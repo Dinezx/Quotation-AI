@@ -5,53 +5,63 @@ import {
   CalculateQuotationRequestDTO,
   CalculationResultDTO,
 } from '../services/api/quotationApi';
-import { mockQuotationHistory } from '../services/mockData';
+import { quotationService } from '../services/quotationService';
 import { QuotationDocument } from '../types/quotation';
 import { calculateQuotationSummary } from '../services/calculationService';
 
 export function dtoToQuotationDocument(dto: QuotationDTO): QuotationDocument {
+  const defaultList = quotationService.getAllQuotations();
+  const template = defaultList[0] || ({} as QuotationDocument);
+
   return {
+    ...template,
     id: dto.id,
     quotationNumber: dto.quotation_number,
-    rfqReference: 'RFQ-AUTO-2026-9821',
-    customerName: 'Mahindra Precision Agro Pvt Ltd',
-    customerGstin: '27AAAPM8891C1Z4',
-    customerBillingAddress: 'MIDC Bhosari Industrial Area, Pune, MH',
-    issueDate: new Date(dto.quotation_date).toLocaleDateString('en-GB', {
+    version: '1.0',
+    createdAt: new Date(dto.quotation_date).toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     }),
-    validUntilDate: dto.valid_until
+    validUntil: dto.valid_until
       ? new Date(dto.valid_until).toLocaleDateString('en-GB')
       : '30 Sep 2026',
-    status: (dto.status as any) || 'CONFIRMED',
-    itemsCount: dto.items?.length || 3,
-    materialCostTotal: Number(dto.material_cost) || 45000,
-    processCostTotal: Number(dto.process_cost) || 18500,
-    baseSubtotal: Number(dto.subtotal) || 63500,
-    overheadPercentage: Number(dto.overhead_percentage) || 12,
-    overheadAmount: Number(dto.overhead_amount) || 7620,
-    profitMarginPercentage: Number(dto.profit_percentage) || 15,
-    profitMarginAmount: Number(dto.profit_amount) || 10668,
-    taxableAssessableValue: Number(dto.taxable_amount) || 81788,
-    gstRatePercentage: 18,
-    gstType: (dto.gst_type as any) || 'CGST_SGST',
-    cgstAmount: Number(dto.cgst_amount) || 7361,
-    sgstAmount: Number(dto.sgst_amount) || 7361,
-    igstAmount: Number(dto.igst_amount) || 0,
-    totalGstAmount: Number(dto.gst_amount) || 14722,
-    grandTotal: Number(dto.final_total) || 96510,
-    grandTotalWords: 'Indian Rupee Ninety-Six Thousand Five Hundred and Ten Only',
-    deliveryLeadTimeWeeks: 3,
+    poReference: 'PO-2026-BOS-0941',
+    poDate: '14 Aug 2026',
+    status: (dto.status as any) || 'GENERATED',
+    calculation: {
+      materialCost: Number(dto.material_cost) || 45000,
+      processCost: Number(dto.process_cost) || 18500,
+      baseSubtotal: Number(dto.subtotal) || 63500,
+      overheadPct: Number(dto.overhead_percentage) || 12,
+      overheadAmount: Number(dto.overhead_amount) || 7620,
+      profitMarginPct: Number(dto.profit_percentage) || 15,
+      profitAmount: Number(dto.profit_amount) || 10668,
+      taxableValue: Number(dto.taxable_amount) || 81788,
+      isInterstate: dto.gst_type === 'IGST',
+      cgstPct: dto.gst_type === 'IGST' ? 0 : 9,
+      cgstAmount: Number(dto.cgst_amount) || 7361,
+      sgstPct: dto.gst_type === 'IGST' ? 0 : 9,
+      sgstAmount: Number(dto.sgst_amount) || 7361,
+      igstPct: dto.gst_type === 'IGST' ? 18 : 0,
+      igstAmount: Number(dto.igst_amount) || 0,
+      totalGstAmount: Number(dto.gst_amount) || 14722,
+      grandTotal: Number(dto.final_total) || 96510,
+      grandTotalInWords: 'Indian Rupee Ninety-Six Thousand Five Hundred and Ten Only',
+      roundingAdjustment: 0,
+    },
+    itemCostings: template.itemCostings || [],
+    boqItems: template.boqItems || [],
+    leadTimeDays: 21,
+    deliveryTerms: dto.delivery_terms || 'Ex-Works Bhosari / FOB Chakan',
     paymentTerms: dto.payment_terms || '30 Days Net from date of invoice',
-    freightTerms: dto.delivery_terms || 'Ex-Works Bhosari / FOB Chakan',
+    freightTerms: 'Included in scope',
     warrantyClause: '12 Months from dispatch against manufacturing defects',
     primaryContactPerson: 'Rajesh Deshmukh (Sr. Costing Engineer)',
     primaryContactPhone: '+91 20 2712 8840',
     primaryContactEmail: 'r.deshmukh@bharatprecision.co.in',
     pdfFileSizeKb: 412,
-    auditTrail: [],
+    auditTrail: template.auditTrail || [],
   };
 }
 
@@ -66,10 +76,10 @@ export function useQuotations() {
         if (dtoList && dtoList.length > 0) {
           return dtoList.map(dtoToQuotationDocument);
         }
-        return mockQuotationHistory;
+        return quotationService.getAllQuotations();
       } catch (err) {
         console.warn('[useQuotations] Falling back to local history:', err);
-        return mockQuotationHistory;
+        return quotationService.getAllQuotations();
       }
     },
   });
@@ -113,7 +123,7 @@ export function useQuotations() {
   });
 
   return {
-    quotations: listQuery.data || mockQuotationHistory,
+    quotations: listQuery.data || quotationService.getAllQuotations(),
     isLoading: listQuery.isLoading,
     isError: listQuery.isError,
     refetch: listQuery.refetch,
