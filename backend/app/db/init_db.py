@@ -46,7 +46,9 @@ def init_db():
             db.refresh(company)
 
         # Ensure default user
-        user = db.query(User).filter(User.id == "usr-bpe-001").first()
+        user = db.query(User).filter(
+            (User.id == "usr-bpe-001") | (User.email == "r.deshmukh@bharatprecision.co.in")
+        ).first()
         if not user:
             user = User(
                 id="usr-bpe-001",

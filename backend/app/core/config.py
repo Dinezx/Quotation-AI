@@ -1,7 +1,6 @@
 import os
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import AnyHttpUrl, field_validator
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Quotation AI Backend"
@@ -11,13 +10,15 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL", 
-        "sqlite:///./quotation_ai.db" # Default local fallback if PostgreSQL is not active
+        "sqlite:///./quotation_ai.db"
     )
 
-    # Supabase credentials
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
-    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-    SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "super-secret-jwt-key-for-local-demo")
+    # Supabase credentials (New JWT Signing Keys / JWKS & Secret Key architecture)
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://hmnaquolktpeztopanja.supabase.co")
+    SUPABASE_SECRET_KEY: str = os.getenv("SUPABASE_SECRET_KEY", os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""))
+
+    # JWKS Key Caching TTL
+    JWKS_CACHE_TTL_SECONDS: int = 3600  # 1 hour cache
 
     # CORS
     CORS_ORIGINS: List[str] = [
@@ -25,6 +26,16 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
         "http://localhost:3000",
     ]
+
+    @property
+    def SUPABASE_JWKS_URL(self) -> str:
+        base = self.SUPABASE_URL.rstrip("/")
+        return f"{base}/auth/v1/.well-known/jwks.json"
+
+    @property
+    def SUPABASE_JWT_ISSUER(self) -> str:
+        base = self.SUPABASE_URL.rstrip("/")
+        return f"{base}/auth/v1"
 
     model_config = SettingsConfigDict(
         env_file=".env",
