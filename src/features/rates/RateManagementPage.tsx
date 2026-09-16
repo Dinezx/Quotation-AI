@@ -25,10 +25,18 @@ import { Modal } from '../../components/ui/Modal';
 import { TabularNumber } from '../../components/common/TabularNumber';
 import { rateService } from '../../services/rateService';
 import { MaterialRate, MaterialCategory } from '../../types/rates';
+import { useRates } from '../../hooks/useRates';
 
 export const RateManagementPage: React.FC = () => {
+  const { materials: queriedMaterials } = useRates();
   const [activeTab, setActiveTab] = useState<'material' | 'process' | 'multipliers' | 'hsn'>('material');
   const [materials, setMaterials] = useState<MaterialRate[]>(rateService.getMaterialRates());
+
+  React.useEffect(() => {
+    if (queriedMaterials && queriedMaterials.length > 0) {
+      setMaterials(queriedMaterials);
+    }
+  }, [queriedMaterials]);
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   
   // Modals

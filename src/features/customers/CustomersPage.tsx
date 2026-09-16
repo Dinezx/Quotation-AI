@@ -16,14 +16,15 @@ import {
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { TabularNumber } from '../../components/common/TabularNumber';
-import { mockCustomersList } from '../../services/mockData';
+import { useCustomers } from '../../hooks/useCustomers';
 import { Customer } from '../../types/customer';
 
 export const CustomersPage: React.FC = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const { customers, isLoading } = useCustomers();
 
-  const filteredCustomers = mockCustomersList.filter(c => 
+  const filteredCustomers = customers.filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.gstin.toLowerCase().includes(search.toLowerCase()) ||
     c.contactPerson.toLowerCase().includes(search.toLowerCase())
