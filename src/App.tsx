@@ -1,5 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
+import { AuthProvider } from './context/AuthContext';
 import { AppShell } from './components/layout/AppShell';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { PoUploadPage } from './features/po-upload/PoUploadPage';
@@ -13,9 +16,11 @@ import { SettingsPage } from './features/settings/SettingsPage';
 
 export function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<AppShell />}>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="upload" element={<PoUploadPage />} />
           <Route path="review" element={<PoReviewPage />} />
@@ -31,7 +36,9 @@ export function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+        </BrowserRouter>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
