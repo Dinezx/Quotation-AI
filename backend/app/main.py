@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
-from app.api.v1.router import api_router
+from app.api.routes.router import api_router
 from app.db.init_db import init_db
 
 @asynccontextmanager

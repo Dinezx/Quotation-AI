@@ -10,7 +10,7 @@ coverage/
 # Production Build
 dist/
 dist-ssr/
-*.local
+tsconfig.tsbuildinfo
 
 # Python
 __pycache__/
@@ -37,12 +37,26 @@ wheels/
 venv/
 ENV/
 
-# Environment variables
+# Databases & local sqlite
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables & secrets (NEVER COMMIT REAL SECRETS)
 .env
-.env.production
 .env.local
+.env.production
+.env.staging
 .env.*.local
-.env.example
+frontend/.env
+frontend/.env.local
+backend/.env
+backend/.env.local
+
+# Always track example files
+!.env.example
+!frontend/.env.example
+!backend/.env.example
 
 # IDE & Editor
 .vscode/
