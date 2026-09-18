@@ -1,3 +1,4 @@
+
 # Quotation AI — Frontend/Backend API Contract
 
 This document defines the REST API integration contract between the **Frontend (React/TypeScript)** and the **Backend (FastAPI)**.
