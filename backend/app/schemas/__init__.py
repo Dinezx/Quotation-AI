@@ -24,6 +24,11 @@ from app.schemas.quotation import (
     CalculateItemInput,
     CalculateQuotationRequest,
 )
+from app.schemas.extraction import (
+    ExtractedPOLineItem,
+    ExtractionMetadata,
+    ExtractedPurchaseOrder,
+)
 
 __all__ = [
     "CompanyBase", "CompanyCreate", "CompanyUpdate", "CompanyResponse",
@@ -36,4 +41,5 @@ __all__ = [
     "QuotationItemBase", "QuotationItemCreate", "QuotationItemResponse",
     "QuotationBase", "QuotationCreate", "QuotationUpdate", "QuotationResponse",
     "CalculateItemInput", "CalculateQuotationRequest",
+    "ExtractedPOLineItem", "ExtractionMetadata", "ExtractedPurchaseOrder",
 ]

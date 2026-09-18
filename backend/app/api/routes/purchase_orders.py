@@ -14,6 +14,7 @@ from app.schemas.purchase_order import (
     PurchaseOrderItemResponse,
 )
 from app.services.storage.storage_service import StorageService
+from app.services.ai.extractor import po_extraction_service
 
 router = APIRouter(prefix="/purchase-orders", tags=["Purchase Orders"])
 
@@ -101,12 +102,23 @@ async def upload_po_document(
             detail=f"Invalid file type {file.content_type}. Allowed: PDF, PNG, JPG, TIFF."
         )
 
+    content = await file.read()
+    await file.seek(0)
+
     url = await StorageService.upload_file(file, subfolder=f"po_{company_id}")
+
+    extraction = await po_extraction_service.extract_document(
+        content=content,
+        file_name=file.filename or "uploaded_document",
+        content_type=file.content_type or "application/pdf",
+    )
+
     return {
         "source_file_url": url,
         "source_file_name": file.filename,
-        "file_size": file.size,
-        "content_type": file.content_type
+        "file_size": file.size or len(content),
+        "content_type": file.content_type,
+        "extraction": extraction.model_dump(mode="json"),
     }
 
 @router.get("/{po_id}", response_model=PurchaseOrderResponse)
