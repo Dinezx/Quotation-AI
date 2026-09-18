@@ -86,6 +86,7 @@ class QuotationResponse(QuotationBase):
 
 # Calculation Engine Input Models
 class CalculateItemInput(BaseModel):
+    id: Optional[str] = None
     purchase_order_item_id: Optional[str] = None
     item_number: int = 1
     part_name: str

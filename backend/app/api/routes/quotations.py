@@ -153,7 +153,7 @@ def calculate_and_update_quotation(
     company_id: str = Depends(get_current_company_id),
     db: Session = Depends(get_db)
 ):
-    """Recalculate an existing quotation and persist the exact commercial figures."""
+    """Recalculate an existing quotation and persist both header totals and item breakdowns atomically."""
     quotation = db.query(Quotation).filter(
         Quotation.id == quotation_id,
         Quotation.company_id == company_id
@@ -161,27 +161,19 @@ def calculate_and_update_quotation(
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
 
-    calc_res = CalculationService.calculate_quotation(request)
-
-    # Update quotation breakdown
-    quotation.material_cost = Decimal(str(calc_res["material_cost"]))
-    quotation.process_cost = Decimal(str(calc_res["process_cost"]))
-    quotation.subtotal = Decimal(str(calc_res["subtotal"]))
-    quotation.overhead_percentage = Decimal(str(calc_res["overhead_percentage"]))
-    quotation.overhead_amount = Decimal(str(calc_res["overhead_amount"]))
-    quotation.profit_percentage = Decimal(str(calc_res["profit_percentage"]))
-    quotation.profit_amount = Decimal(str(calc_res["profit_amount"]))
-    quotation.taxable_amount = Decimal(str(calc_res["taxable_amount"]))
-    quotation.gst_type = calc_res["gst_type"]
-    quotation.cgst_rate = Decimal(str(calc_res["cgst_rate"]))
-    quotation.cgst_amount = Decimal(str(calc_res["cgst_amount"]))
-    quotation.sgst_rate = Decimal(str(calc_res["sgst_rate"]))
-    quotation.sgst_amount = Decimal(str(calc_res["sgst_amount"]))
-    quotation.igst_rate = Decimal(str(calc_res["igst_rate"]))
-    quotation.igst_amount = Decimal(str(calc_res["igst_amount"]))
-    quotation.gst_amount = Decimal(str(calc_res["gst_amount"]))
-    quotation.final_total = Decimal(str(calc_res["final_total"]))
-
-    db.commit()
-    db.refresh(quotation)
-    return quotation
+    try:
+        updated_quotation = QuotationService.recalculate_and_sync_quotation(
+            db=db,
+            quotation=quotation,
+            request=request
+        )
+        return updated_quotation
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Quotation calculation failed: {str(exc)}"
+        )

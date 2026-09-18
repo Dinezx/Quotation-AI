@@ -91,6 +91,7 @@ class CalculationService:
         unit_cost = subtotal / qty
 
         return {
+            "id": getattr(item, "id", None),
             "purchase_order_item_id": item.purchase_order_item_id,
             "item_number": item.item_number,
             "part_name": item.part_name,
