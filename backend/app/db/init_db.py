@@ -1,22 +1,22 @@
 from decimal import Decimal
 from sqlalchemy.orm import Session
-from app.db.base import Base
-from app.db.session import engine, SessionLocal
+from app.db.session import SessionLocal
 from app.models.company import Company
 from app.models.user import User
 from app.models.customer import Customer
 from app.models.material import Material
 from app.models.process import Process
-from app.models.purchase_order import PurchaseOrder
-from app.models.purchase_order_item import PurchaseOrderItem
-from app.models.quotation import Quotation
-from app.models.quotation_item import QuotationItem
 
-def init_db():
-    # Create all tables if they don't exist
-    Base.metadata.create_all(bind=engine)
-    
-    db: Session = SessionLocal()
+def seed_initial_data(db: Session = None) -> None:
+    """Insert initial reference, company, user, and rate card data if not present.
+
+    Schema creation/DDL is strictly managed by Alembic migrations.
+    This function handles ONLY data seeding.
+    """
+    should_close = False
+    if db is None:
+        db = SessionLocal()
+        should_close = True
     try:
         # Check if default company exists
         company = db.query(Company).filter(Company.id == "comp-bpe-pune").first()
@@ -183,4 +183,15 @@ def init_db():
             db.commit()
 
     finally:
-        db.close()
+        if should_close:
+            db.close()
+
+
+def init_db(db: Session = None) -> None:
+    """Backward compatibility alias for seed_initial_data."""
+    seed_initial_data(db=db)
+
+
+if __name__ == "__main__":
+    seed_initial_data()
+

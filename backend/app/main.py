@@ -5,12 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.api.routes.router import api_router
-from app.db.init_db import init_db
+from app.db.init_db import seed_initial_data
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: ensure tables and seed data exist
-    init_db()
+    # Startup: seed reference data if not present (schema is managed via Alembic migrations)
+    seed_initial_data()
     yield
     # Shutdown
 
