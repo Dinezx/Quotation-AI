@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
 from app.core.security import get_current_company_id
 from app.db.session import get_db
+from app.models.customer import Customer
 from app.models.purchase_order import PurchaseOrder
 from app.models.purchase_order_item import PurchaseOrderItem
 from app.schemas.purchase_order import (
@@ -35,6 +36,14 @@ def create_purchase_order(
     db: Session = Depends(get_db)
 ):
     """Create a new purchase order with optional initial extracted items."""
+    if po_in.customer_id:
+        customer = db.query(Customer).filter(
+            Customer.id == po_in.customer_id,
+            Customer.company_id == company_id
+        ).first()
+        if not customer:
+            raise HTTPException(status_code=400, detail="Invalid customer for tenant")
+
     po = PurchaseOrder(
         company_id=company_id,
         customer_id=po_in.customer_id,
@@ -130,6 +139,14 @@ def update_purchase_order(
     if not po:
         raise HTTPException(status_code=404, detail="Purchase order not found")
 
+    if po_in.customer_id:
+        customer = db.query(Customer).filter(
+            Customer.id == po_in.customer_id,
+            Customer.company_id == company_id
+        ).first()
+        if not customer:
+            raise HTTPException(status_code=400, detail="Invalid customer for tenant")
+
     for field, value in po_in.model_dump(exclude_unset=True).items():
         setattr(po, field, value)
 
@@ -165,4 +182,28 @@ def update_purchase_order_item(
 
     db.commit()
     db.refresh(item)
+    return item
+
+@router.get("/{po_id}/items/{item_id}", response_model=PurchaseOrderItemResponse)
+def get_purchase_order_item(
+    po_id: str,
+    item_id: str,
+    company_id: str = Depends(get_current_company_id),
+    db: Session = Depends(get_db)
+):
+    """Retrieve an individual purchase order line item."""
+    po = db.query(PurchaseOrder).filter(
+        PurchaseOrder.id == po_id,
+        PurchaseOrder.company_id == company_id
+    ).first()
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order not found")
+
+    item = db.query(PurchaseOrderItem).filter(
+        PurchaseOrderItem.id == item_id,
+        PurchaseOrderItem.purchase_order_id == po_id
+    ).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found on this PO")
+
     return item

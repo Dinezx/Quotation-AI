@@ -45,6 +45,21 @@ def create_material(
     db.refresh(material)
     return material
 
+@router.get("/materials/{material_id}", response_model=MaterialResponse)
+def get_material(
+    material_id: str,
+    company_id: str = Depends(get_current_company_id),
+    db: Session = Depends(get_db)
+):
+    """Get single material rate card."""
+    material = db.query(Material).filter(
+        Material.id == material_id,
+        Material.company_id == company_id
+    ).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Material rate card not found")
+    return material
+
 @router.put("/materials/{material_id}", response_model=MaterialResponse)
 def update_material(
     material_id: str,
@@ -116,6 +131,21 @@ def create_process(
     db.add(process)
     db.commit()
     db.refresh(process)
+    return process
+
+@router.get("/processes/{process_id}", response_model=ProcessResponse)
+def get_process(
+    process_id: str,
+    company_id: str = Depends(get_current_company_id),
+    db: Session = Depends(get_db)
+):
+    """Get single process rate card."""
+    process = db.query(Process).filter(
+        Process.id == process_id,
+        Process.company_id == company_id
+    ).first()
+    if not process:
+        raise HTTPException(status_code=404, detail="Process rate card not found")
     return process
 
 @router.put("/processes/{process_id}", response_model=ProcessResponse)

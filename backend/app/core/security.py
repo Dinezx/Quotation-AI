@@ -60,42 +60,19 @@ async def get_current_user(
             db.commit()
             db.refresh(user)
 
-    # 3. If new user, assign company and provision user record
+    # 3. Strictly reject unknown user - NO demo/default company fallback
     if not user:
-        # Determine tenant from metadata or fallback to default plant tenant
-        target_company_id = (
-            user_metadata.get("company_id") or 
-            app_metadata.get("company_id")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User has no associated tenant company"
         )
-        
-        target_company = None
-        if target_company_id:
-            target_company = db.query(Company).filter(Company.id == target_company_id).first()
 
-        if not target_company:
-            # Default to primary tenant (e.g. comp-bpe-pune)
-            target_company = db.query(Company).filter(Company.id == "comp-bpe-pune").first()
-
-        if not target_company:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No active company tenant found for user"
-            )
-
-        role = user_metadata.get("role") or app_metadata.get("role") or "COSTING_ENGINEER"
-        full_name = user_metadata.get("full_name") or user_metadata.get("name") or email.split("@")[0]
-
-        user = User(
-            id=sub,
-            company_id=target_company.id,
-            email=email or f"{sub}@tenant.quotation.ai",
-            full_name=full_name,
-            role=role,
-            is_active=True
+    # 4. Strictly verify legitimate company association
+    if not user.company_id or not user.company:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User has no valid company association"
         )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
 
     if not user.is_active:
         raise HTTPException(
@@ -103,14 +80,12 @@ async def get_current_user(
             detail="User account is deactivated"
         )
 
-    company_name = user.company.name if user.company else "Bharat Precision Engineering"
-
     return AuthenticatedUser(
         id=user.id,
         company_id=user.company_id,
         email=user.email,
         role=user.role,
-        company_name=company_name
+        company_name=user.company.name
     )
 
 async def get_current_company_id(

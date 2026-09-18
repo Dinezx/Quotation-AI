@@ -130,18 +130,19 @@ def verify_supabase_jwt(token: str) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Verify signature, expiration, issuer, and algorithm
+    # Verify signature, expiration, issuer, audience, and algorithm
     try:
         payload = jwt.decode(
             token,
             public_key,
             algorithms=[alg],
             issuer=settings.SUPABASE_JWT_ISSUER,
+            audience=settings.SUPABASE_JWT_AUDIENCE,
             options={
                 "verify_signature": True,
                 "verify_exp": True,
                 "verify_iss": True,
-                "verify_aud": False,
+                "verify_aud": True,
             }
         )
     except ExpiredSignatureError:
@@ -160,6 +161,23 @@ def verify_supabase_jwt(token: str) -> Dict[str, Any]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid token signature or format: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Validate required 'aud' claim
+    aud = payload.get("aud")
+    if not aud:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token missing required 'aud' (audience) claim",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if (isinstance(aud, str) and aud != settings.SUPABASE_JWT_AUDIENCE) or (
+        isinstance(aud, list) and settings.SUPABASE_JWT_AUDIENCE not in aud
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token audience claim: expected '{settings.SUPABASE_JWT_AUDIENCE}'",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

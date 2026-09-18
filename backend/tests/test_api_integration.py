@@ -48,6 +48,7 @@ def auth_headers():
     claims = {
         "sub": "usr-integ-test-01",
         "iss": settings.SUPABASE_JWT_ISSUER,
+        "aud": settings.SUPABASE_JWT_AUDIENCE,
         "exp": now + 3600,
         "iat": now,
         "email": "r.deshmukh@bharatprecision.co.in",

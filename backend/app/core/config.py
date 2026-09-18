@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     # JWKS Key Caching TTL
     JWKS_CACHE_TTL_SECONDS: int = 3600  # 1 hour cache
 
+    # Supabase JWT Audience (standard Supabase access token audience is 'authenticated')
+    SUPABASE_JWT_AUDIENCE: str = os.getenv("SUPABASE_JWT_AUDIENCE", "authenticated")
+
     # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",

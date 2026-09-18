@@ -20,7 +20,7 @@ async def get_me(
         "user": {
             "id": current_user.id,
             "email": current_user.email,
-            "full_name": db_user.full_name if db_user else "Rajesh Deshmukh",
+            "full_name": db_user.full_name if (db_user and db_user.full_name) else None,
             "role": current_user.role,
             "company_id": current_user.company_id,
         },
@@ -28,7 +28,7 @@ async def get_me(
             "id": company.id if company else current_user.company_id,
             "name": company.name if company else current_user.company_name,
             "legal_name": company.legal_name if company else None,
-            "gstin": company.gstin if company else "27AAACB1234F1Z8",
+            "gstin": company.gstin if company else None,
             "address": company.address if company else None,
             "phone": company.phone if company else None,
             "email": company.email if company else None,

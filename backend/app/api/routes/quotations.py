@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.security import get_current_company_id
 from app.db.session import get_db
+from app.models.customer import Customer
+from app.models.purchase_order import PurchaseOrder
 from app.models.quotation import Quotation
 from app.models.quotation_item import QuotationItem
 from app.schemas.quotation import (
@@ -34,6 +36,22 @@ def create_quotation(
     db: Session = Depends(get_db)
 ):
     """Create a new quotation document with sequential quotation number."""
+    if quotation_in.customer_id:
+        customer = db.query(Customer).filter(
+            Customer.id == quotation_in.customer_id,
+            Customer.company_id == company_id
+        ).first()
+        if not customer:
+            raise HTTPException(status_code=400, detail="Invalid customer for tenant")
+
+    if quotation_in.purchase_order_id:
+        po = db.query(PurchaseOrder).filter(
+            PurchaseOrder.id == quotation_in.purchase_order_id,
+            PurchaseOrder.company_id == company_id
+        ).first()
+        if not po:
+            raise HTTPException(status_code=400, detail="Invalid purchase order for tenant")
+
     quotation_number = quotation_in.quotation_number or QuotationService.generate_quotation_number(db, company_id)
 
     quotation = Quotation(
@@ -126,6 +144,15 @@ def update_quotation(
     ).first()
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
+
+    cust_id = getattr(quotation_in, "customer_id", None)
+    if cust_id:
+        customer = db.query(Customer).filter(
+            Customer.id == cust_id,
+            Customer.company_id == company_id
+        ).first()
+        if not customer:
+            raise HTTPException(status_code=400, detail="Invalid customer for tenant")
 
     for field, value in quotation_in.model_dump(exclude_unset=True).items():
         setattr(quotation, field, value)

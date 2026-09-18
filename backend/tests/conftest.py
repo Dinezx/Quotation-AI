@@ -88,6 +88,7 @@ def session_jwt_signer():
         claims = {
             "sub": sub,
             "iss": settings.SUPABASE_JWT_ISSUER,
+            "aud": settings.SUPABASE_JWT_AUDIENCE,
             "exp": now + exp_offset,
             "iat": now,
             "role": "authenticated",

@@ -48,6 +48,7 @@ def auth_headers():
     token_claims = {
         "sub": "usr-bpe-001",
         "iss": settings.SUPABASE_JWT_ISSUER,
+        "aud": settings.SUPABASE_JWT_AUDIENCE,
         "exp": int(time.time()) + 3600,
         "role": "authenticated",
         "email": "r.deshmukh@bharatprecision.co.in",
