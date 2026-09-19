@@ -18,8 +18,10 @@ from app.schemas.purchase_order import (
     PurchaseOrderRejectRequest,
 )
 from app.schemas.extraction import ExtractedPurchaseOrder
+from app.schemas.pricing import POCalculateRequest, POCalculateResponse
 from app.services.storage.storage_service import StorageService
 from app.services.ai.extractor import po_extraction_service, convert_extraction_to_po_create
+from app.services.pricing.pricing_service import PricingService
 
 router = APIRouter(prefix="/purchase-orders", tags=["Purchase Orders"])
 
@@ -466,3 +468,36 @@ def reject_purchase_order(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Rejection failed: {str(exc)}",
         )
+
+
+@router.post("/{po_id}/calculate", response_model=POCalculateResponse)
+def calculate_purchase_order(
+    po_id: str,
+    calc_req: Optional[POCalculateRequest] = None,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Deterministically calculates commercial quotation breakdown for an approved PO.
+    Enforces:
+    1. Tenant isolation (company_id derived from verified token).
+    2. Approval gate (PurchaseOrder.status == 'APPROVED').
+    3. Deterministic tenant rate matching (materials & processes).
+    4. Mandatory unit/weight verification.
+    5. Returns structured BLOCKED issues if prerequisites are missing.
+    6. Zero AI / LLM involvement.
+    """
+    po = db.query(PurchaseOrder).filter(
+        PurchaseOrder.id == po_id,
+        PurchaseOrder.company_id == current_user.company_id,
+    ).first()
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order not found")
+
+    params = calc_req or POCalculateRequest()
+    return PricingService.calculate_purchase_order(
+        po=po,
+        db=db,
+        company_id=current_user.company_id,
+        calc_params=params,
+    )

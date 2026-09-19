@@ -675,7 +675,7 @@ export const PoReviewPage: React.FC = () => {
             {isApproved && (
               <Button
                 variant="primary"
-                onClick={() => navigate(`/quotations?po_id=${po.id}`)}
+                onClick={() => navigate(`/calculation?po_id=${po.id}`)}
                 icon={<ArrowRight className="w-4 h-4" />}
               >
                 Proceed to Rate Matching & Costing

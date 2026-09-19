@@ -27,6 +27,12 @@ from app.schemas.quotation import (
     CalculateItemInput,
     CalculateQuotationRequest,
 )
+from app.schemas.pricing import (
+    CalculationIssue,
+    RateMatchItemResult,
+    POCalculateRequest,
+    POCalculateResponse,
+)
 from app.schemas.extraction import (
     ExtractedPOLineItem,
     ExtractionMetadata,
@@ -44,5 +50,6 @@ __all__ = [
     "QuotationItemBase", "QuotationItemCreate", "QuotationItemResponse",
     "QuotationBase", "QuotationCreate", "QuotationUpdate", "QuotationResponse",
     "CalculateItemInput", "CalculateQuotationRequest",
+    "CalculationIssue", "RateMatchItemResult", "POCalculateRequest", "POCalculateResponse",
     "ExtractedPOLineItem", "ExtractionMetadata", "ExtractedPurchaseOrder",
 ]

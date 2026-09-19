@@ -53,6 +53,78 @@ export interface PurchaseOrderDTO {
   items: PurchaseOrderItemDTO[];
 }
 
+export interface CalculationIssueDTO {
+  item_id?: string;
+  item_number?: number;
+  part_name?: string;
+  code: string;
+  message: string;
+}
+
+export interface RateMatchItemDTO {
+  item_id?: string;
+  item_number: number;
+  part_name: string;
+  material?: string;
+  material_rate?: number;
+  scrap_credit_rate?: number;
+  process?: string;
+  process_rate?: number;
+  setup_cost?: number;
+  quantity: number;
+  unit: string;
+  gross_weight_kg: number;
+  scrap_weight_kg: number;
+  machining_hours: number;
+  setup_hours: number;
+  rate_match_status: string;
+  rate_match_messages: string[];
+  gross_material_cost?: number;
+  scrap_credit?: number;
+  net_material_cost?: number;
+  machining_cost?: number;
+  process_cost?: number;
+  subtotal?: number;
+  unit_cost?: number;
+}
+
+export interface POCalculateRequestDTO {
+  overhead_percentage?: number;
+  profit_percentage?: number;
+  gst_type?: string;
+  persist_draft?: boolean;
+}
+
+export interface POCalculateResponseDTO {
+  status: 'SUCCESS' | 'BLOCKED';
+  purchase_order_id: string;
+  po_number: string;
+  customer_name?: string;
+  currency: string;
+  issues: CalculationIssueDTO[];
+  items: RateMatchItemDTO[];
+  manufacturing_subtotal?: number;
+  material_cost?: number;
+  process_cost?: number;
+  overhead_percentage?: number;
+  overhead_amount?: number;
+  assessable_amount?: number;
+  profit_percentage?: number;
+  profit_amount?: number;
+  taxable_amount?: number;
+  gst_type?: string;
+  cgst_rate?: number;
+  cgst_amount?: number;
+  sgst_rate?: number;
+  sgst_amount?: number;
+  igst_rate?: number;
+  igst_amount?: number;
+  gst_amount?: number;
+  grand_total?: number;
+  final_total_in_words?: string;
+  quotation_id?: string;
+}
+
 export const purchaseOrderApi = {
   list: async (status?: string): Promise<PurchaseOrderDTO[]> => {
     const res = await apiClient.get<PurchaseOrderDTO[]>('/purchase-orders', {
@@ -99,6 +171,17 @@ export const purchaseOrderApi = {
     const res = await apiClient.post<PurchaseOrderDTO>(`/purchase-orders/${id}/reject`, {
       reason,
     });
+    return res.data;
+  },
+
+  calculate: async (
+    id: string,
+    params?: POCalculateRequestDTO
+  ): Promise<POCalculateResponseDTO> => {
+    const res = await apiClient.post<POCalculateResponseDTO>(
+      `/purchase-orders/${id}/calculate`,
+      params || {}
+    );
     return res.data;
   },
 
