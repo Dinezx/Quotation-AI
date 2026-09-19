@@ -17,9 +17,13 @@ from app.schemas.extraction import (
     ExtractionMetadata,
     FORBIDDEN_PRICING_FIELDS,
 )
+from pydantic import ValidationError
+
 from app.schemas.normalization import (
     GeminiNormalizedPurchaseOrder,
     GeminiNormalizedLineItem,
+    get_gemini_normalized_po_schema,
+    sanitize_schema_for_gemini,
 )
 from app.services.ai.normalizer import (
     BasePONormalizer,
@@ -537,3 +541,111 @@ async def test_sample_po_regression_process_remains_null():
 
     assert "AMBIGUOUS_PROCESS" in evaluated.review_flags
     assert evaluated.needs_human_review is True
+
+
+# 18. GEMINI-FACING SCHEMA CONTAINS NO ADDITIONAL_PROPERTIES (ROOT & NESTED)
+def test_gemini_facing_schema_contains_no_additional_properties():
+    schema = get_gemini_normalized_po_schema()
+    schema_str = json.dumps(schema)
+
+    # Must contain zero occurrences of additionalProperties or additional_properties
+    assert "additionalProperties" not in schema_str
+    assert "additional_properties" not in schema_str
+
+    # Verify root schema
+    assert "additionalProperties" not in schema
+    assert "additional_properties" not in schema
+
+    # Verify nested defs / line item schema
+    defs = schema.get("$defs", {})
+    if defs:
+        for def_name, def_body in defs.items():
+            assert "additionalProperties" not in def_body
+            assert "additional_properties" not in def_body
+
+
+# 19. GEMINI-FACING SCHEMA PRESERVES REQUIRED AND SUPPORTED FIELDS
+def test_gemini_facing_schema_preserves_supported_fields():
+    schema = get_gemini_normalized_po_schema()
+
+    assert schema.get("type") == "object"
+    assert "properties" in schema
+    assert "po_number" in schema["properties"]
+    assert "customer_name" in schema["properties"]
+    assert "items" in schema["properties"]
+
+    # Check items array schema
+    items_schema = schema["properties"]["items"]
+    assert items_schema.get("type") == "array"
+    assert "items" in items_schema
+
+
+# 20. STRICT APPLICATION-SIDE PYDANTIC VALIDATION STILL REJECTS UNEXPECTED FIELDS
+def test_strict_application_validation_still_rejects_extra_fields():
+    # Attempt to validate an unexpected field on root model
+    with pytest.raises(ValidationError) as exc_info:
+        GeminiNormalizedPurchaseOrder.model_validate({
+            "po_number": "PO-12345",
+            "unexpected_hallucinated_root_field": "disallowed",
+        })
+    errors = exc_info.value.errors()
+    assert any(err.get("type") == "extra_forbidden" for err in errors)
+
+    # Attempt to validate an unexpected field on line item model
+    with pytest.raises(ValidationError) as exc_info_item:
+        GeminiNormalizedLineItem.model_validate({
+            "item_number": 1,
+            "unexpected_hallucinated_item_field": "disallowed",
+        })
+    item_errors = exc_info_item.value.errors()
+    assert any(err.get("type") == "extra_forbidden" for err in item_errors)
+
+
+# 21. STRICT APPLICATION-SIDE VALIDATION REJECTS COMMERCIAL AND PRICING FIELDS
+def test_strict_application_validation_rejects_pricing_fields():
+    # Attempting to supply pricing fields triggers model validator
+    for pricing_key in ["unit_price", "selling_price", "material_rate", "tax_amount", "gst_rate"]:
+        with pytest.raises((ValueError, ValidationError)):
+            GeminiNormalizedPurchaseOrder.model_validate({
+                "customer_name": "Test Customer",
+                pricing_key: 1500.00,
+            })
+
+        with pytest.raises((ValueError, ValidationError)):
+            GeminiNormalizedLineItem.model_validate({
+                "item_number": 1,
+                pricing_key: 150.00,
+            })
+
+
+# 22. NORMALIZER ACTUALLY PASSES SANITIZED SCHEMA TO CLIENT CONFIG
+@pytest.mark.asyncio
+async def test_normalizer_passes_sanitized_schema_to_gemini():
+    initial_po = create_initial_extracted_po()
+    doc_rep = {"file_name": "sample.pdf"}
+
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = json.dumps({
+        "customer_name": "ABC Engineering Components Pvt. Ltd.",
+        "items": [],
+    })
+
+    captured_config = []
+
+    async def mock_generate_content(*args, **kwargs):
+        captured_config.append(kwargs.get("config"))
+        return mock_response
+
+    mock_client.aio.models.generate_content = AsyncMock(side_effect=mock_generate_content)
+
+    normalizer = GeminiPONormalizer(api_key="test-api-key", client=mock_client)
+    await normalizer.normalize(doc_rep, initial_po)
+
+    assert len(captured_config) == 1
+    passed_config = captured_config[0]
+    assert passed_config is not None
+
+    passed_schema_str = json.dumps(passed_config.response_schema)
+    assert "additionalProperties" not in passed_schema_str
+    assert "additional_properties" not in passed_schema_str

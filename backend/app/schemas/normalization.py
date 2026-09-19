@@ -4,7 +4,7 @@ Pydantic schemas for Gemini Semantic Normalization.
 Enforces strict structural constraints and anti-pricing validation.
 Zero commercial or pricing fields are permitted in these models.
 """
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.extraction import FORBIDDEN_PRICING_FIELDS
@@ -89,3 +89,32 @@ class GeminiNormalizedPurchaseOrder(BaseModel):
             if forbidden:
                 raise ValueError(f"Normalized PO contains forbidden pricing fields: {sorted(forbidden)}")
         return data
+
+
+def sanitize_schema_for_gemini(schema: Any) -> Any:
+    """
+    Recursively strips schema keywords unsupported by the Gemini API
+    (such as 'additionalProperties' and 'additional_properties') from a JSON schema dictionary.
+    Preserves all supported properties, types, items, descriptions, and structural constraints.
+    """
+    if isinstance(schema, dict):
+        sanitized = {}
+        for key, value in schema.items():
+            if key in ("additionalProperties", "additional_properties"):
+                continue
+            sanitized[key] = sanitize_schema_for_gemini(value)
+        return sanitized
+    elif isinstance(schema, list):
+        return [sanitize_schema_for_gemini(item) for item in schema]
+    return schema
+
+
+def get_gemini_normalized_po_schema() -> dict:
+    """
+    Generates the Gemini-compatible JSON schema for GeminiNormalizedPurchaseOrder.
+    Keeps application-side Pydantic models strictly configured with extra='forbid',
+    while producing a sanitized schema dictionary without 'additionalProperties'
+    to satisfy the Gemini API endpoint.
+    """
+    raw_schema = GeminiNormalizedPurchaseOrder.model_json_schema()
+    return sanitize_schema_for_gemini(raw_schema)

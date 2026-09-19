@@ -28,6 +28,7 @@ from app.schemas.extraction import (
 from app.schemas.normalization import (
     GeminiNormalizedPurchaseOrder,
     GeminiNormalizedLineItem,
+    get_gemini_normalized_po_schema,
 )
 from app.services.ai.prompts.normalization_v1 import (
     NORMALIZATION_SYSTEM_INSTRUCTION_V1,
@@ -151,9 +152,11 @@ class GeminiPONormalizer(BasePONormalizer):
 
         from google.genai import types
 
+        gemini_response_schema = get_gemini_normalized_po_schema()
+
         config = types.GenerateContentConfig(
             response_mime_type="application/json",
-            response_schema=GeminiNormalizedPurchaseOrder,
+            response_schema=gemini_response_schema,
             system_instruction=NORMALIZATION_SYSTEM_INSTRUCTION_V1,
             temperature=0.0,
         )
