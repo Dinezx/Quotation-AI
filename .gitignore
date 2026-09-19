@@ -11,6 +11,7 @@ coverage/
 # Uploads & Media
 uploads/
 **/uploads/
+sample_manufacturing_purchase_order.pdf
 
 # Production Build
 dist/
