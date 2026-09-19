@@ -11,17 +11,30 @@ CRITICAL ARCHITECTURAL RULES:
 3. Separation of untrusted extraction from application data:
    Document -> ExtractionResult -> Human Review -> Approved PO -> SQLAlchemy PurchaseOrder
 """
+import os
+import re
+import asyncio
 from abc import ABC, abstractmethod
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Dict, Any, List, Optional, Type
 import logging
 
+from azure.core.credentials import AzureKeyCredential
+from azure.ai.documentintelligence import DocumentIntelligenceClient
+from azure.core.exceptions import (
+    ClientAuthenticationError,
+    HttpResponseError,
+    ServiceRequestError,
+    ServiceResponseError,
+)
+
 from app.core.config import settings
 from app.schemas.extraction import (
     ExtractedPurchaseOrder,
     ExtractedPOLineItem,
     ExtractionMetadata,
+    FORBIDDEN_PRICING_FIELDS,
 )
 from app.schemas.purchase_order import (
     PurchaseOrderCreate,
@@ -145,9 +158,54 @@ class MockPOExtractor(BasePOExtractor):
 
 class AzureDocIntelligenceExtractor(BasePOExtractor):
     """
-    Azure Document Intelligence OCR & Table Extraction Provider.
-    Reserved for Phase 3 integration. Network calls not implemented in this phase.
+    Official Azure AI Document Intelligence Provider.
+    Extracts text, layout, and structured tables from PO documents using the prebuilt-layout model.
+    Enforces strict anti-pricing boundaries: zero pricing/rate fields are ever extracted.
     """
+
+    ALLOWED_MIME_TYPES = {
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/tiff",
+    }
+
+    def __init__(
+        self,
+        endpoint: Optional[str] = None,
+        key: Optional[str] = None,
+        client: Optional[Any] = None,
+        model_id: str = "prebuilt-layout",
+    ):
+        self.endpoint = (
+            endpoint if endpoint is not None
+            else (settings.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT or os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"))
+        )
+        self.key = (
+            key if key is not None
+            else (settings.AZURE_DOCUMENT_INTELLIGENCE_KEY or os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY"))
+        )
+        self.model_id = model_id
+        self._client = client
+        self.last_raw_result: Optional[Dict[str, Any]] = None
+
+    def get_last_raw_result(self) -> Optional[Dict[str, Any]]:
+        """Returns the safe normalized internal representation of the last Azure extraction."""
+        return self.last_raw_result
+
+    def _get_client(self) -> DocumentIntelligenceClient:
+        if self._client is not None:
+            return self._client
+
+        if not self.endpoint or not self.key:
+            raise ValueError(
+                "Azure Document Intelligence configuration missing: "
+                "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT and AZURE_DOCUMENT_INTELLIGENCE_KEY must be configured."
+            )
+
+        credential = AzureKeyCredential(self.key)
+        self._client = DocumentIntelligenceClient(endpoint=self.endpoint, credential=credential)
+        return self._client
 
     async def extract(
         self,
@@ -155,10 +213,360 @@ class AzureDocIntelligenceExtractor(BasePOExtractor):
         file_name: str,
         content_type: str = "application/pdf",
     ) -> ExtractedPurchaseOrder:
-        raise NotImplementedError(
-            "Azure Document Intelligence integration is scheduled for Phase 3. "
-            "Please use PO_EXTRACTION_PROVIDER='mock' for local development and testing."
+        if content_type not in self.ALLOWED_MIME_TYPES:
+            raise ValueError(
+                f"Unsupported document MIME type '{content_type}'. Allowed types: {', '.join(sorted(self.ALLOWED_MIME_TYPES))}"
+            )
+
+        if not document_content:
+            raise ValueError("Document content cannot be empty.")
+
+        client = self._get_client()
+
+        def _analyze():
+            poller = client.begin_analyze_document(
+                model_id=self.model_id,
+                body=document_content,
+                content_type="application/octet-stream",
+            )
+            return poller.result()
+
+        try:
+            result = await asyncio.to_thread(_analyze)
+        except ClientAuthenticationError as e:
+            logger.error("Azure Document Intelligence authentication failed.")
+            raise RuntimeError("Azure Document Intelligence authentication failed. Verify configured credentials.") from e
+        except HttpResponseError as e:
+            status_code = getattr(e, "status_code", "unknown")
+            logger.error(f"Azure Document Intelligence HTTP request error: status={status_code}")
+            err_msg = getattr(e, "message", "") or "Request failed"
+            raise RuntimeError(f"Azure Document Intelligence request failed: {err_msg}") from e
+        except (ServiceRequestError, ServiceResponseError, TimeoutError) as e:
+            logger.error("Azure Document Intelligence connection or timeout error.")
+            raise RuntimeError("Azure Document Intelligence service timed out or was unreachable.") from e
+        except Exception as e:
+            logger.error(f"Unexpected error during Azure Document Intelligence extraction: {type(e).__name__}")
+            raise RuntimeError(f"Azure Document Intelligence extraction error: {type(e).__name__}") from e
+
+        return self._parse_analyze_result(result=result, file_name=file_name)
+
+    def _parse_analyze_result(self, result: Any, file_name: str) -> ExtractedPurchaseOrder:
+        if result is None:
+            self.last_raw_result = {"file_name": file_name, "status": "empty_or_none"}
+            return ExtractedPurchaseOrder(
+                extraction_warnings=["Empty OCR/layout result returned from Azure Document Intelligence"],
+                needs_human_review=True,
+            )
+
+        try:
+            full_text = getattr(result, "content", "") or ""
+            pages = getattr(result, "pages", []) or []
+            paragraphs = getattr(result, "paragraphs", []) or []
+            tables = getattr(result, "tables", []) or []
+            key_value_pairs = getattr(result, "key_value_pairs", []) or []
+        except Exception as e:
+            raise RuntimeError("Malformed response received from Azure Document Intelligence.") from e
+
+        # Extract lines across all pages
+        lines: List[Any] = []
+        for page in pages:
+            lines.extend(getattr(page, "lines", []) or [])
+
+        # Preserve safe normalized internal representation (no secrets/credentials)
+        self.last_raw_result = {
+            "file_name": file_name,
+            "page_count": len(pages) if pages else 1,
+            "paragraph_count": len(paragraphs),
+            "table_count": len(tables),
+            "key_value_pair_count": len(key_value_pairs),
+            "line_count": len(lines),
+            "has_content": bool(full_text.strip()),
+            "paragraphs": [
+                getattr(p, "content", "")
+                for p in paragraphs[:50]
+                if getattr(p, "content", None)
+            ],
+            "key_value_pairs": [
+                {
+                    "key": (getattr(kv.key, "content", "") or "").strip(),
+                    "value": (getattr(kv.value, "content", "") or "").strip(),
+                }
+                for kv in key_value_pairs
+                if getattr(kv, "key", None) and getattr(kv, "value", None)
+            ],
+        }
+
+        if not full_text.strip() and not tables:
+            return ExtractedPurchaseOrder(
+                extraction_warnings=["Empty OCR/layout result returned from Azure Document Intelligence"],
+                needs_human_review=True,
+            )
+
+        # 1. Document Confidence & Page count
+        page_count = len(pages) if pages else 1
+        confidences: List[Decimal] = []
+        try:
+            for page in pages:
+                for word in getattr(page, "words", []) or []:
+                    if hasattr(word, "confidence") and word.confidence is not None:
+                        confidences.append(Decimal(str(round(word.confidence, 4))))
+        except Exception:
+            pass
+
+        doc_confidence = (
+            round(sum(confidences) / len(confidences), 2)
+            if confidences
+            else Decimal("0.95")
         )
+
+        # 2. Header Discovery via Key-Value Pairs and Regex
+        po_number: Optional[str] = None
+        po_date_val: Optional[date] = None
+        customer_name: Optional[str] = None
+        customer_gstin: Optional[str] = None
+        payment_terms: Optional[str] = None
+        delivery_terms: Optional[str] = None
+        customer_email: Optional[str] = None
+        customer_phone: Optional[str] = None
+
+        # Check key_value_pairs from layout analysis if present
+        try:
+            for kv in key_value_pairs:
+                k_text = (getattr(kv.key, "content", "") or "").strip().lower()
+                v_text = (getattr(kv.value, "content", "") or "").strip()
+                if not v_text:
+                    continue
+                if not po_number and any(x in k_text for x in ["po number", "po no", "p.o.", "order no", "purchase order"]):
+                    po_number = v_text
+                elif not po_date_val and "date" in k_text and not any(x in k_text for x in ["delivery", "valid", "due"]):
+                    po_date_val = self._parse_date(v_text)
+                elif not customer_name and any(x in k_text for x in ["customer", "buyer", "company", "vendor to", "bill to"]):
+                    customer_name = v_text
+                elif not customer_gstin and "gst" in k_text:
+                    customer_gstin = v_text
+                elif not payment_terms and "payment" in k_text:
+                    payment_terms = v_text
+                elif not delivery_terms and "delivery" in k_text and "term" in k_text:
+                    delivery_terms = v_text
+        except Exception:
+            pass
+
+        # Fallback text regex for header fields
+        if not po_number:
+            match = re.search(r"(?i)(?:PO|P\.O\.|Purchase\s*Order|Order)\s*(?:Number|No\.?|#)\s*[:\-]?\s*([A-Za-z0-9\-_/]+)", full_text)
+            if not match:
+                match = re.search(r"(?i)(?:PO|P\.O\.|Purchase\s*Order|Order)\s*[:\-]\s*([A-Za-z0-9\-_/]+)", full_text)
+            if match:
+                candidate = match.group(1).strip()
+                if candidate.lower() not in ["order", "date", "no", "number"]:
+                    po_number = candidate
+
+        if not po_date_val:
+            match = re.search(r"(?i)(?:PO\s*Date|Date\s*of\s*PO|Order\s*Date|Date)\s*[:\-]?\s*(\d{4}[-/]\d{2}[-/]\d{2}|\d{2}[-/]\d{2}[-/]\d{4}|\d{2}-[A-Za-z]{3}-\d{4})", full_text)
+            if match:
+                po_date_val = self._parse_date(match.group(1))
+
+        if not customer_name:
+            match = re.search(r"(?i)(?:Buyer|Customer|Bill\s*To|Purchaser)\s*[:\-]?\s*([^\n\r]+)", full_text)
+            if match:
+                candidate = match.group(1).strip()
+                if len(candidate) > 2 and not candidate.lower().startswith("gst"):
+                    customer_name = candidate
+
+        if not customer_gstin:
+            match = re.search(r"\b([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})\b", full_text)
+            if match:
+                customer_gstin = match.group(1).strip()
+
+        # 3. Table & Line Item Discovery
+        items: List[ExtractedPOLineItem] = []
+        try:
+            for table in tables:
+                table_items = self._parse_table_to_line_items(table)
+                items.extend(table_items)
+        except Exception as e:
+            logger.warning(f"Error parsing tables from Azure Document Intelligence result: {e}")
+
+        metadata = ExtractionMetadata(
+            source_document=file_name,
+            page_number=page_count,
+            confidence=doc_confidence,
+            provider="azure",
+            raw_text=full_text[:4000] if full_text else None,
+        )
+
+        extracted_po = ExtractedPurchaseOrder(
+            po_number=po_number,
+            po_date=po_date_val,
+            customer_name=customer_name,
+            customer_gstin=customer_gstin,
+            customer_email=customer_email,
+            customer_phone=customer_phone,
+            currency="INR",
+            payment_terms=payment_terms,
+            delivery_terms=delivery_terms,
+            items=items,
+            metadata=metadata,
+        )
+
+        return evaluate_extraction_quality(extracted_po)
+
+    def _parse_table_to_line_items(self, table: Any) -> List[ExtractedPOLineItem]:
+        cells = getattr(table, "cells", []) or []
+        if not cells:
+            return []
+
+        # Group cells by row index
+        rows_by_idx: Dict[int, Dict[int, Any]] = {}
+        for cell in cells:
+            r_idx = getattr(cell, "row_index", 0)
+            c_idx = getattr(cell, "column_index", 0)
+            if r_idx not in rows_by_idx:
+                rows_by_idx[r_idx] = {}
+            rows_by_idx[r_idx][c_idx] = cell
+
+        sorted_row_indices = sorted(rows_by_idx.keys())
+        if not sorted_row_indices:
+            return []
+
+        # Header row inspection
+        header_row_idx = sorted_row_indices[0]
+        header_cells = rows_by_idx[header_row_idx]
+        col_mapping: Dict[int, str] = {}
+
+        for col_idx, cell in header_cells.items():
+            content = (getattr(cell, "content", "") or "").strip().lower()
+
+            # CRITICAL ANTI-PRICING: Discard any pricing/commercial column
+            if any(p in content for p in [
+                "rate", "price", "unit price", "amount", "total", "tax", "gst",
+                "discount", "margin", "cost", "value", "final price", "selling price",
+                "cgst", "sgst", "igst", "overhead", "profit"
+            ]):
+                col_mapping[col_idx] = "FORBIDDEN_PRICING"
+                continue
+
+            if any(x in content for x in ["item no", "sl no", "sr no", "item #", "s.no", "pos", "line"]):
+                col_mapping[col_idx] = "item_number"
+            elif any(x in content for x in ["part name", "description", "item description", "part description", "material description", "item"]):
+                col_mapping[col_idx] = "part_name"
+            elif any(x in content for x in ["drawing", "dwg"]):
+                col_mapping[col_idx] = "drawing_number"
+            elif any(x in content for x in ["specification", "spec"]):
+                col_mapping[col_idx] = "specification"
+            elif "grade" in content:
+                col_mapping[col_idx] = "material_grade"
+            elif "material" in content:
+                col_mapping[col_idx] = "material"
+            elif any(x in content for x in ["qty", "quantity", "nos"]):
+                col_mapping[col_idx] = "quantity"
+            elif any(x in content for x in ["uom", "unit"]):
+                col_mapping[col_idx] = "unit"
+            elif "gross" in content:
+                col_mapping[col_idx] = "gross_weight_kg"
+            elif "scrap" in content:
+                col_mapping[col_idx] = "scrap_weight_kg"
+            elif "setup" in content:
+                col_mapping[col_idx] = "setup_hours"
+            elif any(x in content for x in ["machining", "hours", "hrs"]):
+                col_mapping[col_idx] = "machining_hours"
+            elif any(x in content for x in ["process", "operation"]):
+                col_mapping[col_idx] = "process"
+            elif any(x in content for x in ["delivery", "due date"]):
+                col_mapping[col_idx] = "requested_delivery_date"
+
+        items: List[ExtractedPOLineItem] = []
+        for r_idx in sorted_row_indices[1:]:
+            row_cells = rows_by_idx[r_idx]
+            item_data: Dict[str, Any] = {}
+            confidences: List[Decimal] = []
+
+            for col_idx, cell in row_cells.items():
+                target_field = col_mapping.get(col_idx)
+                if not target_field or target_field == "FORBIDDEN_PRICING" or target_field in FORBIDDEN_PRICING_FIELDS:
+                    continue
+
+                cell_text = (getattr(cell, "content", "") or "").strip()
+                if hasattr(cell, "confidence") and cell.confidence is not None:
+                    confidences.append(Decimal(str(round(cell.confidence, 4))))
+
+                if target_field == "item_number":
+                    try:
+                        digits = re.sub(r"[^\d]", "", cell_text)
+                        if digits:
+                            item_data["item_number"] = int(digits)
+                    except ValueError:
+                        pass
+                elif target_field == "quantity":
+                    try:
+                        clean_num = re.sub(r"[^\d.]", "", cell_text)
+                        if clean_num:
+                            qty = Decimal(clean_num)
+                            if qty > Decimal("0"):
+                                item_data["quantity"] = qty
+                    except Exception:
+                        pass
+                elif target_field in ["gross_weight_kg", "scrap_weight_kg", "machining_hours", "setup_hours"]:
+                    try:
+                        clean_num = re.sub(r"[^\d.]", "", cell_text)
+                        if clean_num:
+                            val = Decimal(clean_num)
+                            if val >= Decimal("0"):
+                                item_data[target_field] = val
+                    except Exception:
+                        pass
+                elif target_field == "requested_delivery_date":
+                    dt = self._parse_date(cell_text)
+                    if dt:
+                        item_data["requested_delivery_date"] = dt
+                else:
+                    if cell_text:
+                        item_data[target_field] = cell_text
+
+            if item_data.get("part_name") or item_data.get("quantity") or item_data.get("material"):
+                if "item_number" not in item_data:
+                    item_data["item_number"] = len(items) + 1
+                row_confidence = (
+                    round(sum(confidences) / len(confidences), 2)
+                    if confidences
+                    else Decimal("0.95")
+                )
+                item_data["confidence"] = row_confidence
+                try:
+                    line_item = ExtractedPOLineItem(**item_data)
+                    items.append(line_item)
+                except Exception as e:
+                    logger.warning(f"Validation error on extracted line item row {r_idx}: {e}")
+
+        return items
+
+    @staticmethod
+    def _parse_date(date_str: str) -> Optional[date]:
+        if not date_str:
+            return None
+        cleaned = date_str.strip()
+        match = re.search(r"(\d{4}[-/]\d{2}[-/]\d{2}|\d{2}[-/]\d{2}[-/]\d{4}|\d{2}-[A-Za-z]{3}-\d{4})", cleaned)
+        if match:
+            candidate = match.group(1).strip()
+        else:
+            candidate = cleaned
+
+        formats = [
+            "%Y-%m-%d",
+            "%d-%m-%Y",
+            "%d/%m/%Y",
+            "%m/%d/%Y",
+            "%d-%b-%Y",
+            "%d %b %Y",
+            "%d-%B-%Y",
+            "%d %B %Y",
+        ]
+        for fmt in formats:
+            try:
+                return datetime.strptime(candidate, fmt).date()
+            except ValueError:
+                continue
+        return None
 
 
 class GeminiPOExtractor(BasePOExtractor):
@@ -236,7 +644,7 @@ def evaluate_extraction_quality(extraction: ExtractedPurchaseOrder) -> Extracted
                 warnings.append(msg)
                 item_flags.append("AMBIGUOUS_PROCESS")
 
-            item.review_flags = list(set(item.review_flags + item_flags))
+            item.review_flags = sorted(list(set(item.review_flags + item_flags)))
             flags.extend(item_flags)
 
     extraction.extraction_warnings = sorted(list(set(extraction.extraction_warnings + warnings)))

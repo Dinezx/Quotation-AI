@@ -222,12 +222,10 @@ async def test_provider_abstraction_works():
     extractor = service.get_extractor()
     assert isinstance(extractor, MockPOExtractor)
 
-    # 2. Azure stub raises NotImplementedError
+    # 2. Azure real provider works and is instantiated
     azure_extractor = service.get_extractor("azure")
     assert isinstance(azure_extractor, AzureDocIntelligenceExtractor)
-    with pytest.raises(NotImplementedError) as exc_azure:
-        await azure_extractor.extract(b"dummy", "test.pdf")
-    assert "Azure Document Intelligence" in str(exc_azure.value)
+    assert azure_extractor.model_id == "prebuilt-layout"
 
     # 3. Gemini stub raises NotImplementedError
     gemini_extractor = service.get_extractor("gemini")
@@ -285,7 +283,10 @@ def test_upload_flow_remains_functional_and_returns_extraction(auth_headers):
     rel_path = data["source_file_url"].replace("/uploads/", "")
     full_path = os.path.join(UPLOAD_DIR, rel_path)
     if os.path.exists(full_path):
-        os.remove(full_path)
+        try:
+            os.remove(full_path)
+        except OSError:
+            pass
 
 
 # ---------------------------------------------------------------------------

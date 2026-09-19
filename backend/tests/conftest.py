@@ -17,8 +17,39 @@ from app.db.session import engine, SessionLocal
 from app.db.init_db import seed_initial_data
 from app.models.company import Company
 from app.models.user import User
+from app.services.ai.extractor import po_extraction_service
 
 CONFTEST_KID = "conftest-shared-kid-2026"
+
+
+@pytest.fixture(autouse=True)
+def isolate_test_po_provider():
+    """
+    Ensure the test suite defaults to 'mock' provider so local .env overrides
+    (such as PO_EXTRACTION_PROVIDER=azure) do not affect baseline test execution.
+    """
+    orig_settings_provider = settings.PO_EXTRACTION_PROVIDER
+    orig_svc_provider = po_extraction_service._default_provider
+    settings.PO_EXTRACTION_PROVIDER = "mock"
+    po_extraction_service._default_provider = "mock"
+    yield
+    settings.PO_EXTRACTION_PROVIDER = orig_settings_provider
+    po_extraction_service._default_provider = orig_svc_provider
+
+
+@pytest.fixture(autouse=True)
+def guard_against_live_azure_calls(monkeypatch):
+    """
+    CRITICAL TEST SAFETY GUARD:
+    Prevents any unmocked live network calls from being sent to Azure Document Intelligence
+    during automated test execution. Any unmocked attempt raises a descriptive RuntimeError.
+    """
+    from azure.ai.documentintelligence import DocumentIntelligenceClient
+
+    def _blocked_begin_analyze_document(*args, **kwargs):
+        raise RuntimeError("CRITICAL TEST SAFETY VIOLATION: Unmocked Azure Document Intelligence network call attempted in tests!")
+
+    monkeypatch.setattr(DocumentIntelligenceClient, "begin_analyze_document", _blocked_begin_analyze_document)
 
 
 @pytest.fixture(scope="session", autouse=True)

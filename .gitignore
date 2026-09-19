@@ -6,6 +6,11 @@ node_modules/
 # Testing & Coverage
 coverage/
 .pytest_cache/
+.coverage
+
+# Uploads & Media
+uploads/
+**/uploads/
 
 # Production Build
 dist/

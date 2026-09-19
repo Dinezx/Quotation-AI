@@ -82,4 +82,23 @@ Interactive API documentation (Swagger UI) is available at:
 ```bash
 python -m pytest tests/ -v
 ```
-All unit tests, API integration tests, JWKS verification tests, and pricing calculations are validated automatically.
+All unit tests, API integration tests, JWKS verification tests, pricing calculations, and Azure PO extraction providers (mocked) are validated automatically.
+
+## PO Extraction Architecture & Providers
+Quotation AI features a modular PO extraction provider architecture:
+- **Mock Provider (`PO_EXTRACTION_PROVIDER=mock`)**: Safe default for local development, CI/CD, and offline testing without cloud credentials.
+- **Azure Document Intelligence (`PO_EXTRACTION_PROVIDER=azure`)**: Uses the official `azure-ai-documentintelligence` SDK and Azure `prebuilt-layout` model to extract raw purchase order text, header metadata (PO number, date, vendor), paragraphs/lines, and line-item tables.
+
+### Azure Document Intelligence Configuration
+To enable the real Azure Document Intelligence extraction provider, configure the following environment variables in `.env`:
+```bash
+AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=https://your-resource.cognitiveservices.azure.com/
+AZURE_DOCUMENT_INTELLIGENCE_KEY=your-key
+PO_EXTRACTION_PROVIDER=azure
+```
+> [!IMPORTANT]
+> Never commit real Azure credentials or expose them in client-side code, logs, or repository files.
+
+### Anti-Pricing Invariant
+AI/OCR is strictly responsible for document extraction and layout parsing. AI **never** calculates quotation prices, selects manufacturer rates, or determines margins/taxes. Extracted line items are matched against manufacturer rate cards and computed through the authoritative deterministic calculation engine.
+

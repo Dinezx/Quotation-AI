@@ -106,6 +106,7 @@ async def upload_po_document(
     await file.seek(0)
 
     url = await StorageService.upload_file(file, subfolder=f"po_{company_id}")
+    await file.close()
 
     extraction = await po_extraction_service.extract_document(
         content=content,
