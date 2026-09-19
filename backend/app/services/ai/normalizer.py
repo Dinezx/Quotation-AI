@@ -98,7 +98,7 @@ class GeminiPONormalizer(BasePONormalizer):
         )
         self.model_name = (
             model_name if model_name is not None
-            else (settings.GEMINI_MODEL or os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+            else (settings.GEMINI_MODEL or os.getenv("GEMINI_MODEL", "gemini-3.6-flash"))
         )
         self._client = client
 
