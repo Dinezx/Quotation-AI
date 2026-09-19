@@ -23,9 +23,11 @@ class Settings(BaseSettings):
     # Supabase JWT Audience (standard Supabase access token audience is 'authenticated')
     SUPABASE_JWT_AUDIENCE: str = os.getenv("SUPABASE_JWT_AUDIENCE", "authenticated")
 
-    # AI / OCR Extraction Configuration
+    # AI / OCR Extraction & Normalization Configuration
     PO_EXTRACTION_PROVIDER: str = os.getenv("PO_EXTRACTION_PROVIDER", "mock")
+    PO_NORMALIZATION_PROVIDER: str = os.getenv("PO_NORMALIZATION_PROVIDER", "mock")
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY", None)
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT: Optional[str] = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT", None)
     AZURE_DOCUMENT_INTELLIGENCE_KEY: Optional[str] = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY", None)
 

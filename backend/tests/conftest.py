@@ -25,16 +25,23 @@ CONFTEST_KID = "conftest-shared-kid-2026"
 @pytest.fixture(autouse=True)
 def isolate_test_po_provider():
     """
-    Ensure the test suite defaults to 'mock' provider so local .env overrides
-    (such as PO_EXTRACTION_PROVIDER=azure) do not affect baseline test execution.
+    Ensure the test suite defaults to 'mock' provider and normalizer so local .env overrides
+    (such as PO_EXTRACTION_PROVIDER=azure or PO_NORMALIZATION_PROVIDER=gemini) do not affect baseline tests.
     """
     orig_settings_provider = settings.PO_EXTRACTION_PROVIDER
+    orig_settings_norm = settings.PO_NORMALIZATION_PROVIDER
     orig_svc_provider = po_extraction_service._default_provider
+    orig_svc_norm = po_extraction_service._default_normalizer
+
     settings.PO_EXTRACTION_PROVIDER = "mock"
+    settings.PO_NORMALIZATION_PROVIDER = "mock"
     po_extraction_service._default_provider = "mock"
+    po_extraction_service._default_normalizer = "mock"
     yield
     settings.PO_EXTRACTION_PROVIDER = orig_settings_provider
+    settings.PO_NORMALIZATION_PROVIDER = orig_settings_norm
     po_extraction_service._default_provider = orig_svc_provider
+    po_extraction_service._default_normalizer = orig_svc_norm
 
 
 @pytest.fixture(autouse=True)
@@ -50,6 +57,28 @@ def guard_against_live_azure_calls(monkeypatch):
         raise RuntimeError("CRITICAL TEST SAFETY VIOLATION: Unmocked Azure Document Intelligence network call attempted in tests!")
 
     monkeypatch.setattr(DocumentIntelligenceClient, "begin_analyze_document", _blocked_begin_analyze_document)
+
+
+@pytest.fixture(autouse=True)
+def guard_against_live_gemini_calls(monkeypatch):
+    """
+    CRITICAL TEST SAFETY GUARD:
+    Prevents any unmocked live network calls from being sent to Gemini API
+    during automated test execution. Any unmocked attempt raises a descriptive RuntimeError.
+    """
+    try:
+        from google.genai.models import AsyncModels, Models
+
+        def _blocked_async_generate_content(*args, **kwargs):
+            raise RuntimeError("CRITICAL TEST SAFETY VIOLATION: Unmocked Gemini API network call attempted in tests!")
+
+        def _blocked_sync_generate_content(*args, **kwargs):
+            raise RuntimeError("CRITICAL TEST SAFETY VIOLATION: Unmocked Gemini API network call attempted in tests!")
+
+        monkeypatch.setattr(AsyncModels, "generate_content", _blocked_async_generate_content)
+        monkeypatch.setattr(Models, "generate_content", _blocked_sync_generate_content)
+    except Exception:
+        pass
 
 
 @pytest.fixture(scope="session", autouse=True)

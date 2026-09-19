@@ -40,6 +40,11 @@ from app.schemas.purchase_order import (
     PurchaseOrderCreate,
     PurchaseOrderItemCreate,
 )
+from app.services.ai.normalizer import (
+    BasePONormalizer,
+    MockPONormalizer,
+    GeminiPONormalizer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +72,13 @@ class MockPOExtractor(BasePOExtractor):
     Deterministic mock extractor for development, testing, and offline verification.
     Returns realistic industrial manufacturing PO data with strictly NO pricing fields.
     """
+
+    def __init__(self):
+        self.last_raw_result: Optional[Dict[str, Any]] = None
+
+    def get_last_raw_result(self) -> Optional[Dict[str, Any]]:
+        """Returns the safe normalized internal representation of the last extraction."""
+        return self.last_raw_result
 
     async def extract(
         self,
@@ -135,7 +147,7 @@ class MockPOExtractor(BasePOExtractor):
             ),
         )
 
-        return ExtractedPurchaseOrder(
+        extracted_po = ExtractedPurchaseOrder(
             po_number="PO-2026-00125",
             po_date=date(2026, 3, 15),
             customer_name="ABC Manufacturing Pvt Ltd",
@@ -154,6 +166,38 @@ class MockPOExtractor(BasePOExtractor):
             review_flags=[],
             needs_human_review=False,
         )
+
+        self.last_raw_result = {
+            "file_name": file_name,
+            "page_count": 1,
+            "paragraph_count": 8,
+            "table_count": 1,
+            "key_value_pair_count": 6,
+            "line_count": 10,
+            "has_content": True,
+            "full_text": metadata.raw_text,
+            "paragraphs": [
+                "PURCHASE ORDER",
+                "PO Number: PO-2026-00125",
+                "Buyer: ABC Manufacturing Pvt Ltd",
+                "Item 1: Bearing Housing, Qty: 100 PCS",
+                "Item 2: Pinion Shaft 40mm, Qty: 50 PCS",
+            ],
+            "key_value_pairs": [
+                {"key": "PO Number", "value": "PO-2026-00125"},
+                {"key": "Buyer", "value": "ABC Manufacturing Pvt Ltd"},
+                {"key": "GSTIN", "value": "27AABCU9603R1ZM"},
+            ],
+            "tables": [
+                [
+                    ["Item", "Description", "Material", "Qty", "UOM"],
+                    ["1", "Bearing Housing", "EN8", "100", "PCS"],
+                    ["2", "Pinion Shaft 40mm", "AISI 4140", "50", "PCS"],
+                ]
+            ],
+        }
+
+        return extracted_po
 
 
 class AzureDocIntelligenceExtractor(BasePOExtractor):
@@ -272,6 +316,25 @@ class AzureDocIntelligenceExtractor(BasePOExtractor):
         for page in pages:
             lines.extend(getattr(page, "lines", []) or [])
 
+        # Format tables for safe representation (stripping pricing columns)
+        serialized_tables: List[List[List[str]]] = []
+        for table in tables:
+            cells = getattr(table, "cells", []) or []
+            rows_by_idx: Dict[int, Dict[int, str]] = {}
+            for cell in cells:
+                r_i = getattr(cell, "row_index", 0)
+                c_i = getattr(cell, "column_index", 0)
+                text = (getattr(cell, "content", "") or "").strip()
+                if r_i not in rows_by_idx:
+                    rows_by_idx[r_i] = {}
+                rows_by_idx[r_i][c_i] = text
+            table_matrix: List[List[str]] = []
+            for r_i in sorted(rows_by_idx.keys()):
+                row_vals = [rows_by_idx[r_i][c_i] for c_i in sorted(rows_by_idx[r_i].keys())]
+                table_matrix.append(row_vals)
+            if table_matrix:
+                serialized_tables.append(table_matrix)
+
         # Preserve safe normalized internal representation (no secrets/credentials)
         self.last_raw_result = {
             "file_name": file_name,
@@ -281,6 +344,7 @@ class AzureDocIntelligenceExtractor(BasePOExtractor):
             "key_value_pair_count": len(key_value_pairs),
             "line_count": len(lines),
             "has_content": bool(full_text.strip()),
+            "full_text": full_text[:12000] if full_text else "",
             "paragraphs": [
                 getattr(p, "content", "")
                 for p in paragraphs[:50]
@@ -294,6 +358,7 @@ class AzureDocIntelligenceExtractor(BasePOExtractor):
                 for kv in key_value_pairs
                 if getattr(kv, "key", None) and getattr(kv, "value", None)
             ],
+            "tables": serialized_tables,
         }
 
         if not full_text.strip() and not tables:
@@ -708,7 +773,8 @@ def convert_extraction_to_po_create(
 
 class POExtractionService:
     """
-    Central service for document extraction, provider routing, and quality assessment.
+    Central service for document extraction, provider routing,
+    semantic normalization, and quality assessment.
     """
 
     _providers: Dict[str, Type[BasePOExtractor]] = {
@@ -717,12 +783,26 @@ class POExtractionService:
         "gemini": GeminiPOExtractor,
     }
 
-    def __init__(self, default_provider: Optional[str] = None):
+    _normalizers: Dict[str, Type[BasePONormalizer]] = {
+        "mock": MockPONormalizer,
+        "gemini": GeminiPONormalizer,
+    }
+
+    def __init__(
+        self,
+        default_provider: Optional[str] = None,
+        default_normalizer: Optional[str] = None,
+    ):
         self._default_provider = default_provider or settings.PO_EXTRACTION_PROVIDER
+        self._default_normalizer = default_normalizer or settings.PO_NORMALIZATION_PROVIDER
 
     def register_provider(self, name: str, provider_cls: Type[BasePOExtractor]):
         """Register a custom extraction provider."""
         self._providers[name.lower()] = provider_cls
+
+    def register_normalizer(self, name: str, normalizer_cls: Type[BasePONormalizer]):
+        """Register a custom normalizer provider."""
+        self._normalizers[name.lower()] = normalizer_cls
 
     def get_extractor(self, provider_name: Optional[str] = None) -> BasePOExtractor:
         """Instantiate an extractor based on name or application configuration."""
@@ -734,24 +814,54 @@ class POExtractionService:
             )
         return provider_cls()
 
+    def get_normalizer(self, normalizer_name: Optional[str] = None) -> BasePONormalizer:
+        """Instantiate a normalizer based on name or application configuration."""
+        name = (normalizer_name or self._default_normalizer).lower()
+        normalizer_cls = self._normalizers.get(name)
+        if not normalizer_cls:
+            raise ValueError(
+                f"Unknown normalization provider '{name}'. Registered: {list(self._normalizers.keys())}"
+            )
+        return normalizer_cls()
+
     async def extract_document(
         self,
         content: bytes,
         file_name: str,
         content_type: str = "application/pdf",
         provider: Optional[str] = None,
+        normalizer_provider: Optional[str] = None,
     ) -> ExtractedPurchaseOrder:
         """
         Executes document extraction through the configured provider,
+        runs semantic normalization (e.g. Gemini) if configured,
         evaluates quality, and attaches validation/review flags.
         """
         extractor = self.get_extractor(provider)
-        extraction = await extractor.extract(
+        initial_po = await extractor.extract(
             document_content=content,
             file_name=file_name,
             content_type=content_type,
         )
-        return evaluate_extraction_quality(extraction)
+
+        norm_name = normalizer_provider or self._default_normalizer
+        if norm_name and norm_name.lower() != "none":
+            normalizer = self.get_normalizer(norm_name)
+            doc_rep = (
+                extractor.get_last_raw_result()
+                if hasattr(extractor, "get_last_raw_result")
+                else {}
+            ) or {
+                "file_name": file_name,
+                "full_text": initial_po.metadata.raw_text,
+            }
+            normalized_po = await normalizer.normalize(
+                document_representation=doc_rep,
+                initial_po=initial_po,
+            )
+            return evaluate_extraction_quality(normalized_po)
+
+        return evaluate_extraction_quality(initial_po)
 
 
 po_extraction_service = POExtractionService()

@@ -9,6 +9,11 @@ from app.services.ai.extractor import (
     evaluate_extraction_quality,
     convert_extraction_to_po_create,
 )
+from app.services.ai.normalizer import (
+    BasePONormalizer,
+    MockPONormalizer,
+    GeminiPONormalizer,
+)
 
 __all__ = [
     "BasePOExtractor",
@@ -16,6 +21,9 @@ __all__ = [
     "MockPOExtractor",
     "AzureDocIntelligenceExtractor",
     "GeminiPOExtractor",
+    "BasePONormalizer",
+    "MockPONormalizer",
+    "GeminiPONormalizer",
     "POExtractionService",
     "po_extraction_service",
     "evaluate_extraction_quality",
