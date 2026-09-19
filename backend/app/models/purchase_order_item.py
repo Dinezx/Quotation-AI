@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Text, Numeric, Integer, ForeignKey
+from sqlalchemy import String, Text, Numeric, Integer, ForeignKey, JSON
 from app.db.base import Base, TimestampMixin, generate_uuid
 
 class PurchaseOrderItem(Base, TimestampMixin):
@@ -11,6 +11,7 @@ class PurchaseOrderItem(Base, TimestampMixin):
     purchase_order_id: Mapped[str] = mapped_column(String(36), ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False, index=True)
     item_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     part_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    drawing_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     part_name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     specification: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -31,6 +32,15 @@ class PurchaseOrderItem(Base, TimestampMixin):
     setup_hours: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0.00, nullable=False)
     
     confidence: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=1.00, nullable=False)
+    review_flags: Mapped[Optional[list]] = mapped_column(JSON, default=list, nullable=True)
+
+    @property
+    def process(self) -> Optional[str]:
+        return self.process_name
+
+    @property
+    def material(self) -> Optional[str]:
+        return self.material_grade
 
     # Relationships
     purchase_order: Mapped["PurchaseOrder"] = relationship("PurchaseOrder", back_populates="items")

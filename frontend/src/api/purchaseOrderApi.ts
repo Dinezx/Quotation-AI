@@ -5,6 +5,7 @@ export interface PurchaseOrderItemDTO {
   purchase_order_id: string;
   item_number: number;
   part_number?: string;
+  drawing_number?: string;
   part_name: string;
   description?: string;
   specification?: string;
@@ -20,6 +21,7 @@ export interface PurchaseOrderItemDTO {
   machining_hours: number;
   setup_hours: number;
   confidence: number;
+  review_flags?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -29,12 +31,21 @@ export interface PurchaseOrderDTO {
   company_id: string;
   customer_id?: string;
   customer_name?: string;
+  supplier_name?: string;
   po_number: string;
   po_date?: string;
   delivery_date?: string;
+  delivery_terms?: string;
+  payment_terms?: string;
+  inspection_clauses?: string;
+  general_notes?: string;
   source_file_url?: string;
   source_file_name?: string;
   status: string;
+  review_status?: string;
+  approved_by?: string;
+  approved_at?: string;
+  rejection_reason?: string;
   extracted_data?: Record<string, any>;
   raw_text?: string;
   created_at: string;
@@ -77,11 +88,28 @@ export const purchaseOrderApi = {
     return res.data;
   },
 
+  approve: async (id: string, notes?: string): Promise<PurchaseOrderDTO> => {
+    const res = await apiClient.post<PurchaseOrderDTO>(`/purchase-orders/${id}/approve`, {
+      approval_notes: notes || undefined,
+    });
+    return res.data;
+  },
+
+  reject: async (id: string, reason: string): Promise<PurchaseOrderDTO> => {
+    const res = await apiClient.post<PurchaseOrderDTO>(`/purchase-orders/${id}/reject`, {
+      reason,
+    });
+    return res.data;
+  },
+
   uploadDocument: async (file: File): Promise<{
     source_file_url: string;
     source_file_name: string;
     file_size: number;
     content_type: string;
+    purchase_order_id?: string;
+    purchase_order?: PurchaseOrderDTO;
+    extraction?: Record<string, any>;
   }> => {
     const formData = new FormData();
     formData.append('file', file);

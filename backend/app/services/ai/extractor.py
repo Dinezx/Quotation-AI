@@ -731,7 +731,7 @@ def convert_extraction_to_po_create(
     """
     po_date_dt = datetime.combine(extraction.po_date, datetime.min.time()) if extraction.po_date else None
     
-    status = "REVIEW_REQUIRED" if extraction.needs_human_review else "UPLOADED"
+    status = "NEEDS_REVIEW"
 
     items: List[PurchaseOrderItemCreate] = []
     for idx, item in enumerate(extraction.items):
@@ -743,6 +743,7 @@ def convert_extraction_to_po_create(
                 description=item.description,
                 specification=item.specification,
                 part_number=item.drawing_number,
+                drawing_number=item.drawing_number,
                 quantity=item_qty,
                 unit=item.unit or "PCS",
                 material_grade=item.material_grade or item.material,
@@ -753,6 +754,7 @@ def convert_extraction_to_po_create(
                 machining_hours=item.machining_hours or Decimal("0.00"),
                 setup_hours=item.setup_hours or Decimal("0.00"),
                 confidence=item.confidence or Decimal("1.00"),
+                review_flags=item.review_flags or [],
             )
         )
 
@@ -762,6 +764,8 @@ def convert_extraction_to_po_create(
         po_number=extraction.po_number or f"DRAFT-PO-{datetime.now().strftime('%Y%m%d%H%M%S')}",
         po_date=po_date_dt,
         delivery_date=None,
+        delivery_terms=extraction.delivery_terms,
+        payment_terms=extraction.payment_terms,
         source_file_url=source_file_url,
         source_file_name=source_file_name or extraction.metadata.source_document,
         status=status,
