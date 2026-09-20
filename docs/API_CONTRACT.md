@@ -350,14 +350,50 @@ Stateless deterministic pricing calculation. Computes exact unit prices, overhea
   }
   ```
 
+### `GET /quotations`
+Lists quotations for the authenticated tenant company. Supports server-side search, status filtering, and pagination.
+
+- **Auth Required**: Yes (Bearer Token)
+- **Query Parameters**:
+  - `page` (optional int): 1-indexed page number. When provided, returns paginated wrapper.
+  - `page_size` (optional int, default 20, max 100): number of items per page.
+  - `search` (optional str): substring filter across quotation number, customer name, and PO number.
+  - `status` (optional str): filter by quotation status (`DRAFT`, `FINAL`).
+- **Response `200 OK` (when `page` is provided)**:
+  ```json
+  {
+    "items": [
+      {
+        "id": "quot-uuid-001",
+        "company_id": "comp-bpe-pune",
+        "quotation_number": "QT-2026-0001",
+        "status": "FINAL",
+        "final_total": 20898.00,
+        "finalized_at": "2026-09-20T10:30:00Z",
+        "finalized_by": "engineer@bharatprecision.co.in",
+        "pdf_storage_path": "companies/comp-bpe-pune/quotations/quot-uuid-001/QT-2026-0001.pdf",
+        "pdf_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20
+  }
+  ```
+- **Response `200 OK` (when `page` is omitted)**:
+  Returns array `List[QuotationDTO]` directly for backward compatibility.
+
 ### `POST /quotations/{id}/calculate`
-Executes deterministic pricing and saves/updates the quotation line items and statutory totals in the database.
+Executes deterministic pricing and persists quotation line items and statutory totals.
 
 - **Auth Required**: Yes
+- **Immutability Invariant**: Blocked if `status == "FINAL"`.
 - **Response `200 OK`**: Returns updated `QuotationDTO`.
+- **Errors**:
+  - `409 Conflict`: "Finalized quotations cannot be modified or recalculated."
 
 ### `GET /quotations/{id}`
-Fetches full quotation details, itemized breakdown, commercial metadata, and current status (`DRAFT`, `FINAL`, `sent`, `accepted`, `rejected`).
+Fetches full quotation details, itemized breakdown, commercial metadata, and current status (`DRAFT`, `FINAL`).
 
 - **Auth Required**: Yes
 - **Response `200 OK`**:
@@ -370,12 +406,12 @@ Fetches full quotation details, itemized breakdown, commercial metadata, and cur
     "customer_name": "ABC Engineering Components Pvt. Ltd.",
     "purchase_order_id": "po-uuid-001",
     "po_number": "PO-2026-0098",
-    "status": "DRAFT",
+    "status": "FINAL",
     "delivery_terms": "Ex-Works Factory Bhosari",
     "payment_terms": "30 Days from date of supply",
-    "validity_period": "30 Days from date of issue",
+    "valid_until": "2026-10-20T00:00:00Z",
     "inspection_terms": "Pre-dispatch inspection at vendor site",
-    "general_notes": "Standard industrial tolerances +/- 0.05mm apply",
+    "notes": "Standard industrial tolerances +/- 0.05mm apply",
     "prepared_by": "Costing Engineering Department",
     "authorized_signatory": "Authorized Signatory",
     "subtotal": 14000.00,
@@ -384,15 +420,17 @@ Fetches full quotation details, itemized breakdown, commercial metadata, and cur
     "taxable_amount": 17710.00,
     "gst_amount": 3188.00,
     "final_total": 20898.00,
+    "finalized_at": "2026-09-20T10:30:00Z",
+    "finalized_by": "engineer@bharatprecision.co.in",
+    "pdf_storage_path": "companies/comp-bpe-pune/quotations/quot-uuid-001/QT-2026-0001.pdf",
+    "pdf_file_name": "QT-2026-0001.pdf",
+    "pdf_generated_at": "2026-09-20T10:30:00Z",
+    "pdf_sha256": "a3f5...",
     "items": [
       {
         "id": "qitem-uuid-001",
         "item_number": 1,
         "part_name": "Bearing Housing",
-        "specification": "Dia 120mm x 80mm",
-        "drawing_number": "DRW-BH-001",
-        "material": "EN8",
-        "process": "CNC Machining",
         "quantity": 10.0,
         "unit": "PCS",
         "unit_price": 1400.00,
@@ -403,37 +441,44 @@ Fetches full quotation details, itemized breakdown, commercial metadata, and cur
   ```
 
 ### `PUT /quotations/{id}`
-Updates editable commercial metadata on a draft quotation. Pricing fields remain calculation-engine controlled and cannot be manually altered.
+Updates editable commercial metadata on a `DRAFT` quotation.
 
 - **Auth Required**: Yes
-- **Request Body**:
-  ```json
-  {
-    "validity_period": "45 Days from date of issue",
-    "delivery_terms": "Ex-Works Factory Bhosari",
-    "payment_terms": "30 Days from date of supply",
-    "inspection_terms": "Pre-dispatch inspection at vendor site",
-    "general_notes": "Standard industrial tolerances +/- 0.05mm apply",
-    "prepared_by": "Rajesh Deshmukh",
-    "authorized_signatory": "Plant Operations Manager"
-  }
-  ```
+- **Immutability Invariant**: Blocked if `status == "FINAL"`.
 - **Response `200 OK`**: Returns updated `QuotationDTO`.
+- **Errors**:
+  - `409 Conflict`: "Finalized quotations cannot be modified."
 
 ### `POST /quotations/{id}/finalize`
-Transitions quotation from `DRAFT` to `FINAL` state. Once finalized, the quotation represents an approved corporate offer.
+Finalizes a quotation from `DRAFT` to immutable `FINAL` status:
+1. Validates company tenant ownership and active user status.
+2. Validates line items completeness (at least 1 item required).
+3. Validates positive calculated financial totals (`final_total > 0`).
+4. Generates official presentation-only A4 PDF via ReportLab.
+5. Computes SHA-256 document integrity hash.
+6. Uploads PDF to tenant-safe private storage (`companies/{company_id}/quotations/{id}/{number}.pdf`).
+7. Records `finalized_at`, `finalized_by`, `pdf_storage_path`, `pdf_file_name`, `pdf_generated_at`, `pdf_sha256`.
+8. Atomically commits transaction with rollback cleanup guard.
 
 - **Auth Required**: Yes
 - **Response `200 OK`**: Returns finalized `QuotationDTO` with `status: "FINAL"`.
+- **Errors**:
+  - `403 Forbidden`: Cross-company finalization or deactivated user.
+  - `404 Not Found`: Quotation not found.
+  - `409 Conflict`: Quotation is already finalized or calculation blocked/zero.
+  - `422 Unprocessable Content`: Line items missing.
+  - `500 Internal Server Error`: Storage upload or persistence failure (rolled back).
 
 ### `GET /quotations/{id}/pdf` or `POST /quotations/{id}/pdf`
-Generates and downloads a presentation-only, high-fidelity A4 manufacturing quotation PDF via ReportLab.
+Secure download endpoint for quotation PDF:
+- For `FINAL` quotations: retrieves the stored official PDF from persistent storage. Controlled `409 Conflict` if storage object missing. No silent recalculation or regeneration.
+- For `DRAFT` quotations: generates presentation-only preview PDF dynamically.
 
 - **Auth Required**: Yes
 - **Tenant Protection**: Strict company verification (returns 403 Forbidden for cross-company requests).
-- **Calculation Invariant**: Requires completed calculation (`final_total > 0`). Never recalculates prices.
 - **Response `200 OK`**:
   - `Content-Type: application/pdf`
   - `Content-Disposition: attachment; filename="QT-2026-0001.pdf"`
   - Response Body: Binary PDF stream.
+
 

@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     # Supabase JWT Audience (standard Supabase access token audience is 'authenticated')
     SUPABASE_JWT_AUDIENCE: str = os.getenv("SUPABASE_JWT_AUDIENCE", "authenticated")
 
+    # Storage Configuration
+    STORAGE_PROVIDER: str = os.getenv("STORAGE_PROVIDER", "supabase") # supabase, local
+    QUOTATION_PDF_BUCKET: str = os.getenv("QUOTATION_PDF_BUCKET", "quotation-pdfs")
+
     # AI / OCR Extraction & Normalization Configuration
     PO_EXTRACTION_PROVIDER: str = os.getenv("PO_EXTRACTION_PROVIDER", "mock")
     PO_NORMALIZATION_PROVIDER: str = os.getenv("PO_NORMALIZATION_PROVIDER", "mock")

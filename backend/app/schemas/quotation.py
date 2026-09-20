@@ -61,6 +61,12 @@ class QuotationBase(BaseModel):
     final_total: Decimal = Decimal("0.00")
     status: str = "DRAFT"
     pdf_url: Optional[str] = None
+    pdf_storage_path: Optional[str] = None
+    pdf_file_name: Optional[str] = None
+    pdf_generated_at: Optional[datetime] = None
+    pdf_sha256: Optional[str] = None
+    finalized_at: Optional[datetime] = None
+    finalized_by: Optional[str] = None
     notes: Optional[str] = None
     payment_terms: Optional[str] = None
     delivery_terms: Optional[str] = None
@@ -107,6 +113,12 @@ class QuotationResponse(QuotationBase):
     bank_details: Optional[dict] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+class QuotationPaginationResponse(BaseModel):
+    items: List[QuotationResponse]
+    total: int
+    page: int
+    page_size: int
 
 
 # Calculation Engine Input Models

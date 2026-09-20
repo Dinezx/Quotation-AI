@@ -17,6 +17,7 @@ class AuthenticatedUser(BaseModel):
     email: str
     role: str # ADMIN, COSTING_ENGINEER, VIEWER
     company_name: str
+    is_active: bool = True
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
@@ -85,7 +86,8 @@ async def get_current_user(
         company_id=user.company_id,
         email=user.email,
         role=user.role,
-        company_name=user.company.name
+        company_name=user.company.name,
+        is_active=user.is_active,
     )
 
 async def get_current_company_id(

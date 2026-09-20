@@ -54,10 +54,26 @@ cd backend
 python -m pytest tests/test_quotation_pdf.py -v
 ```
 
+To run quotation finalization, immutability, storage persistence, and history tests:
+```bash
+cd backend
+python -m pytest tests/test_quotation_finalization.py -v
+```
+
 ### PDF Generation & Testing Rules
 - Backend PDF generation is implemented using **ReportLab** (`backend/app/services/pdf/quotation_pdf_service.py`).
 - The PDF generator is strictly **presentation-only**. It never recalculates prices or invokes external AI services.
 - Deterministic calculation results in `Quotation` and `QuotationItem` are rendered directly into an A4 industrial document.
+
+### Storage Configuration & Test Abstraction
+- Quotation PDFs are persisted via `app.services.storage.storage_service.StorageService` (`BaseStorageService` abstraction).
+- **Environment Variables**:
+  - `STORAGE_PROVIDER`: `"supabase"` (default for production) or `"local"` (fallback to local filesystem).
+  - `QUOTATION_PDF_BUCKET`: `"quotation-pdfs"` (dedicated Supabase Storage bucket).
+  - `STORAGE_LOCAL_DIR`: Directory path for local file storage (defaults to `storage_data/`).
+- **Hermetic Testing**:
+  - The pytest test suite automatically configures `FakeStorageService` in `tests/conftest.py`.
+  - Automated tests run completely in-memory without requiring production Supabase credentials or network connectivity.
 
 ### Database Migrations
 When modifying SQLAlchemy models in `app/models/`:

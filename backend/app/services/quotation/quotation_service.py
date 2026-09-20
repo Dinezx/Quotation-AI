@@ -141,12 +141,129 @@ class QuotationService:
         authorized_by: Optional[str] = None,
     ) -> Quotation:
         """
-        Marks quotation as FINAL (authorized commercial document).
+        Marks quotation as immutable FINAL commercial document:
+        1. Validates status is DRAFT (409 Conflict if already FINAL)
+        2. Validates line items completeness (422 Unprocessable Content if empty)
+        3. Validates positive calculated financial totals (409 Conflict if <= 0)
+        4. Generates official presentation-only A4 PDF
+        5. Computes SHA-256 hash for document integrity
+        6. Uploads PDF to tenant-safe storage location
+        7. Records finalized_at, finalized_by, pdf_storage_path, pdf_generated_at, pdf_sha256
+        8. Atomically commits transaction with rollback guard
         """
+        from fastapi import HTTPException, status
+        import hashlib
+        from app.core.config import settings
+        from app.models.company import Company
+        from app.models.customer import Customer
+        from app.models.purchase_order import PurchaseOrder
+        from app.services.pdf.quotation_pdf_service import QuotationPDFService
+        from app.services.storage.storage_service import get_storage_service
+
+        if quotation.status == "FINAL":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Quotation is already finalized.",
+            )
+
+        if not quotation.items or len(quotation.items) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Quotation data incomplete: Line items missing",
+            )
+
+        if quotation.final_total is None or quotation.final_total <= Decimal("0.00"):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Quotation cannot be finalized because calculation is blocked or incomplete",
+            )
+
+        company = quotation.company
+        if not company:
+            company = db.query(Company).filter(Company.id == quotation.company_id).first()
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company associated with quotation not found",
+            )
+
+        customer = quotation.customer
+        if not customer and quotation.customer_id:
+            customer = db.query(Customer).filter(
+                Customer.id == quotation.customer_id,
+                Customer.company_id == quotation.company_id,
+            ).first()
+
+        purchase_order = quotation.purchase_order
+        if not purchase_order and quotation.purchase_order_id:
+            purchase_order = db.query(PurchaseOrder).filter(
+                PurchaseOrder.id == quotation.purchase_order_id,
+                PurchaseOrder.company_id == quotation.company_id,
+            ).first()
+
+        # Generate official presentation-only PDF
+        try:
+            pdf_bytes = QuotationPDFService.generate_quotation_pdf(
+                quotation=quotation,
+                company=company,
+                customer=customer,
+                purchase_order=purchase_order,
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Official quotation PDF generation failed: {str(exc)}",
+            )
+
+        # Document integrity hash
+        pdf_sha256 = hashlib.sha256(pdf_bytes).hexdigest()
+
+        # Tenant-safe storage path: companies/{company_id}/quotations/{quotation_id}/{quotation_number}.pdf
+        storage_path = f"companies/{quotation.company_id}/quotations/{quotation.id}/{quotation.quotation_number}.pdf"
+        file_name = f"{quotation.quotation_number}.pdf"
+        bucket = settings.QUOTATION_PDF_BUCKET
+        storage = get_storage_service()
+
+        # Step 3: Upload PDF to storage
+        try:
+            storage.upload(
+                bucket=bucket,
+                path=storage_path,
+                data=pdf_bytes,
+                content_type="application/pdf",
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"PDF storage upload failed: {str(exc)}",
+            )
+
+        # Step 4: Atomic update and commit with rollback guard
+        now = datetime.utcnow()
         quotation.status = "FINAL"
-        if authorized_by:
+        quotation.finalized_at = now
+        quotation.finalized_by = authorized_by
+        if authorized_by and not quotation.authorized_signatory:
             quotation.authorized_signatory = authorized_by
-        db.commit()
-        db.refresh(quotation)
-        return quotation
+        quotation.pdf_storage_path = storage_path
+        quotation.pdf_file_name = file_name
+        quotation.pdf_generated_at = now
+        quotation.pdf_sha256 = pdf_sha256
+        quotation.pdf_url = storage_path
+
+        try:
+            db.commit()
+            db.refresh(quotation)
+            return quotation
+        except Exception as exc:
+            # Prevent orphan storage object if DB commit fails
+            try:
+                storage.delete(bucket, storage_path)
+            except Exception:
+                pass
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to persist quotation finalization: {str(exc)}",
+            )
 

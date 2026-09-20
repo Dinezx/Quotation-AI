@@ -45,6 +45,19 @@ def isolate_test_po_provider():
 
 
 @pytest.fixture(autouse=True)
+def isolate_test_storage():
+    """
+    Ensure the test suite defaults to isolated FakeStorageService so no external network
+    calls or live Supabase Storage calls are made during automated test execution.
+    """
+    from app.services.storage.storage_service import FakeStorageService, set_storage_service
+    fake = FakeStorageService()
+    set_storage_service(fake)
+    yield fake
+    set_storage_service(None)
+
+
+@pytest.fixture(autouse=True)
 def guard_against_live_azure_calls(monkeypatch):
     """
     CRITICAL TEST SAFETY GUARD:

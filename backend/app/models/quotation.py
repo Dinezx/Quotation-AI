@@ -45,6 +45,12 @@ class Quotation(Base, TimestampMixin):
     
     status: Mapped[str] = mapped_column(String(50), default="DRAFT", nullable=False)
     pdf_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    pdf_storage_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    pdf_file_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    pdf_generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    pdf_sha256: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    finalized_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    finalized_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     payment_terms: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     delivery_terms: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

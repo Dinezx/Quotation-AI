@@ -54,6 +54,12 @@ export interface QuotationDTO {
   final_total: number;
   status: string;
   pdf_url?: string;
+  pdf_storage_path?: string;
+  pdf_file_name?: string;
+  pdf_generated_at?: string;
+  pdf_sha256?: string;
+  finalized_at?: string;
+  finalized_by?: string;
   notes?: string;
   payment_terms?: string;
   delivery_terms?: string;
@@ -86,6 +92,20 @@ export interface QuotationDTO {
   created_at: string;
   updated_at: string;
   items: QuotationItemDTO[];
+}
+
+export interface QuotationListParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  status?: string;
+}
+
+export interface QuotationPaginationDTO {
+  items: QuotationDTO[];
+  total: number;
+  page: number;
+  page_size: number;
 }
 
 export interface CalculateItemInputDTO {
@@ -137,8 +157,13 @@ export interface CalculationResultDTO {
 }
 
 export const quotationApi = {
-  list: async (): Promise<QuotationDTO[]> => {
-    const res = await apiClient.get<QuotationDTO[]>('/quotations');
+  list: async (params?: QuotationListParams): Promise<QuotationDTO[]> => {
+    const res = await apiClient.get<QuotationDTO[]>('/quotations', { params });
+    return res.data;
+  },
+
+  listPaginated: async (params: QuotationListParams): Promise<QuotationPaginationDTO> => {
+    const res = await apiClient.get<QuotationPaginationDTO>('/quotations', { params });
     return res.data;
   },
 

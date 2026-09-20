@@ -1,7 +1,9 @@
 from decimal import Decimal
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from typing import List, Optional, Union
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
+from app.core.config import settings
 from app.core.security import get_current_company_id, get_current_user, AuthenticatedUser
 from app.db.session import get_db
 from app.models.company import Company
@@ -13,28 +15,71 @@ from app.schemas.quotation import (
     QuotationCreate,
     QuotationUpdate,
     QuotationResponse,
+    QuotationPaginationResponse,
     CalculateQuotationRequest,
 )
 from app.services.calculation.calculation_service import CalculationService
 from app.services.quotation.quotation_service import QuotationService
 from app.services.pdf.quotation_pdf_service import QuotationPDFService
+from app.services.storage.storage_service import get_storage_service
 
 router = APIRouter(prefix="/quotations", tags=["Quotations"])
 
-@router.get("", response_model=List[QuotationResponse])
+@router.get("", response_model=Union[QuotationPaginationResponse, List[QuotationResponse]])
 def list_quotations(
+    page: Optional[int] = Query(None, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     company_id: str = Depends(get_current_company_id),
     db: Session = Depends(get_db)
 ):
-    """List all quotations for the current tenant company."""
-    return db.query(Quotation).options(
+    """
+    List quotations for the current tenant company.
+    Supports server-side search, status filtering, and pagination.
+    If page is supplied, returns QuotationPaginationResponse({ items, total, page, page_size }).
+    If page is omitted, returns List[QuotationResponse] (backward-compatible).
+    """
+    query = db.query(Quotation).filter(Quotation.company_id == company_id)
+
+    if status:
+        query = query.filter(func.upper(Quotation.status) == status.strip().upper())
+
+    if search:
+        s = f"%{search.strip()}%"
+        query = query.outerjoin(Customer, Quotation.customer_id == Customer.id)\
+                     .outerjoin(PurchaseOrder, Quotation.purchase_order_id == PurchaseOrder.id)\
+                     .filter(
+                         or_(
+                             Quotation.quotation_number.ilike(s),
+                             Customer.name.ilike(s),
+                             PurchaseOrder.po_number.ilike(s),
+                         )
+                     )
+
+    query = query.order_by(Quotation.created_at.desc())
+
+    if page is not None:
+        total = query.count()
+        items = query.options(
+            selectinload(Quotation.items),
+            selectinload(Quotation.customer),
+            selectinload(Quotation.purchase_order),
+            selectinload(Quotation.company),
+        ).offset((page - 1) * page_size).limit(page_size).all()
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
+
+    return query.options(
         selectinload(Quotation.items),
         selectinload(Quotation.customer),
         selectinload(Quotation.purchase_order),
         selectinload(Quotation.company),
-    ).filter(
-        Quotation.company_id == company_id
-    ).order_by(Quotation.created_at.desc()).all()
+    ).all()
 
 
 @router.post("", response_model=QuotationResponse, status_code=status.HTTP_201_CREATED)
@@ -157,13 +202,19 @@ def update_quotation(
     company_id: str = Depends(get_current_company_id),
     db: Session = Depends(get_db)
 ):
-    """Update quotation status or commercial terms."""
+    """Update quotation status or commercial terms on a draft quotation."""
     quotation = db.query(Quotation).filter(
         Quotation.id == quotation_id,
         Quotation.company_id == company_id
     ).first()
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
+
+    if quotation.status == "FINAL":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Finalized quotations cannot be modified.",
+        )
 
     cust_id = getattr(quotation_in, "customer_id", None)
     if cust_id:
@@ -208,6 +259,12 @@ def calculate_and_update_quotation(
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
 
+    if quotation.status == "FINAL":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Finalized quotations cannot be modified or recalculated.",
+        )
+
     try:
         updated_quotation = QuotationService.recalculate_and_sync_quotation(
             db=db,
@@ -233,9 +290,15 @@ def finalize_quotation(
     db: Session = Depends(get_db)
 ):
     """
-    Finalizes a draft quotation into an approved FINAL quotation.
-    Enforces tenant ownership and data completeness.
+    Finalizes a draft quotation into an immutable approved FINAL quotation.
+    Generates official PDF, stores it securely, and records finalization audit timestamps.
     """
+    if not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Deactivated user cannot finalize quotations",
+        )
+
     quotation = db.query(Quotation).filter(Quotation.id == quotation_id).first()
     if not quotation:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quotation not found")
@@ -244,6 +307,12 @@ def finalize_quotation(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Quotation belongs to another company"
+        )
+
+    if quotation.status == "FINAL":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Quotation is already finalized.",
         )
 
     if not quotation.items or len(quotation.items) == 0:
@@ -273,13 +342,13 @@ def get_quotation_pdf(
     db: Session = Depends(get_db)
 ):
     """
-    Renders and downloads presentation-only A4 quotation PDF from persisted database values.
+    Renders/retrieves and downloads presentation-only A4 quotation PDF.
+    - If quotation is FINAL: retrieves official stored PDF from persistent storage.
+    - If quotation is DRAFT: generates preview PDF dynamically from database values.
     Enforces:
     1. Tenant isolation (Company A cannot download Company B quotation PDF).
-    2. Calculation completeness (BLOCKED/zero calculations cannot generate PDF).
-    3. Mandatory items validation (data completeness).
-    4. Presentation-only: strictly reads stored values with zero recalculation.
-    5. Zero AI involvement.
+    2. Data completeness.
+    3. Zero AI involvement, zero pricing recalculation.
     """
     quotation = db.query(Quotation).filter(Quotation.id == quotation_id).first()
     if not quotation:
@@ -291,7 +360,37 @@ def get_quotation_pdf(
             detail="Quotation belongs to another company"
         )
 
-    # Incomplete quotation verification
+    # For FINAL quotations, return the official persisted document from storage
+    if quotation.status == "FINAL":
+        if not quotation.pdf_storage_path:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Final quotation PDF is unavailable.",
+            )
+
+        storage = get_storage_service()
+        try:
+            pdf_bytes = storage.download(
+                bucket=settings.QUOTATION_PDF_BUCKET,
+                path=quotation.pdf_storage_path,
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Final quotation PDF is unavailable.",
+            )
+
+        safe_filename = quotation.pdf_file_name or f"{quotation.quotation_number}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{safe_filename}"',
+                "Content-Type": "application/pdf",
+            }
+        )
+
+    # Incomplete quotation verification for draft
     if not quotation.items or len(quotation.items) == 0:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

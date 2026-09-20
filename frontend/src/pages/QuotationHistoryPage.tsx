@@ -1,71 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FileText, 
   Search, 
-  Filter, 
   Download, 
   Plus, 
-  Calendar, 
   CheckCircle2, 
-  AlertTriangle, 
+  AlertCircle, 
   Clock, 
-  ExternalLink, 
-  Copy, 
-  Check, 
-  MessageSquare, 
-  Mail, 
-  ShieldCheck,
+  Eye, 
+  RefreshCw,
+  ChevronLeft,
   ChevronRight,
-  Maximize2,
-  Pin
+  ShieldCheck,
+  FileCheck
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { MetricCard } from '../components/ui/MetricCard';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { TabularNumber } from '../components/common/TabularNumber';
-import { mockQuotationsList } from '../services/mockData';
-import { QuotationDocument, QuotationStatus } from '../types/quotation';
+import { quotationApi, QuotationDTO } from '../api/quotationApi';
 
 export const QuotationHistoryPage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
-  const [customerFilter, setCustomerFilter] = useState<string>('ALL');
-  const [selectedQuote, setSelectedQuote] = useState<QuotationDocument>(mockQuotationsList[0]);
-  const [selectedRows, setSelectedRows] = useState<string[]>([mockQuotationsList[0].id]);
 
-  const filteredQuotes = mockQuotationsList.filter(q => {
-    const matchesSearch = 
-      q.quotationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.poReference.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (!matchesSearch) return false;
+  // State
+  const [quotations, setQuotations] = useState<QuotationDTO[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize] = useState<number>(15);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-    if (selectedStatus === 'SENT' && q.status !== 'SENT') return false;
-    if (selectedStatus === 'ACCEPTED' && q.status !== 'ACCEPTED') return false;
-    if (selectedStatus === 'DRAFT' && q.status !== 'DRAFT' && q.status !== 'NEEDS_REVIEW') return false;
-    if (selectedStatus === 'REVISION' && q.status !== 'REVISION_ISSUED') return false;
+  // Fetch paginated quotations from backend
+  const fetchQuotations = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await quotationApi.listPaginated({
+        page,
+        page_size: pageSize,
+        search: searchQuery.trim() || undefined,
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+      });
+      setQuotations(data.items || []);
+      setTotalCount(data.total || 0);
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || 'Failed to load quotation history.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, searchQuery, statusFilter]);
 
-    if (customerFilter !== 'ALL' && !q.customer.name.includes(customerFilter)) return false;
+  useEffect(() => {
+    fetchQuotations();
+  }, [fetchQuotations]);
 
-    return true;
-  });
-
-  const toggleRowSelect = (id: string, q: QuotationDocument) => {
-    setSelectedQuote(q);
-    if (selectedRows.includes(id)) {
-      setSelectedRows(selectedRows.filter(r => r !== id));
-    } else {
-      setSelectedRows([...selectedRows, id]);
+  // Handle PDF Download
+  const handleDownload = async (q: QuotationDTO, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDownloadingId(q.id);
+    try {
+      await quotationApi.downloadPdf(q.id, q.quotation_number);
+    } catch (err: any) {
+      alert(`Download failed: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setDownloadingId(null);
     }
   };
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  // Compute metrics from current page
+  const finalCount = quotations.filter(q => q.status === 'FINAL').length;
+  const draftCount = quotations.filter(q => q.status === 'DRAFT').length;
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
-      {/* Header Bar (Matches Image 2) */}
+      {/* Header Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -73,11 +89,11 @@ export const QuotationHistoryPage: React.FC = () => {
               Quotation History & Commercial Archive
             </h1>
             <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-              FY 24-25 Q2
+              Live Database
             </span>
           </div>
           <p className="text-xs text-slate-500">
-            Search, audit, and track lifecycle status of all generated customer quotations, PO references, revision versions, and dispatch receipts.
+            Authoritative corporate records of all generated quotations, official PDFs, and audit trail of finalization.
           </p>
         </div>
 
@@ -85,17 +101,10 @@ export const QuotationHistoryPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => alert("Bulk dispatch / approval modal")}
+            onClick={() => fetchQuotations()}
+            icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
           >
-            Bulk Actions
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            icon={<Download className="w-3.5 h-3.5" />}
-            onClick={() => alert("Exporting full quotation archive to Excel & Tally CSV")}
-          >
-            Export Archive (Excel / Tally CSV)
+            Refresh
           </Button>
           <Button
             variant="primary"
@@ -108,48 +117,38 @@ export const QuotationHistoryPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Bento KPI Metric Cards (Matches Image 2) */}
+      {/* KPI Bento Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Total Quoted (FY 24-25)"
-          value="₹3.84 Cr"
-          subtitle="Across 342 quotations"
-          badge={<Badge variant="success" size="sm">+18.4%</Badge>}
-          footer={
-            <div className="flex justify-between w-full text-slate-500 text-[11px]">
-              <span>Baseline: ₹3.24 Cr</span>
-              <span>Annual Cap: <strong>₹5.0 Cr</strong></span>
-            </div>
-          }
+          title="Total Quotations"
+          value={`${totalCount}`}
+          subtitle="All generated documents in database"
+          badge={<Badge variant="info" size="sm">Indexed</Badge>}
+          footer={<span className="text-[11px] text-slate-500">Server-side paginated</span>}
         />
 
         <MetricCard
-          title="Pending / In-Review"
-          value="7 Quotes"
-          subtitle="₹24.8 Lakhs pipeline awaiting sign-off"
-          badge={<Badge variant="warning" size="sm" dot>Action Req.</Badge>}
-          footer={<span className="text-[11px] text-slate-500">4 Customer PO • 3 Margin Approval</span>}
+          title="Finalized & Stored"
+          value={`${finalCount}`}
+          subtitle="Official immutable commercial documents"
+          badge={<Badge variant="success" size="sm" dot>Immutable</Badge>}
+          footer={<span className="text-[11px] text-slate-500">Persisted in Supabase Storage</span>}
         />
 
         <MetricCard
-          title="Accepted & Won"
-          value="218 Quotes"
-          subtitle="₹2.45 Cr realized order value"
-          badge={<Badge variant="success" size="sm">64% Win Rate</Badge>}
-          footer={
-            <div className="flex justify-between w-full text-slate-500 text-[11px]">
-              <span>Top: Mahindra Agro</span>
-              <span className="font-semibold text-emerald-700">92% Dispatch Sync</span>
-            </div>
-          }
+          title="Draft / Review"
+          value={`${draftCount}`}
+          subtitle="Editable commercial terms pending approval"
+          badge={<Badge variant="warning" size="sm" dot>In Progress</Badge>}
+          footer={<span className="text-[11px] text-slate-500">Awaiting user finalization</span>}
         />
 
         <MetricCard
-          title="Average TAT"
-          value="14 mins"
-          subtitle="PO upload to final WhatsApp dispatch"
-          badge={<Badge variant="info" size="sm">95% Faster</Badge>}
-          footer={<span className="text-[11px] text-slate-500">Legacy manual time: 4.5 hrs</span>}
+          title="Storage Security"
+          value="Private"
+          subtitle="Tenant isolated storage paths"
+          badge={<Badge variant="purple" size="sm">Encrypted</Badge>}
+          footer={<span className="text-[11px] text-slate-500">SHA-256 integrity verified</span>}
         />
       </div>
 
@@ -160,13 +159,13 @@ export const QuotationHistoryPage: React.FC = () => {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by Quotation No, Customer, PO Reference..."
-            className="w-full pl-9 pr-12 py-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search by Quotation No, Customer Name, PO Number..."
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded">
-            ⌘ + K
-          </span>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -174,17 +173,18 @@ export const QuotationHistoryPage: React.FC = () => {
           <div className="flex items-center gap-1.5 overflow-x-auto">
             <span className="text-[11px] uppercase font-bold text-slate-400 mr-1">Status:</span>
             {[
-              { id: 'ALL', label: 'All (342)' },
-              { id: 'SENT', label: 'Sent / WhatsApp (142)' },
-              { id: 'ACCEPTED', label: 'Accepted / Won (218)' },
-              { id: 'DRAFT', label: 'Draft / Review (18)' },
-              { id: 'REVISION', label: 'Revision Issued (24)' },
+              { id: 'ALL', label: 'All' },
+              { id: 'FINAL', label: 'Final (Immutable)' },
+              { id: 'DRAFT', label: 'Draft' },
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setSelectedStatus(tab.id)}
-                className={`px-2.5 py-1 rounded font-medium transition-colors cursor-pointer whitespace-nowrap text-xs ${
-                  selectedStatus === tab.id
+                onClick={() => {
+                  setStatusFilter(tab.id);
+                  setPage(1);
+                }}
+                className={`px-3 py-1 rounded font-medium transition-colors cursor-pointer whitespace-nowrap text-xs ${
+                  statusFilter === tab.id
                     ? 'bg-slate-900 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
@@ -194,125 +194,156 @@ export const QuotationHistoryPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Secondary Filters */}
-          <div className="flex items-center gap-2">
-            <select
-              value={customerFilter}
-              onChange={(e) => setCustomerFilter(e.target.value)}
-              className="px-2.5 py-1 border border-slate-200 rounded bg-slate-50 text-xs font-medium text-slate-700"
-            >
-              <option value="ALL">All Customers (Mahindra, Tata, L&T...)</option>
-              <option value="Mahindra">Mahindra Precision Agro</option>
-              <option value="Tata">Tata Motors Commercial</option>
-              <option value="Larsen">Larsen & Toubro Heavy</option>
-              <option value="Godrej">Godrej Aerospace</option>
-            </select>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedStatus('ALL');
-                setCustomerFilter('ALL');
-              }}
-            >
-              Clear Filters
-            </Button>
+          <div className="text-slate-500 text-xs font-mono">
+            Showing {quotations.length} of {totalCount} records
           </div>
         </div>
       </div>
 
-      {/* Main Split Layout: Table (7 Cols) + Inspection Drawer (5 Cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: Table */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-          <div className="p-3 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between text-xs">
-            <span className="font-bold text-slate-900">Active Archive View</span>
-            <span className="text-[11px] font-mono text-slate-500">
-              Showing {filteredQuotes.length} matched quotations
-            </span>
+      {/* Main Quotation History Table */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+        {loading ? (
+          <div className="p-12 text-center text-slate-500 text-xs flex flex-col items-center gap-2">
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <span>Loading quotation records from server...</span>
           </div>
-
+        ) : error ? (
+          <div className="p-8 text-center text-amber-600 text-xs space-y-2">
+            <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
+            <p className="font-semibold">{error}</p>
+            <Button variant="outline" size="sm" onClick={() => fetchQuotations()}>
+              Retry
+            </Button>
+          </div>
+        ) : quotations.length === 0 ? (
+          <div className="p-12 text-center text-slate-400 text-xs space-y-2">
+            <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+            <p className="font-semibold text-slate-700">No Quotations Found</p>
+            <p className="text-slate-500">No quotation records match your search or filter criteria.</p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px] tracking-wider">
-                  <th className="py-2.5 px-3 w-8">
-                    <input type="checkbox" className="rounded text-blue-600 focus:ring-0" />
-                  </th>
-                  <th className="py-2.5 px-3">Quotation ID & Ver</th>
-                  <th className="py-2.5 px-3">Customer & GSTIN</th>
-                  <th className="py-2.5 px-3">PO Ref & Date</th>
-                  <th className="py-2.5 px-3">Components</th>
-                  <th className="py-2.5 px-3">Value (Incl. GST)</th>
-                  <th className="py-2.5 px-3 text-right">Status</th>
+                  <th className="py-3 px-4">Quotation No</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Customer</th>
+                  <th className="py-3 px-4">PO No</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Total</th>
+                  <th className="py-3 px-4">Finalized At</th>
+                  <th className="py-3 px-4">Finalized By</th>
+                  <th className="py-3 px-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {filteredQuotes.map((q) => {
-                  const isSelected = selectedQuote.id === q.id;
-
+                {quotations.map((q) => {
+                  const isFinal = q.status === 'FINAL';
                   return (
                     <tr
                       key={q.id}
-                      onClick={() => setSelectedQuote(q)}
-                      className={`cursor-pointer transition-colors ${
-                        isSelected ? 'bg-blue-50/60 font-medium' : 'hover:bg-slate-50/70'
-                      }`}
+                      onClick={() => navigate(`/quotation/${q.id}`)}
+                      className="cursor-pointer transition-colors hover:bg-slate-50/80"
                     >
-                      <td className="py-3 px-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedRows.includes(q.id)}
-                          onChange={() => toggleRowSelect(q.id, q)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="rounded text-blue-600 focus:ring-0"
-                        />
-                      </td>
-
-                      <td className="py-3 px-3 font-mono">
-                        <div className="flex items-center gap-1.5 font-bold text-blue-700">
-                          <span>{q.quotationNumber}</span>
-                          <span className="text-[10px] font-normal text-slate-500">{q.version}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">PDF {q.pdfFileSizeKb} KB</div>
-                      </td>
-
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-slate-900 truncate max-w-[140px]">{q.customer.name}</div>
-                        <div className="text-[10px] font-mono text-slate-400">{q.customer.gstin}</div>
-                      </td>
-
-                      <td className="py-3 px-3 font-mono">
-                        <div className="font-bold text-slate-800">{q.poReference}</div>
-                        <div className="text-[10px] text-slate-400">{q.poDate}</div>
-                      </td>
-
-                      <td className="py-3 px-3 text-[11px] text-slate-600">
-                        {q.itemCostings.length || 3} Items
-                      </td>
-
-                      <td className="py-3 px-3 font-mono font-bold text-slate-900">
-                        <TabularNumber value={q.calculation.grandTotal} />
-                        <div className="text-[10px] text-slate-400 font-normal">
-                          Ex: <TabularNumber value={q.calculation.taxableValue} />
+                      {/* Quotation No */}
+                      <td className="py-3.5 px-4 font-mono font-bold text-blue-700">
+                        <div className="flex items-center gap-1.5">
+                          <FileCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                          <span>{q.quotation_number}</span>
                         </div>
                       </td>
 
-                      <td className="py-3 px-3 text-right">
+                      {/* Date */}
+                      <td className="py-3.5 px-4 text-slate-600 font-mono">
+                        {new Date(q.quotation_date).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
+
+                      {/* Customer */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900 truncate max-w-[180px]">
+                          {q.customer_name || 'Customer'}
+                        </div>
+                        {q.customer_gstin && (
+                          <div className="text-[10px] font-mono text-slate-400">{q.customer_gstin}</div>
+                        )}
+                      </td>
+
+                      {/* PO No */}
+                      <td className="py-3.5 px-4 font-mono text-slate-800">
+                        <div className="font-semibold">{q.po_number || '—'}</div>
+                        {q.po_date && (
+                          <div className="text-[10px] text-slate-400">
+                            {new Date(q.po_date).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3.5 px-4">
                         <Badge
-                          variant={
-                            q.status === 'SENT' ? 'info' :
-                            q.status === 'ACCEPTED' ? 'success' :
-                            q.status === 'READY' ? 'purple' :
-                            q.status === 'REVISION_ISSUED' ? 'warning' : 'slate'
-                          }
+                          variant={isFinal ? 'success' : 'slate'}
                           size="sm"
                           dot
                         >
-                          {q.status.replace('_', ' ')}
+                          {q.status}
                         </Badge>
+                      </td>
+
+                      {/* Total */}
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 text-right">
+                        <TabularNumber value={q.final_total} />
+                      </td>
+
+                      {/* Finalized At */}
+                      <td className="py-3.5 px-4 text-[11px] text-slate-600 font-mono">
+                        {q.finalized_at
+                          ? new Date(q.finalized_at).toLocaleString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : '—'}
+                      </td>
+
+                      {/* Finalized By */}
+                      <td className="py-3.5 px-4 text-[11px] text-slate-600 truncate max-w-[140px]">
+                        {q.finalized_by || '—'}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-slate-700 hover:bg-slate-100 px-2 py-1 h-7 text-xs"
+                            onClick={() => navigate(`/quotation/${q.id}`)}
+                            icon={<Eye className="w-3.5 h-3.5" />}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-700 border-blue-200 hover:bg-blue-50 px-2 py-1 h-7 text-xs font-semibold"
+                            onClick={(e) => handleDownload(q, e)}
+                            disabled={downloadingId === q.id}
+                            icon={<Download className={`w-3.5 h-3.5 ${downloadingId === q.id ? 'animate-spin' : ''}`} />}
+                          >
+                            {downloadingId === q.id ? '...' : 'Download'}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -320,175 +351,33 @@ export const QuotationHistoryPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+        )}
 
-          <div className="p-3 bg-slate-50 border-t border-slate-200 text-xs flex items-center justify-between text-slate-500">
-            <span>Showing 1 - {filteredQuotes.length} of 342 quotations</span>
-            <span className="font-mono text-[11px] text-emerald-700 font-medium">
-              Tally Prime & SAP ECC sync live
-            </span>
-          </div>
-        </div>
+        {/* Server Pagination Footer */}
+        <div className="p-3.5 bg-slate-50 border-t border-slate-200 text-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-600">
+          <span className="font-mono text-[11px]">
+            Page <strong>{page}</strong> of <strong>{totalPages}</strong> (Total {totalCount} quotations)
+          </span>
 
-        {/* Right: Inspection Preview Drawer (Matches Image 2 right column) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 sticky top-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-slate-900">Inspection Preview</span>
-                <Badge variant="success" size="sm">WON</Badge>
-              </div>
-              <div className="text-xs font-mono text-slate-500 mt-0.5">
-                Quotation Reference: <strong className="text-slate-800">{selectedQuote.quotationNumber} {selectedQuote.version}</strong>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button className="p-1 rounded text-slate-400 hover:text-slate-700">
-                <Pin className="w-3.5 h-3.5" />
-              </button>
-              <button 
-                onClick={() => navigate(`/quotation/${selectedQuote.id}`)}
-                className="p-1 rounded text-slate-400 hover:text-slate-700"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Recipient & Delivery Channel */}
-          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Recipient & Delivery Channel</div>
-            <div className="font-bold text-slate-900">{selectedQuote.customer.name}</div>
-            <div className="text-slate-600 flex items-center gap-1.5">
-              <MessageSquare className="w-3 h-3 text-emerald-600" />
-              <span>WhatsApp to <strong>{selectedQuote.primaryContactPerson}</strong> ({selectedQuote.primaryContactPhone})</span>
-            </div>
-            <div className="text-slate-500 font-mono text-[11px] flex items-center gap-1.5">
-              <Mail className="w-3 h-3 text-blue-600" />
-              <span>{selectedQuote.primaryContactEmail}</span>
-            </div>
-          </div>
-
-          {/* Bill of Materials Summary */}
-          <div className="space-y-1.5 text-xs">
-            <div className="flex justify-between font-bold text-slate-900 text-[11px] uppercase tracking-wider">
-              <span>Bill of Materials (3 Items)</span>
-              <span className="font-mono text-slate-400">HSN: 841391</span>
-            </div>
-
-            <div className="p-2.5 rounded bg-slate-50 border border-slate-200 font-mono text-[11px] space-y-1">
-              <div className="flex justify-between">
-                <span>1. Cast Iron Pump Casing (CI-25)</span>
-                <strong className="text-slate-900">₹41,000</strong>
-              </div>
-              <div className="text-[10px] text-slate-400">Qty: 50 Nos @ ₹820/unit</div>
-
-              <div className="flex justify-between pt-1 border-t border-slate-200">
-                <span>2. CNC Turned Shaft (EN8 Grade)</span>
-                <strong className="text-slate-900">₹28,000</strong>
-              </div>
-              <div className="text-[10px] text-slate-400">Qty: 50 Nos @ ₹560/unit</div>
-
-              <div className="flex justify-between pt-1 border-t border-slate-200">
-                <span>3. Precision Cover Plate (MS-4mm)</span>
-                <strong className="text-slate-900">₹12,788</strong>
-              </div>
-              <div className="text-[10px] text-slate-400">Qty: 50 Nos @ ₹255.76/unit</div>
-            </div>
-          </div>
-
-          {/* Commercial Ledger Breakdown */}
-          <div className="space-y-1 text-xs font-mono">
-            <div className="flex justify-between text-slate-600 py-0.5">
-              <span>Raw Material Cost:</span>
-              <span>₹45,000</span>
-            </div>
-            <div className="flex justify-between text-slate-600 py-0.5">
-              <span>Machining & Process:</span>
-              <span>₹18,500</span>
-            </div>
-            <div className="flex justify-between text-slate-600 py-0.5">
-              <span>Factory Overhead (12%):</span>
-              <span>₹7,620</span>
-            </div>
-            <div className="flex justify-between text-slate-600 py-0.5">
-              <span>Commercial Margin (15%):</span>
-              <span>₹10,668</span>
-            </div>
-            <div className="flex justify-between font-bold text-slate-900 py-0.5 border-t border-slate-200">
-              <span>Taxable Amount:</span>
-              <span>₹81,788</span>
-            </div>
-            <div className="flex justify-between text-slate-600 py-0.5">
-              <span>CGST (9%) + SGST (9%):</span>
-              <span>₹14,722</span>
-            </div>
-
-            <div className="flex justify-between font-bold text-sm bg-slate-900 text-white p-2.5 rounded mt-1">
-              <span>Total Quoted Value:</span>
-              <span className="text-emerald-400">₹96,510</span>
-            </div>
-          </div>
-
-          {/* Digital Audit Lifecycle */}
-          <div className="space-y-2 pt-2 border-t border-slate-200 text-xs">
-            <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
-              <span>Digital Audit Lifecycle</span>
-              <span className="text-emerald-700">ALL CHECKS PASSED</span>
-            </div>
-
-            <div className="space-y-2 text-[11px]">
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1 shrink-0" />
-                <div>
-                  <div className="font-bold text-slate-900">PO Uploaded & OCR Parsed</div>
-                  <div className="text-[10px] text-slate-500">18 Aug, 10:14 AM by R. Deshmukh (Production)</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1 shrink-0" />
-                <div>
-                  <div className="font-bold text-slate-900">Automated Costing & HSN Verification</div>
-                  <div className="text-[10px] text-slate-500">18 Aug, 10:19 AM • AI Model v4.2 verified 100%</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1 shrink-0" />
-                <div>
-                  <div className="font-bold text-slate-900">Margin Approved by Plant Manager</div>
-                  <div className="text-[10px] text-slate-500">18 Aug, 10:24 AM • Signed digitally (Token #910)</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500 mt-1 shrink-0" />
-                <div>
-                  <div className="font-bold text-slate-900">Dispatched via WhatsApp & Email</div>
-                  <div className="text-[10px] text-slate-500">18 Aug, 10:28 AM • Delivered & Read</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Drawer Actions */}
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200">
+          <div className="flex items-center gap-2">
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
-              onClick={() => navigate(`/quotation/${selectedQuote.id}`)}
-              icon={<FileText className="w-3.5 h-3.5" />}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || loading}
+              icon={<ChevronLeft className="w-3.5 h-3.5" />}
             >
-              Open PDF
+              Previous
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate('/calculation/qt-089')}
-              icon={<Copy className="w-3.5 h-3.5" />}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || loading}
+              icon={<ChevronRight className="w-3.5 h-3.5" />}
+              iconPosition="right"
             >
-              Clone / Revise
+              Next
             </Button>
           </div>
         </div>
@@ -496,3 +385,5 @@ export const QuotationHistoryPage: React.FC = () => {
     </div>
   );
 };
+
+export default QuotationHistoryPage;

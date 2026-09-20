@@ -36,6 +36,10 @@ export const QuotationPreviewPage: React.FC = () => {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState<boolean>(false);
   const [isFinalizing, setIsFinalizing] = useState<boolean>(false);
 
+  // Finalization Confirmation & Success Modals
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
+
   // Edit Metadata Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isSavingMetadata, setIsSavingMetadata] = useState<boolean>(false);
@@ -116,6 +120,8 @@ export const QuotationPreviewPage: React.FC = () => {
     try {
       const updated = await quotationApi.finalize(quote.id);
       setQuote(updated);
+      setIsConfirmModalOpen(false);
+      setIsSuccessModalOpen(true);
       showToast(`Quotation ${updated.quotation_number} finalized successfully.`);
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Failed to finalize quotation.';
@@ -229,23 +235,26 @@ export const QuotationPreviewPage: React.FC = () => {
                 <Badge variant={isFinal ? 'success' : 'slate'} size="sm">
                   {quote.status}
                 </Badge>
-
               </div>
               <p className="text-[11px] text-slate-500 font-medium">
-                Authoritative Commercial Quotation Document
+                {isFinal
+                  ? `Finalized by ${quote.finalized_by || 'Admin'}`
+                  : 'Authoritative Commercial Quotation Draft'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditModalOpen(true)}
-              icon={<Edit3 className="w-3.5 h-3.5" />}
-            >
-              Edit Metadata
-            </Button>
+            {!isFinal && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditModalOpen(true)}
+                icon={<Edit3 className="w-3.5 h-3.5" />}
+              >
+                Edit Terms
+              </Button>
+            )}
 
             <Button
               variant="outline"
@@ -259,45 +268,66 @@ export const QuotationPreviewPage: React.FC = () => {
 
             {!isFinal && (
               <Button
-                variant="outline"
+                variant="primary"
                 size="sm"
-                className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 font-bold"
-                onClick={handleFinalize}
+                className="text-white bg-emerald-600 hover:bg-emerald-700 font-bold"
+                onClick={() => setIsConfirmModalOpen(true)}
                 disabled={isFinalizing}
                 icon={<CheckCircle2 className="w-3.5 h-3.5" />}
               >
-                {isFinalizing ? 'Finalizing...' : 'Finalize'}
+                Finalize Quotation
               </Button>
             )}
 
             <Button
-              variant="primary"
+              variant={isFinal ? 'primary' : 'outline'}
               size="sm"
-              className="font-bold bg-blue-600 hover:bg-blue-700"
+              className={isFinal ? "font-bold bg-blue-600 hover:bg-blue-700" : ""}
               onClick={handleDownloadPdf}
               disabled={isDownloadingPdf}
               icon={<Download className="w-4 h-4" />}
             >
-              {isDownloadingPdf ? 'Generating PDF...' : 'Download PDF'}
+              {isDownloadingPdf
+                ? 'Downloading...'
+                : isFinal
+                ? 'Download Final PDF'
+                : 'Download PDF'}
             </Button>
           </div>
         </div>
 
-        {/* Anti-Price Tampering Notification Notice */}
-        <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex items-center justify-between text-xs text-blue-900">
-          <div className="flex items-center gap-2">
-            <Lock className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>
-              <strong>Deterministic Price Protection:</strong> Financial figures and statutory taxes are authoritative from the calculation engine and cannot be manually overridden.
-            </span>
+        {/* Price Tampering / Immutability Status Banner */}
+        {isFinal ? (
+          <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 flex items-center justify-between text-xs text-emerald-900">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                <strong>Official Finalized Quotation:</strong> This quotation is immutable. Commercial figures and terms have been recorded and the official document is stored securely.
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/quotations')}
+              className="text-emerald-700 font-bold hover:underline shrink-0 text-xs ml-3"
+            >
+              Quotation History
+            </button>
           </div>
-          <button
-            onClick={() => navigate('/calculation')}
-            className="text-blue-700 font-bold hover:underline shrink-0 text-xs ml-3"
-          >
-            Recalculate
-          </button>
-        </div>
+        ) : (
+          <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex items-center justify-between text-xs text-blue-900">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>
+                <strong>Deterministic Price Protection:</strong> Financial figures and statutory taxes are authoritative from the calculation engine and cannot be manually overridden.
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/calculation')}
+              className="text-blue-700 font-bold hover:underline shrink-0 text-xs ml-3"
+            >
+              Recalculate
+            </button>
+          </div>
+        )}
 
         {/* Physical Industrial Precision Quotation Document Sheet */}
         <div className="bg-white border border-slate-300 rounded-2xl shadow-md p-6 sm:p-10 max-w-[850px] mx-auto text-slate-900 font-sans space-y-6">
@@ -590,26 +620,165 @@ export const QuotationPreviewPage: React.FC = () => {
           </div>
 
           {/* Section 7: Authorization & Signatures */}
-          <div className="pt-6 border-t border-slate-200 grid grid-cols-2 gap-6 text-xs">
-            <div className="space-y-1">
-              <span className="text-slate-500">Prepared By:</span>
-              <div className="font-bold text-slate-950">{quote.prepared_by || 'Rajesh Deshmukh'}</div>
-              <div className="text-[11px] text-slate-500">Costing Engineering Department</div>
-            </div>
-            <div className="text-right space-y-1">
-              <span className="text-slate-500">For {quote.company_name || 'Bharat Precision Engineering Works'}:</span>
-              <div className="h-10 flex items-end justify-end">
-                <div className="border-b border-slate-400 w-44 text-center font-bold text-slate-950 pb-0.5">
-                  {quote.authorized_signatory || (isFinal ? 'Authorized Signatory' : 'Draft Document')}
-                </div>
+          <div className="pt-6 border-t border-slate-200 space-y-4 text-xs">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <span className="text-slate-500">Prepared By:</span>
+                <div className="font-bold text-slate-950">{quote.prepared_by || 'Rajesh Deshmukh'}</div>
+                <div className="text-[11px] text-slate-500">Costing Engineering Department</div>
               </div>
-              <div className="text-[11px] text-slate-500">Authorized Signatory</div>
+              <div className="text-right space-y-1">
+                <span className="text-slate-500">For {quote.company_name || 'Bharat Precision Engineering Works'}:</span>
+                <div className="h-10 flex items-end justify-end">
+                  <div className="border-b border-slate-400 w-44 text-center font-bold text-slate-950 pb-0.5">
+                    {quote.authorized_signatory || (isFinal ? 'Authorized Signatory' : 'Draft Document')}
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-500">Authorized Signatory</div>
+              </div>
             </div>
+
+            {quote.finalized_at && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-emerald-900">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>
+                    Digitally Finalized by <strong>{quote.finalized_by || 'Authorized Officer'}</strong> on{' '}
+                    {new Date(quote.finalized_at).toLocaleString('en-IN', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                  </span>
+                </div>
+                {quote.pdf_sha256 && (
+                  <span className="font-mono text-[10px] text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded border border-emerald-200">
+                    SHA-256: {quote.pdf_sha256.substring(0, 16)}...
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
         </div>
 
       </div>
+
+      {/* Finalization Confirmation Modal */}
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        title="Finalize Quotation?"
+        maxWidth="md"
+      >
+        <div className="space-y-4 pt-1 text-xs">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold text-amber-900 text-sm">After finalization, this quotation cannot be edited.</p>
+              <p className="text-amber-800 leading-relaxed">
+                The current quotation values will become the official commercial document. An authoritative PDF will be generated and stored securely.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5 font-mono text-slate-700">
+            <div className="flex justify-between">
+              <span>Quotation No:</span>
+              <strong>{quote.quotation_number}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span>Customer:</span>
+              <strong>{quote.customer_name || 'Customer'}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span>Grand Total:</span>
+              <strong className="text-slate-900">
+                ₹{Number(quote.final_total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </strong>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsConfirmModalOpen(false)}
+              disabled={isFinalizing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleFinalize}
+              disabled={isFinalizing}
+              icon={<CheckCircle2 className="w-4 h-4 text-white" />}
+            >
+              {isFinalizing ? 'Finalizing & Storing PDF...' : 'Finalize'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Finalization Success Modal */}
+      <Modal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        title="Quotation Finalized"
+        maxWidth="md"
+      >
+        <div className="p-4 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-600">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Quotation Finalized</h3>
+            <p className="text-xs text-slate-500 mt-1">The official commercial document has been created and stored securely.</p>
+          </div>
+
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-left space-y-2 font-mono">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Quotation No:</span>
+              <strong className="text-slate-900">{quote.quotation_number}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Status:</span>
+              <Badge variant="success" size="sm">FINAL</Badge>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">PDF:</span>
+              <span className="text-emerald-700 font-semibold">Stored securely</span>
+            </div>
+            {quote.pdf_sha256 && (
+              <div className="flex justify-between text-[11px] pt-1 border-t border-slate-200">
+                <span className="text-slate-500">SHA-256:</span>
+                <span className="text-slate-600 truncate max-w-[200px]">{quote.pdf_sha256}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-2 pt-2">
+            <Button
+              variant="primary"
+              size="sm"
+              className="font-bold bg-blue-600 hover:bg-blue-700"
+              onClick={handleDownloadPdf}
+              icon={<Download className="w-4 h-4" />}
+            >
+              Download Final PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/quotations')}
+            >
+              View Quotation History
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Edit Metadata Modal */}
       <Modal
