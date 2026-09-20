@@ -21,4 +21,5 @@ export interface Customer {
   creditDays: number;
   rating: string;
   lastQuotedDate: string;
+  isActive?: boolean;
 }

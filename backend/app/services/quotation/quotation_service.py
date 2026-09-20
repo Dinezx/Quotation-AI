@@ -46,14 +46,12 @@ def resolve_quotation_recipient(quotation: Quotation) -> str:
             detail="Customer belongs to another company",
         )
 
-    # 1. Quotation email preference
+    # 1. Customer quotation email preference
     recipient = None
     if customer.quotation_email and customer.quotation_email.strip():
         recipient = customer.quotation_email.strip()
-    elif quotation.customer_quotation_email and quotation.customer_quotation_email.strip():
-        recipient = quotation.customer_quotation_email.strip()
 
-    # 2. Fallback to customer login email
+    # 2. Fallback to customer login / account email
     if not recipient:
         login_email = customer.login_email or customer.email
         if login_email and login_email.strip():

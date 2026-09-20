@@ -70,10 +70,11 @@ def test_nonexistent_customer_404(auth_headers):
 
 def test_cross_company_customer_access_rejected(auth_headers, auth_headers_company_b):
     """Test multi-tenancy isolation: Company B cannot view, modify, or delete Company A's customer."""
-    unique_name = f"Company A Secret Client {int(time.time())}"
+    ts = int(time.time())
+    unique_name = f"Company A Secret Client {ts}"
     res_a = client.post(
         "/api/v1/customers",
-        json={"name": unique_name, "email": "secret@client.com"},
+        json={"name": unique_name, "email": f"secret_{ts}@client.com"},
         headers=auth_headers,
     )
     assert res_a.status_code == 201

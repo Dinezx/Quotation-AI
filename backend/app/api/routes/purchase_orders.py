@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from app.core.security import get_current_company_id, get_current_user, AuthenticatedUser
 from app.db.session import get_db
 from app.models.customer import Customer
@@ -29,11 +29,18 @@ router = APIRouter(prefix="/purchase-orders", tags=["Purchase Orders"])
 @router.get("", response_model=List[PurchaseOrderResponse])
 def list_purchase_orders(
     status_filter: Optional[str] = None,
+    customer_id: Optional[str] = None,
     company_id: str = Depends(get_current_company_id),
     db: Session = Depends(get_db),
 ):
     """List purchase orders for the current tenant company."""
-    query = db.query(PurchaseOrder).filter(PurchaseOrder.company_id == company_id)
+    query = (
+        db.query(PurchaseOrder)
+        .options(selectinload(PurchaseOrder.items))
+        .filter(PurchaseOrder.company_id == company_id)
+    )
+    if customer_id:
+        query = query.filter(PurchaseOrder.customer_id == customer_id)
     if status_filter:
         query = query.filter(PurchaseOrder.status == status_filter.upper())
     return query.order_by(PurchaseOrder.created_at.desc()).all()
@@ -53,6 +60,8 @@ def create_purchase_order(
         ).first()
         if not customer:
             raise HTTPException(status_code=400, detail="Invalid customer for tenant")
+        if not customer.is_active:
+            raise HTTPException(status_code=400, detail="Cannot create purchase order for deactivated customer")
 
     po = PurchaseOrder(
         company_id=company_id,
@@ -213,10 +222,15 @@ def get_purchase_order(
     db: Session = Depends(get_db),
 ):
     """Retrieve full purchase order details including items and review status."""
-    po = db.query(PurchaseOrder).filter(
-        PurchaseOrder.id == po_id,
-        PurchaseOrder.company_id == company_id,
-    ).first()
+    po = (
+        db.query(PurchaseOrder)
+        .options(selectinload(PurchaseOrder.items))
+        .filter(
+            PurchaseOrder.id == po_id,
+            PurchaseOrder.company_id == company_id,
+        )
+        .first()
+    )
     if not po:
         raise HTTPException(status_code=404, detail="Purchase order not found")
     return po
@@ -244,6 +258,8 @@ def update_purchase_order(
         ).first()
         if not customer:
             raise HTTPException(status_code=400, detail="Invalid customer for tenant")
+        if not customer.is_active:
+            raise HTTPException(status_code=400, detail="Cannot assign deactivated customer to purchase order")
 
     # Update header attributes
     update_dict = po_in.model_dump(exclude_unset=True)

@@ -23,6 +23,11 @@ class Customer(Base, TimestampMixin):
         """Returns the customer authentication/account login email."""
         return self.email
 
+    @property
+    def code(self) -> str:
+        """Returns a deterministic customer reference code."""
+        return f"CUST-{self.id[:6].upper()}"
+
     # Relationships
     company: Mapped["Company"] = relationship("Company", back_populates="customers")
     purchase_orders: Mapped[List["PurchaseOrder"]] = relationship("PurchaseOrder", back_populates="customer")

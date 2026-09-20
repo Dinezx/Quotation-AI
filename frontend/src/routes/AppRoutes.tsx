@@ -9,6 +9,7 @@ import { CalculationReviewPage } from '../pages/CalculationReviewPage';
 import { QuotationHistoryPage } from '../pages/QuotationHistoryPage';
 import { QuotationPreviewPage } from '../pages/QuotationPreviewPage';
 import { CustomersPage } from '../pages/CustomersPage';
+import { CustomerDetailPage } from '../pages/CustomerDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 
 export const AppRoutes: React.FC = () => {
@@ -27,6 +28,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="quotations" element={<QuotationHistoryPage />} />
 
         <Route path="customers" element={<CustomersPage />} />
+        <Route path="customers/:customerId" element={<CustomerDetailPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

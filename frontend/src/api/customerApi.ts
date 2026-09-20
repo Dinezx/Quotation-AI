@@ -3,6 +3,7 @@ import { apiClient } from './apiClient';
 export interface CustomerDTO {
   id: string;
   company_id: string;
+  code?: string;
   name: string;
   contact_person?: string;
   email?: string;
@@ -33,9 +34,21 @@ export interface CustomerCommunicationSettingsDTO {
   quotation_email?: string | null;
 }
 
+export interface CustomerPaginationDTO {
+  items: CustomerDTO[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 export const customerApi = {
   list: async (): Promise<CustomerDTO[]> => {
     const res = await apiClient.get<CustomerDTO[]>('/customers');
+    return res.data;
+  },
+
+  listPaginated: async (params?: { page?: number; page_size?: number; search?: string; status?: string }): Promise<CustomerPaginationDTO> => {
+    const res = await apiClient.get<CustomerPaginationDTO>('/customers', { params });
     return res.data;
   },
 
@@ -61,6 +74,21 @@ export const customerApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/customers/${id}`);
+  },
+
+  getQuotations: async (id: string): Promise<any[]> => {
+    const res = await apiClient.get<any[]>(`/customers/${id}/quotations`);
+    return res.data;
+  },
+
+  getPurchaseOrders: async (id: string): Promise<any[]> => {
+    const res = await apiClient.get<any[]>(`/customers/${id}/purchase-orders`);
+    return res.data;
+  },
+
+  reactivate: async (id: string): Promise<CustomerDTO> => {
+    const res = await apiClient.put<CustomerDTO>(`/customers/${id}`, { is_active: true });
+    return res.data;
   },
 };
 

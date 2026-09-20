@@ -87,32 +87,18 @@ class Quotation(Base, TimestampMixin):
         """Returns the customer authentication/account login email."""
         if not self.customer:
             return None
-        return self.customer.email.strip() if (self.customer.email and self.customer.email.strip()) else None
+        return self.customer.login_email or self.customer.email
 
     @property
     def customer_quotation_email(self) -> Optional[str]:
         """Returns the customer quotation email communication preference, if configured."""
         if not self.customer:
             return None
-        # 1. Direct customer record preference
-        if self.customer.quotation_email and self.customer.quotation_email.strip():
-            return self.customer.quotation_email.strip()
-        # 2. Settings override fallback
-        if self.company and isinstance(self.company.settings, dict):
-            c_settings = self.company.settings
-            cust_overrides = c_settings.get("customer_quotation_emails") or c_settings.get("customer_emails")
-            if isinstance(cust_overrides, dict):
-                override = cust_overrides.get(self.customer.id) or cust_overrides.get(self.customer.email)
-                if override and isinstance(override, str) and override.strip():
-                    return override.strip()
-            override_general = c_settings.get("customer_quotation_email") or c_settings.get("quotation_email")
-            if override_general and isinstance(override_general, str) and override_general.strip():
-                return override_general.strip()
-        return None
+        return self.customer.quotation_email.strip() if (self.customer.quotation_email and self.customer.quotation_email.strip()) else None
 
     @property
     def resolved_email_recipient(self) -> Optional[str]:
-        """Resolves the quotation recipient: quotation_email ?? customer_login_email."""
+        """Resolves the quotation recipient: customer.quotation_email ?? customer.login_email."""
         return self.customer_quotation_email or self.customer_login_email
 
     @property

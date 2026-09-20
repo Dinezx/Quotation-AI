@@ -32,16 +32,20 @@ def list_quotations(
     page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
+    customer_id: Optional[str] = Query(None),
     company_id: str = Depends(get_current_company_id),
     db: Session = Depends(get_db)
 ):
     """
     List quotations for the current tenant company.
-    Supports server-side search, status filtering, and pagination.
+    Supports server-side search, status filtering, customer filtering, and pagination.
     If page is supplied, returns QuotationPaginationResponse({ items, total, page, page_size }).
     If page is omitted, returns List[QuotationResponse] (backward-compatible).
     """
     query = db.query(Quotation).filter(Quotation.company_id == company_id)
+
+    if customer_id:
+        query = query.filter(Quotation.customer_id == customer_id)
 
     if status:
         query = query.filter(func.upper(Quotation.status) == status.strip().upper())
@@ -97,6 +101,8 @@ def create_quotation(
         ).first()
         if not customer:
             raise HTTPException(status_code=400, detail="Invalid customer for tenant")
+        if not customer.is_active:
+            raise HTTPException(status_code=400, detail="Cannot create quotation for deactivated customer")
 
     if quotation_in.purchase_order_id:
         po = db.query(PurchaseOrder).filter(
@@ -225,6 +231,8 @@ def update_quotation(
         ).first()
         if not customer:
             raise HTTPException(status_code=400, detail="Invalid customer for tenant")
+        if not customer.is_active:
+            raise HTTPException(status_code=400, detail="Cannot assign deactivated customer to quotation")
 
     for field, value in quotation_in.model_dump(exclude_unset=True).items():
         setattr(quotation, field, value)
