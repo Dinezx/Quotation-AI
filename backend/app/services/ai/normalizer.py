@@ -12,6 +12,7 @@ Rate calculations and quotation pricing belong strictly to the deterministic Pyt
 import os
 import re
 import json
+import asyncio
 import logging
 from abc import ABC, abstractmethod
 from datetime import date, datetime
@@ -161,18 +162,42 @@ class GeminiPONormalizer(BasePONormalizer):
             temperature=0.0,
         )
 
-        try:
-            response = await client.aio.models.generate_content(
-                model=self.model_name,
-                contents=user_prompt,
-                config=config,
-            )
-        except TimeoutError as e:
-            logger.error("Gemini normalization request timed out.")
-            raise RuntimeError("Gemini normalization service timed out.") from None
-        except Exception as e:
-            err_type = type(e).__name__
-            sanitized_msg = self._sanitize_error(str(e))
+        models_to_try = [self.model_name]
+        for candidate in ["gemini-3-flash-preview", "gemini-flash-latest"]:
+            if candidate not in models_to_try:
+                models_to_try.append(candidate)
+
+        response = None
+        last_exception = None
+
+        for model_candidate in models_to_try:
+            for attempt in range(2):
+                try:
+                    response = await client.aio.models.generate_content(
+                        model=model_candidate,
+                        contents=user_prompt,
+                        config=config,
+                    )
+                    if response and getattr(response, "text", ""):
+                        break
+                except TimeoutError as e:
+                    last_exception = e
+                    logger.error(f"Gemini normalization request timed out on {model_candidate}.")
+                except Exception as e:
+                    last_exception = e
+                    err_type = type(e).__name__
+                    sanitized_msg = self._sanitize_error(str(e))
+                    logger.warning(f"Gemini normalization API attempt on {model_candidate} returned ({err_type}): {sanitized_msg}")
+                    if "503" in str(e) or "UNAVAILABLE" in str(e):
+                        await asyncio.sleep(1.0)
+                        continue
+                    break
+            if response and getattr(response, "text", ""):
+                break
+
+        if not response:
+            err_type = type(last_exception).__name__ if last_exception else "Unknown"
+            sanitized_msg = self._sanitize_error(str(last_exception)) if last_exception else "No response"
             logger.error(f"Gemini normalization API error ({err_type}): {sanitized_msg}")
             raise RuntimeError(f"Gemini normalization request failed ({err_type}): {sanitized_msg}") from None
 
