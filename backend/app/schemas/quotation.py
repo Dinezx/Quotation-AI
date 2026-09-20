@@ -8,6 +8,9 @@ class QuotationItemBase(BaseModel):
     item_number: int = 1
     part_name: str
     specification: Optional[str] = None
+    drawing_number: Optional[str] = None
+    material: Optional[str] = None
+    process: Optional[str] = None
     quantity: Decimal = Decimal("1.00")
     unit: str = "PCS"
     gross_material_cost: Decimal = Decimal("0.00")
@@ -61,6 +64,9 @@ class QuotationBase(BaseModel):
     notes: Optional[str] = None
     payment_terms: Optional[str] = None
     delivery_terms: Optional[str] = None
+    inspection_terms: Optional[str] = None
+    prepared_by: Optional[str] = None
+    authorized_signatory: Optional[str] = None
 
 class QuotationCreate(QuotationBase):
     items: Optional[List[QuotationItemCreate]] = []
@@ -74,6 +80,9 @@ class QuotationUpdate(BaseModel):
     notes: Optional[str] = None
     payment_terms: Optional[str] = None
     delivery_terms: Optional[str] = None
+    inspection_terms: Optional[str] = None
+    prepared_by: Optional[str] = None
+    authorized_signatory: Optional[str] = None
 
 class QuotationResponse(QuotationBase):
     id: str
@@ -82,7 +91,23 @@ class QuotationResponse(QuotationBase):
     updated_at: datetime
     items: List[QuotationItemResponse] = []
 
+    # Presentation fields
+    customer_name: Optional[str] = None
+    customer_address: Optional[str] = None
+    customer_gstin: Optional[str] = None
+    po_number: Optional[str] = None
+    po_date: Optional[datetime] = None
+    amount_in_words: Optional[str] = None
+    company_name: Optional[str] = None
+    company_legal_name: Optional[str] = None
+    company_address: Optional[str] = None
+    company_gstin: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_email: Optional[str] = None
+    bank_details: Optional[dict] = None
+
     model_config = ConfigDict(from_attributes=True)
+
 
 # Calculation Engine Input Models
 class CalculateItemInput(BaseModel):
@@ -91,6 +116,9 @@ class CalculateItemInput(BaseModel):
     item_number: int = 1
     part_name: str
     specification: Optional[str] = None
+    drawing_number: Optional[str] = None
+    material: Optional[str] = None
+    process: Optional[str] = None
     quantity: Decimal = Decimal("1.00")
     unit: str = "PCS"
     

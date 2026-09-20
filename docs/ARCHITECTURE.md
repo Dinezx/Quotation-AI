@@ -78,7 +78,7 @@ Supabase PostgreSQL (Enforcing company_id isolation)
 
 ---
 
-## 3. Pricing Calculation Pipeline
+## 3. Pricing Calculation & Quotation PDF Pipeline
 
 Pricing is strictly deterministic and auditable. AI does not set final prices.
 
@@ -89,7 +89,7 @@ Extracted / Human-Verified Geometry (Billet Weight, Finished Weight, Scrap Weigh
       ↓
 Manufacturer Database Rates (Base Material ₹/kg, Scrap Credit ₹/kg, Machine ₹/hr, Setup ₹)
       ↓
-Deterministic Python Engine (backend/app/services/calculation/calculation_service.py)
+Deterministic Calculation Engine (backend/app/services/calculation/calculation_service.py)
   • Net Material = (Gross Wt × Base Rate) - (Scrap Wt × Scrap Rate)
   • Process Cost = (Machining Hrs × Machine Rate) + Setup Cost
   • Subtotal = Net Material + Process Cost
@@ -99,10 +99,20 @@ Deterministic Python Engine (backend/app/services/calculation/calculation_servic
   • Statutory GST = 18% (CGST 9% + SGST 9% OR IGST 18%)
   • Final Total = Taxable Total + GST (Rounded half up)
       ↓
-Quotation Review Screen
+Quotation & QuotationItem Persistence (Status: DRAFT)
       ↓
-Customer Quotation Dispatch (PDF / WhatsApp / Email)
+Quotation Preview & Human Review (Metadata editing; pricing fields strictly read-only)
+      ↓
+ReportLab PDF Generator (backend/app/services/pdf/quotation_pdf_service.py)
+      ↓
+Downloadable A4 Manufacturing Quotation Document
 ```
+
+> [!CRITICAL]
+> **Presentation-Only Invariant for PDF Generation**:
+> **PDF generation never recalculates prices.**
+> The PDF generator is presentation-only. It reads already-calculated, persisted commercial values from `Quotation` and `QuotationItem` records and renders them into an A4 industrial layout. There is exactly one pricing source of truth: `CalculationService`. No pricing formulas, GST math, or rate lookups are duplicated in the PDF service.
+
 
 ---
 

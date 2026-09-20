@@ -48,6 +48,17 @@ cd backend
 python -m pytest tests/ -v
 ```
 
+To run specifically the quotation draft, ReportLab PDF rendering, and consistency regression tests:
+```bash
+cd backend
+python -m pytest tests/test_quotation_pdf.py -v
+```
+
+### PDF Generation & Testing Rules
+- Backend PDF generation is implemented using **ReportLab** (`backend/app/services/pdf/quotation_pdf_service.py`).
+- The PDF generator is strictly **presentation-only**. It never recalculates prices or invokes external AI services.
+- Deterministic calculation results in `Quotation` and `QuotationItem` are rendered directly into an A4 industrial document.
+
 ### Database Migrations
 When modifying SQLAlchemy models in `app/models/`:
 ```bash

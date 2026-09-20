@@ -1,9 +1,10 @@
 from decimal import Decimal
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.core.security import get_current_company_id
+from fastapi import APIRouter, Depends, HTTPException, status, Response
+from sqlalchemy.orm import Session, selectinload
+from app.core.security import get_current_company_id, get_current_user, AuthenticatedUser
 from app.db.session import get_db
+from app.models.company import Company
 from app.models.customer import Customer
 from app.models.purchase_order import PurchaseOrder
 from app.models.quotation import Quotation
@@ -16,6 +17,7 @@ from app.schemas.quotation import (
 )
 from app.services.calculation.calculation_service import CalculationService
 from app.services.quotation.quotation_service import QuotationService
+from app.services.pdf.quotation_pdf_service import QuotationPDFService
 
 router = APIRouter(prefix="/quotations", tags=["Quotations"])
 
@@ -25,9 +27,15 @@ def list_quotations(
     db: Session = Depends(get_db)
 ):
     """List all quotations for the current tenant company."""
-    return db.query(Quotation).filter(
+    return db.query(Quotation).options(
+        selectinload(Quotation.items),
+        selectinload(Quotation.customer),
+        selectinload(Quotation.purchase_order),
+        selectinload(Quotation.company),
+    ).filter(
         Quotation.company_id == company_id
     ).order_by(Quotation.created_at.desc()).all()
+
 
 @router.post("", response_model=QuotationResponse, status_code=status.HTTP_201_CREATED)
 def create_quotation(
@@ -84,6 +92,9 @@ def create_quotation(
         notes=quotation_in.notes,
         payment_terms=quotation_in.payment_terms,
         delivery_terms=quotation_in.delivery_terms,
+        inspection_terms=quotation_in.inspection_terms,
+        prepared_by=quotation_in.prepared_by,
+        authorized_signatory=quotation_in.authorized_signatory,
     )
     db.add(quotation)
     db.flush()
@@ -96,6 +107,9 @@ def create_quotation(
                 item_number=it.item_number,
                 part_name=it.part_name,
                 specification=it.specification,
+                drawing_number=it.drawing_number,
+                material=it.material,
+                process=it.process,
                 quantity=it.quantity,
                 unit=it.unit,
                 gross_material_cost=it.gross_material_cost,
@@ -122,10 +136,16 @@ def get_quotation(
     db: Session = Depends(get_db)
 ):
     """Retrieve full quotation details including line items."""
-    quotation = db.query(Quotation).filter(
+    quotation = db.query(Quotation).options(
+        selectinload(Quotation.items),
+        selectinload(Quotation.customer),
+        selectinload(Quotation.purchase_order),
+        selectinload(Quotation.company),
+    ).filter(
         Quotation.id == quotation_id,
         Quotation.company_id == company_id
     ).first()
+
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
     return quotation
@@ -204,3 +224,137 @@ def calculate_and_update_quotation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Quotation calculation failed: {str(exc)}"
         )
+
+
+@router.post("/{quotation_id}/finalize", response_model=QuotationResponse)
+def finalize_quotation(
+    quotation_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Finalizes a draft quotation into an approved FINAL quotation.
+    Enforces tenant ownership and data completeness.
+    """
+    quotation = db.query(Quotation).filter(Quotation.id == quotation_id).first()
+    if not quotation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quotation not found")
+
+    if quotation.company_id != current_user.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Quotation belongs to another company"
+        )
+
+    if not quotation.items or len(quotation.items) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Quotation data incomplete: Line items missing"
+        )
+
+    if quotation.final_total is None or quotation.final_total <= Decimal("0.00"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Quotation cannot be finalized because calculation is blocked or incomplete"
+        )
+
+    updated = QuotationService.finalize_quotation(
+        db=db,
+        quotation=quotation,
+        authorized_by=current_user.email,
+    )
+    return updated
+
+
+@router.get("/{quotation_id}/pdf")
+def get_quotation_pdf(
+    quotation_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Renders and downloads presentation-only A4 quotation PDF from persisted database values.
+    Enforces:
+    1. Tenant isolation (Company A cannot download Company B quotation PDF).
+    2. Calculation completeness (BLOCKED/zero calculations cannot generate PDF).
+    3. Mandatory items validation (data completeness).
+    4. Presentation-only: strictly reads stored values with zero recalculation.
+    5. Zero AI involvement.
+    """
+    quotation = db.query(Quotation).filter(Quotation.id == quotation_id).first()
+    if not quotation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quotation not found")
+
+    if quotation.company_id != current_user.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Quotation belongs to another company"
+        )
+
+    # Incomplete quotation verification
+    if not quotation.items or len(quotation.items) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Quotation data incomplete: Line items missing"
+        )
+
+    # Blocked calculation verification: Must have valid positive calculated total
+    if quotation.final_total is None or quotation.final_total <= Decimal("0.00"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Quotation cannot be generated because calculation is blocked or incomplete"
+        )
+
+    company = db.query(Company).filter(Company.id == current_user.company_id).first()
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company associated with quotation not found"
+        )
+
+    customer = None
+    if quotation.customer_id:
+        customer = db.query(Customer).filter(
+            Customer.id == quotation.customer_id,
+            Customer.company_id == current_user.company_id
+        ).first()
+
+    purchase_order = None
+    if quotation.purchase_order_id:
+        purchase_order = db.query(PurchaseOrder).filter(
+            PurchaseOrder.id == quotation.purchase_order_id,
+            PurchaseOrder.company_id == current_user.company_id
+        ).first()
+
+    try:
+        pdf_bytes = QuotationPDFService.generate_quotation_pdf(
+            quotation=quotation,
+            company=company,
+            customer=customer,
+            purchase_order=purchase_order,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"PDF generation failure: {str(exc)}"
+        )
+
+    safe_filename = f"{quotation.quotation_number}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_filename}"',
+            "Content-Type": "application/pdf",
+        }
+    )
+
+
+@router.post("/{quotation_id}/pdf")
+def generate_quotation_pdf_post(
+    quotation_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """POST endpoint for generating/downloading quotation PDF."""
+    return get_quotation_pdf(quotation_id=quotation_id, current_user=current_user, db=db)

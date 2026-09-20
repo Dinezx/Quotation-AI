@@ -7,7 +7,7 @@ import { PoReviewPage } from '../pages/PoReviewPage';
 import { RateManagementPage } from '../pages/RateManagementPage';
 import { CalculationReviewPage } from '../pages/CalculationReviewPage';
 import { QuotationHistoryPage } from '../pages/QuotationHistoryPage';
-import { QuotationDispatchPage } from '../pages/QuotationDispatchPage';
+import { QuotationPreviewPage } from '../pages/QuotationPreviewPage';
 import { CustomersPage } from '../pages/CustomersPage';
 import { SettingsPage } from '../pages/SettingsPage';
 
@@ -22,9 +22,10 @@ export const AppRoutes: React.FC = () => {
         <Route path="rates" element={<RateManagementPage />} />
         <Route path="calculation" element={<CalculationReviewPage />} />
         <Route path="calculation/:quoteId" element={<CalculationReviewPage />} />
-        <Route path="quotation" element={<QuotationDispatchPage />} />
-        <Route path="quotation/:quoteId" element={<QuotationDispatchPage />} />
+        <Route path="quotation" element={<QuotationPreviewPage />} />
+        <Route path="quotation/:quoteId" element={<QuotationPreviewPage />} />
         <Route path="quotations" element={<QuotationHistoryPage />} />
+
         <Route path="customers" element={<CustomersPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

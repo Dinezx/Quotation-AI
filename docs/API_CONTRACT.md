@@ -357,4 +357,83 @@ Executes deterministic pricing and saves/updates the quotation line items and st
 - **Response `200 OK`**: Returns updated `QuotationDTO`.
 
 ### `GET /quotations/{id}`
-Fetches full quotation details, itemized breakdown, and current status (`draft`, `sent`, `accepted`, `rejected`).
+Fetches full quotation details, itemized breakdown, commercial metadata, and current status (`DRAFT`, `FINAL`, `sent`, `accepted`, `rejected`).
+
+- **Auth Required**: Yes
+- **Response `200 OK`**:
+  ```json
+  {
+    "id": "quot-uuid-001",
+    "company_id": "comp-bpe-pune",
+    "quotation_number": "QT-2026-0001",
+    "customer_id": "cust-uuid-001",
+    "customer_name": "ABC Engineering Components Pvt. Ltd.",
+    "purchase_order_id": "po-uuid-001",
+    "po_number": "PO-2026-0098",
+    "status": "DRAFT",
+    "delivery_terms": "Ex-Works Factory Bhosari",
+    "payment_terms": "30 Days from date of supply",
+    "validity_period": "30 Days from date of issue",
+    "inspection_terms": "Pre-dispatch inspection at vendor site",
+    "general_notes": "Standard industrial tolerances +/- 0.05mm apply",
+    "prepared_by": "Costing Engineering Department",
+    "authorized_signatory": "Authorized Signatory",
+    "subtotal": 14000.00,
+    "overhead_amount": 1400.00,
+    "profit_amount": 2310.00,
+    "taxable_amount": 17710.00,
+    "gst_amount": 3188.00,
+    "final_total": 20898.00,
+    "items": [
+      {
+        "id": "qitem-uuid-001",
+        "item_number": 1,
+        "part_name": "Bearing Housing",
+        "specification": "Dia 120mm x 80mm",
+        "drawing_number": "DRW-BH-001",
+        "material": "EN8",
+        "process": "CNC Machining",
+        "quantity": 10.0,
+        "unit": "PCS",
+        "unit_price": 1400.00,
+        "total_price": 14000.00
+      }
+    ]
+  }
+  ```
+
+### `PUT /quotations/{id}`
+Updates editable commercial metadata on a draft quotation. Pricing fields remain calculation-engine controlled and cannot be manually altered.
+
+- **Auth Required**: Yes
+- **Request Body**:
+  ```json
+  {
+    "validity_period": "45 Days from date of issue",
+    "delivery_terms": "Ex-Works Factory Bhosari",
+    "payment_terms": "30 Days from date of supply",
+    "inspection_terms": "Pre-dispatch inspection at vendor site",
+    "general_notes": "Standard industrial tolerances +/- 0.05mm apply",
+    "prepared_by": "Rajesh Deshmukh",
+    "authorized_signatory": "Plant Operations Manager"
+  }
+  ```
+- **Response `200 OK`**: Returns updated `QuotationDTO`.
+
+### `POST /quotations/{id}/finalize`
+Transitions quotation from `DRAFT` to `FINAL` state. Once finalized, the quotation represents an approved corporate offer.
+
+- **Auth Required**: Yes
+- **Response `200 OK`**: Returns finalized `QuotationDTO` with `status: "FINAL"`.
+
+### `GET /quotations/{id}/pdf` or `POST /quotations/{id}/pdf`
+Generates and downloads a presentation-only, high-fidelity A4 manufacturing quotation PDF via ReportLab.
+
+- **Auth Required**: Yes
+- **Tenant Protection**: Strict company verification (returns 403 Forbidden for cross-company requests).
+- **Calculation Invariant**: Requires completed calculation (`final_total > 0`). Never recalculates prices.
+- **Response `200 OK`**:
+  - `Content-Type: application/pdf`
+  - `Content-Disposition: attachment; filename="QT-2026-0001.pdf"`
+  - Response Body: Binary PDF stream.
+

@@ -123,7 +123,9 @@ export interface POCalculateResponseDTO {
   grand_total?: number;
   final_total_in_words?: string;
   quotation_id?: string;
+  quotation_number?: string;
 }
+
 
 export const purchaseOrderApi = {
   list: async (status?: string): Promise<PurchaseOrderDTO[]> => {

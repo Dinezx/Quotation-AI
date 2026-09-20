@@ -229,13 +229,19 @@ class PricingService:
             )
 
         # Step 4: Run deterministic calculation
+        poi_map = {poi.id: poi for poi in po.items}
         calc_inputs: List[CalculateItemInput] = []
         for it in matched_items:
+            orig_poi = poi_map.get(it.item_id) if it.item_id else None
             calc_inputs.append(
                 CalculateItemInput(
                     purchase_order_item_id=it.item_id,
                     item_number=it.item_number,
                     part_name=it.part_name,
+                    specification=orig_poi.specification if orig_poi else None,
+                    drawing_number=orig_poi.drawing_number if orig_poi else None,
+                    material=it.material,
+                    process=it.process,
                     quantity=it.quantity,
                     unit=it.unit,
                     gross_weight_kg=it.gross_weight_kg,
@@ -271,6 +277,7 @@ class PricingService:
 
         # Step 5: Optional Draft Quotation Persistence
         quotation_id: Optional[str] = None
+        quotation_number: Optional[str] = None
         if calc_params.persist_draft:
             quotation = db.query(Quotation).filter(
                 Quotation.purchase_order_id == po.id,
@@ -288,6 +295,18 @@ class PricingService:
                 )
                 db.add(quotation)
                 db.flush()
+            else:
+                quotation_number = quotation.quotation_number
+
+            # Sync terms from PO if not set
+            if not quotation.delivery_terms and po.delivery_terms:
+                quotation.delivery_terms = po.delivery_terms
+            if not quotation.payment_terms and po.payment_terms:
+                quotation.payment_terms = po.payment_terms
+            if not quotation.inspection_terms and po.inspection_clauses:
+                quotation.inspection_terms = po.inspection_clauses
+            if not quotation.notes and po.general_notes:
+                quotation.notes = po.general_notes
 
             QuotationService.recalculate_and_sync_quotation(
                 db=db,
@@ -295,6 +314,7 @@ class PricingService:
                 request=engine_request,
             )
             quotation_id = quotation.id
+            quotation_number = quotation.quotation_number
 
         return POCalculateResponse(
             status="SUCCESS",
@@ -324,4 +344,6 @@ class PricingService:
             grand_total=Decimal(str(calc_result["final_total"])),
             final_total_in_words=calc_result["final_total_in_words"],
             quotation_id=quotation_id,
+            quotation_number=quotation_number,
         )
+

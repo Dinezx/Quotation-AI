@@ -104,6 +104,12 @@ class QuotationService:
             target_item.item_number = calc_it.get("item_number", idx + 1)
             target_item.part_name = calc_it["part_name"]
             target_item.specification = calc_it.get("specification")
+            if calc_it.get("drawing_number"):
+                target_item.drawing_number = calc_it["drawing_number"]
+            if calc_it.get("material"):
+                target_item.material = calc_it["material"]
+            if calc_it.get("process"):
+                target_item.process = calc_it["process"]
             target_item.quantity = Decimal(str(calc_it["quantity"]))
             target_item.unit = calc_it.get("unit", "PCS")
             if calc_it.get("purchase_order_item_id"):
@@ -124,6 +130,22 @@ class QuotationService:
         for stale_item in unmatched_existing:
             db.delete(stale_item)
 
+        db.commit()
+        db.refresh(quotation)
+        return quotation
+
+    @staticmethod
+    def finalize_quotation(
+        db: Session,
+        quotation: Quotation,
+        authorized_by: Optional[str] = None,
+    ) -> Quotation:
+        """
+        Marks quotation as FINAL (authorized commercial document).
+        """
+        quotation.status = "FINAL"
+        if authorized_by:
+            quotation.authorized_signatory = authorized_by
         db.commit()
         db.refresh(quotation)
         return quotation

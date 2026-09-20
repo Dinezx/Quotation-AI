@@ -13,6 +13,9 @@ class QuotationItem(Base, TimestampMixin):
     item_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     part_name: Mapped[str] = mapped_column(String(255), nullable=False)
     specification: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    drawing_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    material: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    process: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     quantity: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=1, nullable=False)
     unit: Mapped[str] = mapped_column(String(20), default="PCS", nullable=False)
     

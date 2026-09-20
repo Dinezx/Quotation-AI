@@ -96,6 +96,9 @@ class CalculationService:
             "item_number": item.item_number,
             "part_name": item.part_name,
             "specification": item.specification,
+            "drawing_number": getattr(item, "drawing_number", None),
+            "material": getattr(item, "material", None),
+            "process": getattr(item, "process", None),
             "quantity": quantize_currency(qty),
             "unit": item.unit,
             "gross_material_cost": quantize_currency(gross_mat),
@@ -111,7 +114,13 @@ class CalculationService:
         }
 
     @staticmethod
+    def number_to_indian_words(num: int) -> str:
+        """Forwarding helper for number_to_indian_words."""
+        return number_to_indian_words(num)
+
+    @staticmethod
     def calculate_quotation(
+
         request: CalculateQuotationRequest, 
         base_override_subtotal: Decimal = None,
         base_material_override: Decimal = None,

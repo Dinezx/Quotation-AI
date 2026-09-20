@@ -46,7 +46,7 @@ class POCalculateRequest(BaseModel):
     overhead_percentage: Decimal = Decimal("10.00")
     profit_percentage: Decimal = Decimal("15.00")
     gst_type: str = "CGST_SGST"  # CGST_SGST, IGST, EXEMPT
-    persist_draft: bool = False  # If True, stores calculation as a draft Quotation
+    persist_draft: bool = True  # If True, stores calculation as a draft Quotation
 
 
 class POCalculateResponse(BaseModel):
@@ -79,5 +79,7 @@ class POCalculateResponse(BaseModel):
     grand_total: Optional[Decimal] = None
     final_total_in_words: Optional[str] = None
     quotation_id: Optional[str] = None
+    quotation_number: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+

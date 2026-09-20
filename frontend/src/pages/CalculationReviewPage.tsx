@@ -613,24 +613,66 @@ export const CalculationReviewPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Primary CTA */}
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="w-full font-bold"
-                    disabled={isBlocked || loading || isRecalculating}
-                    onClick={() => navigate(`/quotation/${calcResult?.quotation_id || 'qt-089'}`)}
-                    icon={<ArrowRight className="w-4 h-4" />}
-                    iconPosition="right"
-                  >
-                    {isBlocked ? 'Pricing Blocked' : 'Proceed to Quotation Dispatch'}
-                  </Button>
+                  {/* Status Banner */}
+                  {isBlocked ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center space-y-1">
+                      <div className="text-xs font-bold text-amber-900 uppercase tracking-wide flex items-center justify-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        Calculation Blocked
+                      </div>
+                      <p className="text-[11px] text-amber-700">
+                        {calcResult.issues.length} prerequisite issue(s) preventing quotation finalization.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center space-y-1">
+                      <div className="text-xs font-bold text-emerald-900 uppercase tracking-wide flex items-center justify-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        Calculation Complete
+                      </div>
+                      <p className="text-[11px] text-emerald-700 font-medium">
+                        Quotation Draft Created
+                      </p>
+                      {calcResult.quotation_number && (
+                        <div className="text-xs font-mono font-bold text-slate-800 bg-white border border-emerald-300 rounded px-2.5 py-1 inline-block mt-1">
+                          Quotation Number: {calcResult.quotation_number}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Primary & Secondary Action CTAs */}
+                  <div className="space-y-2">
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className="w-full font-bold"
+                      disabled={isBlocked || loading || isRecalculating || !calcResult?.quotation_id}
+                      onClick={() => navigate(`/quotation/${calcResult?.quotation_id}`)}
+                      icon={<ArrowRight className="w-4 h-4" />}
+                      iconPosition="right"
+                    >
+                      {isBlocked ? 'Pricing Blocked' : 'Review Quotation'}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="md"
+                      className="w-full font-semibold text-slate-600 hover:text-slate-900"
+                      onClick={() => navigate(selectedPoId ? `/review/${selectedPoId}` : '/review')}
+                      icon={<ArrowLeft className="w-4 h-4" />}
+                      iconPosition="left"
+                    >
+                      Back to PO
+                    </Button>
+                  </div>
 
                   {/* Human Review Note */}
                   <div className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                     <span>Human Review Gate: Commercial terms reviewed before document generation</span>
                   </div>
+
 
                 </div>
               </div>

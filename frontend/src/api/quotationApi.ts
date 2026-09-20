@@ -7,6 +7,9 @@ export interface QuotationItemDTO {
   item_number: number;
   part_name: string;
   specification?: string;
+  drawing_number?: string;
+  material?: string;
+  process?: string;
   quantity: number;
   unit: string;
   gross_material_cost: number;
@@ -54,6 +57,32 @@ export interface QuotationDTO {
   notes?: string;
   payment_terms?: string;
   delivery_terms?: string;
+  inspection_terms?: string;
+  prepared_by?: string;
+  authorized_signatory?: string;
+
+  // Presentation fields
+  customer_name?: string;
+  customer_address?: string;
+  customer_gstin?: string;
+  po_number?: string;
+  po_date?: string;
+  amount_in_words?: string;
+  company_name?: string;
+  company_legal_name?: string;
+  company_address?: string;
+  company_gstin?: string;
+  company_phone?: string;
+  company_email?: string;
+  bank_details?: {
+    bank_name?: string;
+    bank_branch?: string;
+    bank_account?: string;
+    bank_ifsc?: string;
+    upi_id?: string;
+    [key: string]: any;
+  };
+
   created_at: string;
   updated_at: string;
   items: QuotationItemDTO[];
@@ -64,6 +93,9 @@ export interface CalculateItemInputDTO {
   item_number: number;
   part_name: string;
   specification?: string;
+  drawing_number?: string;
+  material?: string;
+  process?: string;
   quantity: number;
   unit: string;
   gross_weight_kg: number;
@@ -123,6 +155,27 @@ export const quotationApi = {
   update: async (id: string, data: Partial<QuotationDTO>): Promise<QuotationDTO> => {
     const res = await apiClient.put<QuotationDTO>(`/quotations/${id}`, data);
     return res.data;
+  },
+
+  finalize: async (id: string): Promise<QuotationDTO> => {
+    const res = await apiClient.post<QuotationDTO>(`/quotations/${id}/finalize`);
+    return res.data;
+  },
+
+  downloadPdf: async (id: string, quotationNumber?: string): Promise<Blob> => {
+    const res = await apiClient.get(`/quotations/${id}/pdf`, {
+      responseType: 'blob',
+    });
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${quotationNumber || id}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    return blob;
   },
 
   calculateStateless: async (
