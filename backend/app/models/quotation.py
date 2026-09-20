@@ -84,7 +84,26 @@ class Quotation(Base, TimestampMixin):
 
     @property
     def customer_email(self) -> Optional[str]:
-        return self.customer.email if self.customer else None
+        if not self.customer:
+            return None
+        # 1. Check if customer quotation email is configured in company.settings
+        if self.company and isinstance(self.company.settings, dict):
+            c_settings = self.company.settings
+            cust_overrides = c_settings.get("customer_quotation_emails") or c_settings.get("customer_emails")
+            if isinstance(cust_overrides, dict):
+                override = cust_overrides.get(self.customer.id) or cust_overrides.get(self.customer.email)
+                if override and isinstance(override, str) and override.strip():
+                    return override.strip()
+            override_general = c_settings.get("customer_quotation_email") or c_settings.get("quotation_email")
+            if override_general and isinstance(override_general, str) and override_general.strip():
+                return override_general.strip()
+        # 2. Check if customer record has dedicated quotation_email attribute
+        if hasattr(self.customer, "quotation_email") and getattr(self.customer, "quotation_email", None):
+            q_email = getattr(self.customer, "quotation_email")
+            if q_email and isinstance(q_email, str) and q_email.strip():
+                return q_email.strip()
+        # 3. Default recipient: customer login email
+        return self.customer.email.strip() if (self.customer.email and self.customer.email.strip()) else None
 
     @property
     def customer_address(self) -> Optional[str]:

@@ -23,9 +23,9 @@ class ResendEmailService(BaseEmailService):
         from_email: Optional[str] = None,
         from_name: Optional[str] = None,
     ):
-        self.api_key = api_key or settings.RESEND_API_KEY
-        self.default_from_email = from_email or settings.RESEND_FROM_EMAIL
-        self.default_from_name = from_name or settings.RESEND_FROM_NAME or "Quotation AI"
+        self.api_key = api_key if api_key is not None else settings.RESEND_API_KEY
+        self.default_from_email = from_email if from_email is not None else settings.RESEND_FROM_EMAIL
+        self.default_from_name = from_name if from_name is not None else settings.RESEND_FROM_NAME
 
     def send_email(
         self,
@@ -38,15 +38,18 @@ class ResendEmailService(BaseEmailService):
         from_email: Optional[str] = None,
         from_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        if not self.api_key:
+        if not self.api_key or not str(self.api_key).strip():
             raise ValueError("Resend API key is not configured. Please set RESEND_API_KEY.")
 
-        sender_email = from_email or self.default_from_email
-        if not sender_email:
+        sender_email = from_email if from_email is not None else self.default_from_email
+        if not sender_email or not str(sender_email).strip():
             raise ValueError("Sender email address is not configured. Please set RESEND_FROM_EMAIL.")
 
-        sender_name = from_name or self.default_from_name
-        from_header = f"{sender_name} <{sender_email}>" if sender_name else sender_email
+        sender_name = from_name if from_name is not None else self.default_from_name
+        if not sender_name or not str(sender_name).strip():
+            raise ValueError("Sender display name is not configured. Please set RESEND_FROM_NAME.")
+
+        from_header = f"{sender_name.strip()} <{sender_email.strip()}>"
 
         payload: Dict[str, Any] = {
             "from": from_header,
@@ -81,22 +84,12 @@ class ResendEmailService(BaseEmailService):
             with httpx.Client(timeout=20.0) as client:
                 response = client.post(self.RESEND_API_URL, headers=headers, json=payload)
         except httpx.RequestError as exc:
-            logger.error("Network failure contacting Resend API: %s", type(exc).__name__)
-            raise RuntimeError(f"Email delivery network error: {type(exc).__name__}") from exc
+            logger.error("Network error communicating with Resend API: %s", type(exc).__name__)
+            raise RuntimeError("Email provider failed to send the quotation.") from None
 
         if response.status_code >= 400:
-            try:
-                err_data = response.json()
-                sanitized_msg = err_data.get("message") or err_data.get("name") or "Email delivery failed"
-            except Exception:
-                sanitized_msg = f"HTTP {response.status_code} from email provider"
-
-            # Clean any potential accidental key reflection
-            if self.api_key and self.api_key in sanitized_msg:
-                sanitized_msg = sanitized_msg.replace(self.api_key, "[REDACTED]")
-
-            logger.error("Resend API rejected dispatch: status=%d msg=%s", response.status_code, sanitized_msg)
-            raise RuntimeError(f"Resend dispatch error: {sanitized_msg}")
+            logger.error("Resend API rejected dispatch: status_code=%d", response.status_code)
+            raise RuntimeError("Email provider failed to send the quotation.")
 
         try:
             res_data = response.json()

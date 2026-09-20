@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, List
@@ -7,6 +8,8 @@ from app.models.quotation import Quotation
 from app.models.quotation_item import QuotationItem
 from app.schemas.quotation import CalculateQuotationRequest
 from app.services.calculation.calculation_service import CalculationService
+
+logger = logging.getLogger(__name__)
 
 class QuotationService:
     @staticmethod
@@ -319,13 +322,17 @@ class QuotationService:
                 detail="Customer belongs to another company",
             )
 
-        if not customer.email or not customer.email.strip():
+        # 2. Recipient resolution & validation
+        # IF customer quotation email is configured: use quotation email
+        # ELSE: use customer login email
+        recipient_email = quotation.customer_email
+        if not recipient_email or not recipient_email.strip():
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Customer email address is required before sending the quotation.",
             )
 
-        recipient_email = customer.email.strip()
+        recipient_email = recipient_email.strip()
         email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
         if not re.match(email_regex, recipient_email):
             raise HTTPException(
@@ -391,16 +398,18 @@ class QuotationService:
                 }],
             )
         except Exception as exc:
-            clean_error = str(exc)
-            if settings.RESEND_API_KEY and settings.RESEND_API_KEY in clean_error:
-                clean_error = clean_error.replace(settings.RESEND_API_KEY, "[REDACTED]")
-
+            clean_error = "Email provider failed to send the quotation."
+            logger.error(
+                "Quotation email dispatch failed for quotation_id=%s: %s",
+                quotation.id,
+                type(exc).__name__,
+            )
             quotation.email_status = "FAILED"
             quotation.email_error = clean_error
             db.commit()
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Failed to send quotation email: {clean_error}",
+                detail=clean_error,
             )
 
         # 10. Record success audit trail

@@ -348,14 +348,14 @@ def test_provider_failure_sets_status_failed_and_sanitizes_error(auth_headers):
 
     res = client.post(f"/api/v1/quotations/{quote.id}/send-email", headers=auth_headers)
     assert res.status_code == 502
-    assert "Failed to send quotation email" in res.json()["detail"]
+    assert res.json()["detail"] == "Email provider failed to send the quotation."
 
     # Verify DB state
     db = SessionLocal()
     try:
         refreshed = db.query(Quotation).filter(Quotation.id == quote.id).first()
         assert refreshed.email_status == "FAILED"
-        assert "timed out" in refreshed.email_error
+        assert refreshed.email_error == "Email provider failed to send the quotation."
     finally:
         fake_email.should_fail = False
         db.close()
@@ -448,3 +448,139 @@ def test_quotation_immutability_and_deterministic_email_content(auth_headers):
         assert len(q.items) == 1
     finally:
         db.close()
+
+
+def test_recipient_resolution_with_settings_override_and_login_fallback(auth_headers):
+    """
+    Test Recipient Resolution Logic:
+    - IF customer quotation email is configured in company.settings: use quotation email
+    - ELSE: use customer login email
+    """
+    fake_email = get_email_service()
+    fake_email.clear()
+
+    # Case 1: Override in company.settings for customer ID
+    db = SessionLocal()
+    try:
+        company = db.query(Company).filter(Company.id == "comp-bpe-pune").first()
+        cust = _seed_customer(email="login_email@customer.com", name="Precision Tooling Ltd")
+        company.settings = {
+            "customer_quotation_emails": {
+                cust.id: "procurement-dept@precisiontooling.in"
+            }
+        }
+        db.commit()
+
+        quote = _seed_final_quotation(customer=cust)
+        res = client.post(f"/api/v1/quotations/{quote.id}/send-email", headers=auth_headers)
+        assert res.status_code == 200
+
+        sent = fake_email.get_last_sent()
+        assert sent["to"] == "procurement-dept@precisiontooling.in"
+
+        # Case 2: General override in company.settings
+        company.settings = {
+            "customer_quotation_email": "global-quotations@factorygroup.com"
+        }
+        db.commit()
+
+        cust2 = _seed_customer(email="user2_login@customer.com", name="Factory Group")
+        quote2 = _seed_final_quotation(customer=cust2)
+        res2 = client.post(f"/api/v1/quotations/{quote2.id}/send-email", headers=auth_headers)
+        assert res2.status_code == 200
+
+        sent2 = fake_email.get_last_sent()
+        assert sent2["to"] == "global-quotations@factorygroup.com"
+
+        # Case 3: No override in settings -> falls back to customer login email
+        company.settings = {}
+        db.commit()
+
+        cust3 = _seed_customer(email="standard_login@customer.com", name="Standard Parts Co")
+        quote3 = _seed_final_quotation(customer=cust3)
+        res3 = client.post(f"/api/v1/quotations/{quote3.id}/send-email", headers=auth_headers)
+        assert res3.status_code == 200
+
+        sent3 = fake_email.get_last_sent()
+        assert sent3["to"] == "standard_login@customer.com"
+    finally:
+        # Reset company settings
+        company = db.query(Company).filter(Company.id == "comp-bpe-pune").first()
+        if company:
+            company.settings = None
+            db.commit()
+        db.close()
+
+
+def test_resend_service_sender_config_and_security_sanitization():
+    """
+    Test ResendEmailService:
+    - Missing sender email raises ValueError without fallback.
+    - Missing sender name raises ValueError without fallback.
+    - Missing API key raises ValueError.
+    - Errors are sanitized without leaking sensitive data.
+    """
+    from app.services.email.resend_service import ResendEmailService
+
+    # 1. Missing sender email
+    service_no_from = ResendEmailService(api_key="re_test_key", from_email="", from_name="Quotation AI")
+    try:
+        service_no_from.send_email(
+            to="recipient@test.com",
+            subject="Test",
+            html_body="<p>Test</p>",
+            text_body="Test",
+        )
+        assert False, "Should have raised ValueError for missing sender email"
+    except ValueError as exc:
+        assert "Sender email address is not configured" in str(exc)
+
+    # 2. Missing sender name
+    service_no_name = ResendEmailService(api_key="re_test_key", from_email="quotes@test.com", from_name="")
+    try:
+        service_no_name.send_email(
+            to="recipient@test.com",
+            subject="Test",
+            html_body="<p>Test</p>",
+            text_body="Test",
+        )
+        assert False, "Should have raised ValueError for missing sender name"
+    except ValueError as exc:
+        assert "Sender display name is not configured" in str(exc)
+
+    # 3. Missing API key
+    service_no_key = ResendEmailService(api_key="", from_email="quotes@test.com", from_name="Quotation AI")
+    try:
+        service_no_key.send_email(
+            to="recipient@test.com",
+            subject="Test",
+            html_body="<p>Test</p>",
+            text_body="Test",
+        )
+        assert False, "Should have raised ValueError for missing API key"
+    except ValueError as exc:
+        assert "Resend API key is not configured" in str(exc)
+
+    # 4. Error sanitization without leaking sensitive data or authorization headers
+    from unittest.mock import patch, MagicMock
+    mock_resp = MagicMock()
+    mock_resp.status_code = 400
+    mock_resp.json.return_value = {
+        "statusCode": 400,
+        "message": "Sensitive internal exception with auth tokens and re_test_key_xyz",
+    }
+
+    with patch("httpx.Client.post", return_value=mock_resp):
+        service = ResendEmailService(api_key="re_test_key_xyz", from_email="quotes@test.com", from_name="Quotation AI")
+        try:
+            service.send_email(
+                to="recipient@test.com",
+                subject="Test",
+                html_body="<p>Test</p>",
+                text_body="Test",
+            )
+            assert False, "Should have raised RuntimeError"
+        except RuntimeError as exc:
+            assert str(exc) == "Email provider failed to send the quotation."
+            assert "re_test_key_xyz" not in str(exc)
+            assert "internal" not in str(exc)
