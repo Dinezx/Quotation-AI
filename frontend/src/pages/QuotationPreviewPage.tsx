@@ -854,14 +854,26 @@ export const QuotationPreviewPage: React.FC = () => {
               <span className="text-slate-500 font-sans">Customer:</span>
               <span className="text-slate-900 font-semibold font-sans">{quote.customer_name || 'Customer'}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-sans">Recipient Email:</span>
-              <span className={`font-semibold ${quote.customer_email ? 'text-blue-700' : 'text-amber-600 italic font-sans'}`}>
-                {quote.customer_email || 'No email on file'}
-              </span>
+            <div className="flex justify-between items-start">
+              <span className="text-slate-500 font-sans">Send To:</span>
+              <div className="text-right">
+                <span className={`font-semibold ${quote.resolved_email_recipient || quote.customer_quotation_email || quote.customer_login_email || quote.customer_email ? 'text-blue-700' : 'text-amber-600 italic font-sans'}`}>
+                  {quote.resolved_email_recipient || quote.customer_quotation_email || quote.customer_login_email || quote.customer_email || 'No email on file'}
+                </span>
+                {(quote.resolved_email_recipient || quote.customer_login_email) && !quote.customer_quotation_email && (
+                  <div className="text-[10px] text-slate-500 font-sans mt-0.5">
+                    Using customer's login email
+                  </div>
+                )}
+                {quote.customer_quotation_email && (
+                  <div className="text-[10px] text-emerald-600 font-sans mt-0.5">
+                    Configured quotation email
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500 font-sans">Quotation No:</span>
+              <span className="text-slate-500 font-sans">Quotation:</span>
               <span className="text-slate-900 font-semibold">{quote.quotation_number}</span>
             </div>
             <div className="flex justify-between">
@@ -870,14 +882,14 @@ export const QuotationPreviewPage: React.FC = () => {
             </div>
           </div>
 
-          {!quote.customer_email ? (
+          {!(quote.resolved_email_recipient || quote.customer_quotation_email || quote.customer_login_email || quote.customer_email) ? (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-800 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <span>Customer email address is missing. Add an email address to the customer record before sending.</span>
+              <span>Customer email address is missing. Add an email address in Customer Communication Settings before sending.</span>
             </div>
           ) : (
             <p className="text-slate-600 leading-relaxed">
-              This will send the finalized quotation PDF to the customer's stored email address using Resend.
+              This will send the official finalized quotation PDF directly to the recipient address resolved server-side.
             </p>
           )}
 

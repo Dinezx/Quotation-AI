@@ -11,11 +11,17 @@ class Customer(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     contact_person: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    quotation_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     billing_address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     shipping_address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     gstin: Mapped[Optional[str]] = mapped_column(String(15), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    @property
+    def login_email(self) -> Optional[str]:
+        """Returns the customer authentication/account login email."""
+        return self.email
 
     # Relationships
     company: Mapped["Company"] = relationship("Company", back_populates="customers")

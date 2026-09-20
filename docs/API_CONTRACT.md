@@ -94,18 +94,33 @@ Creates a new customer under the authenticated company tenant.
     "billing_address": "Chakan MIDC Phase II, Pune, MH",
     "shipping_address": "Chakan Plant Gate 2, Pune, MH",
     "gstin": "27AAACM0000A1Z5",
+    "quotation_email": "quotes@mahindra.com",
     "is_active": true
   }
   ```
 - **Response `201 Created`**: Returns created `CustomerDTO`.
-- **Errors**: `400 Bad Request` (duplicate name or invalid GSTIN format).
+- **Errors**: `400 Bad Request` (duplicate name or invalid GSTIN format), `422 Unprocessable Content` (invalid email format).
 
 ### `PUT /customers/{id}`
-Updates an existing customer record.
+Updates an existing customer record. Preserves `quotation_email` when `email` changes and vice versa.
 
 - **Auth Required**: Yes
 - **Response `200 OK`**: Returns updated `CustomerDTO`.
-- **Errors**: `404 Not Found`.
+- **Errors**: `404 Not Found`, `422 Unprocessable Content`.
+
+### `PUT /customers/{id}/communication-settings`
+Updates a customer's quotation communication email preference without modifying their account login email.
+
+- **Auth Required**: Yes
+- **Request Body**:
+  ```json
+  {
+    "quotation_email": "quotes@mahindra.com"
+  }
+  ```
+  *(Pass `null` or `""` to clear the quotation email and fall back to the account login email).*
+- **Response `200 OK`**: Returns updated `CustomerDTO`.
+- **Errors**: `404 Not Found`, `422 Unprocessable Content` (invalid email format).
 
 ### `DELETE /customers/{id}`
 Soft-deactivates or deletes a customer.

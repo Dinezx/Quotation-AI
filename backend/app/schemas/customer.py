@@ -6,6 +6,7 @@ class CustomerBase(BaseModel):
     name: str
     contact_person: Optional[str] = None
     email: Optional[str] = None
+    quotation_email: Optional[str] = None
     phone: Optional[str] = None
     billing_address: Optional[str] = None
     shipping_address: Optional[str] = None
@@ -19,15 +20,20 @@ class CustomerUpdate(BaseModel):
     name: Optional[str] = None
     contact_person: Optional[str] = None
     email: Optional[str] = None
+    quotation_email: Optional[str] = None
     phone: Optional[str] = None
     billing_address: Optional[str] = None
     shipping_address: Optional[str] = None
     gstin: Optional[str] = None
     is_active: Optional[bool] = None
 
+class CustomerCommunicationSettingsUpdate(BaseModel):
+    quotation_email: Optional[str] = None
+
 class CustomerResponse(CustomerBase):
     id: str
     company_id: str
+    login_email: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

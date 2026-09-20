@@ -106,6 +106,9 @@ class QuotationResponse(QuotationBase):
     # Presentation fields
     customer_name: Optional[str] = None
     customer_email: Optional[str] = None
+    customer_login_email: Optional[str] = None
+    customer_quotation_email: Optional[str] = None
+    resolved_email_recipient: Optional[str] = None
     customer_address: Optional[str] = None
     customer_gstin: Optional[str] = None
     po_number: Optional[str] = None

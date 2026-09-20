@@ -9,6 +9,8 @@ export interface Customer {
   designation: string;
   phone: string;
   email: string;
+  loginEmail?: string;
+  quotationEmail?: string;
   billingAddress: string;
   shippingAddress: string;
   state: string;

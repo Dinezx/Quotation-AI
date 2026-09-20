@@ -6,6 +6,8 @@ export interface CustomerDTO {
   name: string;
   contact_person?: string;
   email?: string;
+  login_email?: string;
+  quotation_email?: string;
   phone?: string;
   billing_address?: string;
   shipping_address?: string;
@@ -19,11 +21,16 @@ export interface CustomerCreateDTO {
   name: string;
   contact_person?: string;
   email?: string;
+  quotation_email?: string;
   phone?: string;
   billing_address?: string;
   shipping_address?: string;
   gstin?: string;
   is_active?: boolean;
+}
+
+export interface CustomerCommunicationSettingsDTO {
+  quotation_email?: string | null;
 }
 
 export const customerApi = {
@@ -44,6 +51,11 @@ export const customerApi = {
 
   update: async (id: string, data: Partial<CustomerCreateDTO>): Promise<CustomerDTO> => {
     const res = await apiClient.put<CustomerDTO>(`/customers/${id}`, data);
+    return res.data;
+  },
+
+  updateCommunicationSettings: async (id: string, data: CustomerCommunicationSettingsDTO): Promise<CustomerDTO> => {
+    const res = await apiClient.put<CustomerDTO>(`/customers/${id}/communication-settings`, data);
     return res.data;
   },
 

@@ -76,6 +76,9 @@ export interface QuotationDTO {
   // Presentation fields
   customer_name?: string;
   customer_email?: string;
+  customer_login_email?: string;
+  customer_quotation_email?: string;
+  resolved_email_recipient?: string;
   customer_address?: string;
   customer_gstin?: string;
   po_number?: string;

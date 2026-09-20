@@ -1,6 +1,7 @@
 import time
 import hashlib
 from decimal import Decimal
+from typing import Optional
 import pytest
 from fastapi.testclient import TestClient
 
@@ -21,7 +22,8 @@ client = TestClient(app)
 
 def _seed_customer(
     company_id: str = "comp-bpe-pune",
-    email: str = "purchase@precision-components.in",
+    email: Optional[str] = "purchase@precision-components.in",
+    quotation_email: Optional[str] = None,
     name: str = "Precision Components Ltd",
 ) -> Customer:
     """Seeds a customer record for testing."""
@@ -31,6 +33,7 @@ def _seed_customer(
             company_id=company_id,
             name=name,
             email=email,
+            quotation_email=quotation_email,
             billing_address="GIDC Estate, Vatva, Ahmedabad, Gujarat 382445",
             gstin="24ABCDE1234F1Z5",
         )
@@ -584,3 +587,163 @@ def test_resend_service_sender_config_and_security_sanitization():
             assert str(exc) == "Email provider failed to send the quotation."
             assert "re_test_key_xyz" not in str(exc)
             assert "internal" not in str(exc)
+
+
+def test_customer_with_only_login_email_goes_to_login_email(auth_headers):
+    """Scenario 1: Customer has only login email -> quotation goes to login email."""
+    cust = _seed_customer(email="purchase@abcengineering.com", quotation_email=None)
+    quote = _seed_final_quotation(customer=cust)
+
+    fake_email = get_email_service()
+    fake_email.clear()
+
+    res = client.post(f"/api/v1/quotations/{quote.id}/send-email", headers=auth_headers)
+    assert res.status_code == 200
+    sent = fake_email.get_last_sent()
+    assert sent["to"] == "purchase@abcengineering.com"
+
+
+def test_customer_with_quotation_email_goes_to_quotation_email(auth_headers):
+    """Scenario 2: Customer has login email + quotation email -> quotation goes to quotation email."""
+    cust = _seed_customer(
+        email="purchase@abcengineering.com",
+        quotation_email="quotes@abcengineering.com",
+    )
+    quote = _seed_final_quotation(customer=cust)
+
+    fake_email = get_email_service()
+    fake_email.clear()
+
+    res = client.post(f"/api/v1/quotations/{quote.id}/send-email", headers=auth_headers)
+    assert res.status_code == 200
+    sent = fake_email.get_last_sent()
+    assert sent["to"] == "quotes@abcengineering.com"
+
+
+def test_customer_clears_quotation_email_falls_back_to_login_email(auth_headers):
+    """Scenario 3: Customer clears quotation email -> quotation goes to login email."""
+    cust = _seed_customer(
+        email="purchase@abcengineering.com",
+        quotation_email="old-quotes@abcengineering.com",
+    )
+    # Clear quotation email via communication settings API
+    res_update = client.put(
+        f"/api/v1/customers/{cust.id}/communication-settings",
+        headers=auth_headers,
+        json={"quotation_email": ""},
+    )
+    assert res_update.status_code == 200
+    assert res_update.json()["quotation_email"] is None
+    assert res_update.json()["email"] == "purchase@abcengineering.com"
+
+    quote = _seed_final_quotation(customer=cust)
+
+    fake_email = get_email_service()
+    fake_email.clear()
+
+    res = client.post(f"/api/v1/quotations/{quote.id}/send-email", headers=auth_headers)
+    assert res.status_code == 200
+    sent = fake_email.get_last_sent()
+    assert sent["to"] == "purchase@abcengineering.com"
+
+
+def test_invalid_quotation_email_blocks_send(auth_headers):
+    """Scenario 4: Invalid quotation email format blocks sending with 422."""
+    cust = _seed_customer(
+        email="purchase@abcengineering.com",
+        quotation_email="not-an-email-address",
+    )
+    quote = _seed_final_quotation(customer=cust)
+
+    fake_email = get_email_service()
+    fake_email.clear()
+
+    res = client.post(f"/api/v1/quotations/{quote.id}/send-email", headers=auth_headers)
+    assert res.status_code == 422
+    assert "Customer email address is invalid" in res.json()["detail"]
+    assert fake_email.get_sent_count() == 0
+
+
+def test_missing_login_and_missing_quotation_email_blocks_send(auth_headers):
+    """Scenario 5: Missing login email + missing quotation email blocks sending with 422."""
+    cust = _seed_customer(email=None, quotation_email=None)
+    quote = _seed_final_quotation(customer=cust)
+
+    fake_email = get_email_service()
+    fake_email.clear()
+
+    res = client.post(f"/api/v1/quotations/{quote.id}/send-email", headers=auth_headers)
+    assert res.status_code == 422
+    assert "Customer email address is required" in res.json()["detail"]
+    assert fake_email.get_sent_count() == 0
+
+
+def test_email_recipient_audit_stores_actual_resolved_recipient(auth_headers):
+    """Scenario 7: email_recipient stores the actual resolved recipient."""
+    cust = _seed_customer(
+        email="login@domain.com",
+        quotation_email="special-quotes@domain.com",
+    )
+    quote = _seed_final_quotation(customer=cust)
+
+    res = client.post(f"/api/v1/quotations/{quote.id}/send-email", headers=auth_headers)
+    assert res.status_code == 200
+
+    db = SessionLocal()
+    try:
+        q = db.query(Quotation).filter(Quotation.id == quote.id).first()
+        assert q.email_recipient == "special-quotes@domain.com"
+        assert q.email_status == "SENT"
+    finally:
+        db.close()
+
+
+def test_updating_quotation_email_does_not_change_login_email(auth_headers):
+    """Scenario 8: Changing quotation email in Settings does NOT change login email."""
+    cust = _seed_customer(
+        email="strictly-login@abc.com",
+        quotation_email="old-quotation@abc.com",
+    )
+    res = client.put(
+        f"/api/v1/customers/{cust.id}/communication-settings",
+        headers=auth_headers,
+        json={"quotation_email": "new-quotations@abc.com"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["quotation_email"] == "new-quotations@abc.com"
+    assert data["email"] == "strictly-login@abc.com"
+
+    db = SessionLocal()
+    try:
+        refreshed = db.query(Customer).filter(Customer.id == cust.id).first()
+        assert refreshed.quotation_email == "new-quotations@abc.com"
+        assert refreshed.email == "strictly-login@abc.com"
+        assert refreshed.login_email == "strictly-login@abc.com"
+    finally:
+        db.close()
+
+
+def test_updating_login_email_does_not_overwrite_quotation_email(auth_headers):
+    """Scenario 9: Changing login/account email does NOT silently overwrite quotation email."""
+    cust = _seed_customer(
+        email="first-login@abc.com",
+        quotation_email="persisted-quotations@abc.com",
+    )
+    res = client.put(
+        f"/api/v1/customers/{cust.id}",
+        headers=auth_headers,
+        json={"email": "second-login@abc.com"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["email"] == "second-login@abc.com"
+    assert data["quotation_email"] == "persisted-quotations@abc.com"
+
+    db = SessionLocal()
+    try:
+        refreshed = db.query(Customer).filter(Customer.id == cust.id).first()
+        assert refreshed.email == "second-login@abc.com"
+        assert refreshed.quotation_email == "persisted-quotations@abc.com"
+    finally:
+        db.close()

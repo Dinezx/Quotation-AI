@@ -16,6 +16,8 @@ export function dtoToCustomer(dto: CustomerDTO): Customer {
     designation: 'Procurement Manager',
     phone: dto.phone || '+91 98224 81902',
     email: dto.email || 'procurement@company.com',
+    loginEmail: dto.login_email || dto.email || 'procurement@company.com',
+    quotationEmail: dto.quotation_email || '',
     billingAddress: dto.billing_address || 'MIDC Pune, Maharashtra',
     shippingAddress: dto.shipping_address || dto.billing_address || 'MIDC Pune, Maharashtra',
     state: 'Maharashtra',

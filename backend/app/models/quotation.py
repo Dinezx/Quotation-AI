@@ -83,10 +83,21 @@ class Quotation(Base, TimestampMixin):
         return None
 
     @property
-    def customer_email(self) -> Optional[str]:
+    def customer_login_email(self) -> Optional[str]:
+        """Returns the customer authentication/account login email."""
         if not self.customer:
             return None
-        # 1. Check if customer quotation email is configured in company.settings
+        return self.customer.email.strip() if (self.customer.email and self.customer.email.strip()) else None
+
+    @property
+    def customer_quotation_email(self) -> Optional[str]:
+        """Returns the customer quotation email communication preference, if configured."""
+        if not self.customer:
+            return None
+        # 1. Direct customer record preference
+        if self.customer.quotation_email and self.customer.quotation_email.strip():
+            return self.customer.quotation_email.strip()
+        # 2. Settings override fallback
         if self.company and isinstance(self.company.settings, dict):
             c_settings = self.company.settings
             cust_overrides = c_settings.get("customer_quotation_emails") or c_settings.get("customer_emails")
@@ -97,13 +108,17 @@ class Quotation(Base, TimestampMixin):
             override_general = c_settings.get("customer_quotation_email") or c_settings.get("quotation_email")
             if override_general and isinstance(override_general, str) and override_general.strip():
                 return override_general.strip()
-        # 2. Check if customer record has dedicated quotation_email attribute
-        if hasattr(self.customer, "quotation_email") and getattr(self.customer, "quotation_email", None):
-            q_email = getattr(self.customer, "quotation_email")
-            if q_email and isinstance(q_email, str) and q_email.strip():
-                return q_email.strip()
-        # 3. Default recipient: customer login email
-        return self.customer.email.strip() if (self.customer.email and self.customer.email.strip()) else None
+        return None
+
+    @property
+    def resolved_email_recipient(self) -> Optional[str]:
+        """Resolves the quotation recipient: quotation_email ?? customer_login_email."""
+        return self.customer_quotation_email or self.customer_login_email
+
+    @property
+    def customer_email(self) -> Optional[str]:
+        """Backward-compatible alias returning the resolved email recipient."""
+        return self.resolved_email_recipient
 
     @property
     def customer_address(self) -> Optional[str]:

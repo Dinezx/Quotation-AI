@@ -1,15 +1,79 @@
 import logging
+import re
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, List
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.quotation import Quotation
 from app.models.quotation_item import QuotationItem
+from app.models.customer import Customer
 from app.schemas.quotation import CalculateQuotationRequest
 from app.services.calculation.calculation_service import CalculationService
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_quotation_recipient(quotation: Quotation) -> str:
+    """
+    Authoritative server-side recipient resolution for quotation dispatch:
+    1. Verify associated customer exists and belongs to the same tenant company.
+    2. Obtain customer's quotation email preference (customer.quotation_email or settings override).
+    3. Fallback to customer's login email (customer.login_email / customer.email).
+    4. Validate selected address format.
+    5. Return the validated recipient email string.
+    """
+    customer = quotation.customer
+    if not customer and quotation.customer_id:
+        from app.db.session import SessionLocal
+        db = SessionLocal()
+        try:
+            customer = db.query(Customer).filter(Customer.id == quotation.customer_id).first()
+            quotation.customer = customer
+        finally:
+            db.close()
+
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Quotation customer is missing.",
+        )
+
+    if customer.company_id != quotation.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Customer belongs to another company",
+        )
+
+    # 1. Quotation email preference
+    recipient = None
+    if customer.quotation_email and customer.quotation_email.strip():
+        recipient = customer.quotation_email.strip()
+    elif quotation.customer_quotation_email and quotation.customer_quotation_email.strip():
+        recipient = quotation.customer_quotation_email.strip()
+
+    # 2. Fallback to customer login email
+    if not recipient:
+        login_email = customer.login_email or customer.email
+        if login_email and login_email.strip():
+            recipient = login_email.strip()
+
+    if not recipient:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Customer email address is required before sending the quotation.",
+        )
+
+    email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+    if not re.match(email_regex, recipient):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Customer email address is invalid.",
+        )
+
+    return recipient
+
 
 class QuotationService:
     @staticmethod
@@ -29,6 +93,10 @@ class QuotationService:
 
         next_sequence = count + 1
         return f"{prefix}{next_sequence:04d}"
+
+    @staticmethod
+    def resolve_quotation_recipient(quotation: Quotation) -> str:
+        return resolve_quotation_recipient(quotation)
 
     @staticmethod
     def recalculate_and_sync_quotation(
@@ -305,40 +373,14 @@ class QuotationService:
                 detail="Only finalized quotations can be sent by email.",
             )
 
-        # 2. Customer validation: recipient MUST be derived from quotation's customer record
+        # 2. Recipient resolution & validation
+        # Server-side resolution: quotation_email ?? customer_login_email
         customer = quotation.customer
         if not customer and quotation.customer_id:
             customer = db.query(Customer).filter(Customer.id == quotation.customer_id).first()
+            quotation.customer = customer
 
-        if not customer:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Quotation customer is missing.",
-            )
-
-        if customer.company_id != quotation.company_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Customer belongs to another company",
-            )
-
-        # 2. Recipient resolution & validation
-        # IF customer quotation email is configured: use quotation email
-        # ELSE: use customer login email
-        recipient_email = quotation.customer_email
-        if not recipient_email or not recipient_email.strip():
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Customer email address is required before sending the quotation.",
-            )
-
-        recipient_email = recipient_email.strip()
-        email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-        if not re.match(email_regex, recipient_email):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Customer email address is invalid.",
-            )
+        recipient_email = resolve_quotation_recipient(quotation)
 
         # 3. PDF metadata validation
         if not quotation.pdf_storage_path or not quotation.pdf_file_name or not quotation.pdf_sha256:
