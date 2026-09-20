@@ -67,6 +67,12 @@ class QuotationBase(BaseModel):
     pdf_sha256: Optional[str] = None
     finalized_at: Optional[datetime] = None
     finalized_by: Optional[str] = None
+    email_status: str = "NOT_SENT"
+    email_sent_at: Optional[datetime] = None
+    email_sent_by: Optional[str] = None
+    email_recipient: Optional[str] = None
+    email_error: Optional[str] = None
+    email_message_id: Optional[str] = None
     notes: Optional[str] = None
     payment_terms: Optional[str] = None
     delivery_terms: Optional[str] = None
@@ -99,6 +105,7 @@ class QuotationResponse(QuotationBase):
 
     # Presentation fields
     customer_name: Optional[str] = None
+    customer_email: Optional[str] = None
     customer_address: Optional[str] = None
     customer_gstin: Optional[str] = None
     po_number: Optional[str] = None
@@ -119,6 +126,14 @@ class QuotationPaginationResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+class SendQuotationEmailResponse(BaseModel):
+    quotation_id: str
+    quotation_number: str
+    email_status: str
+    recipient: str
+    sent_at: datetime
+    message: str
 
 
 # Calculation Engine Input Models

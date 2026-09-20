@@ -60,6 +60,12 @@ export interface QuotationDTO {
   pdf_sha256?: string;
   finalized_at?: string;
   finalized_by?: string;
+  email_status?: string;
+  email_sent_at?: string;
+  email_sent_by?: string;
+  email_recipient?: string;
+  email_error?: string;
+  email_message_id?: string;
   notes?: string;
   payment_terms?: string;
   delivery_terms?: string;
@@ -69,6 +75,7 @@ export interface QuotationDTO {
 
   // Presentation fields
   customer_name?: string;
+  customer_email?: string;
   customer_address?: string;
   customer_gstin?: string;
   po_number?: string;
@@ -106,6 +113,15 @@ export interface QuotationPaginationDTO {
   total: number;
   page: number;
   page_size: number;
+}
+
+export interface SendQuotationEmailResponseDTO {
+  quotation_id: string;
+  quotation_number: string;
+  email_status: string;
+  recipient: string;
+  sent_at: string;
+  message: string;
 }
 
 export interface CalculateItemInputDTO {
@@ -201,6 +217,11 @@ export const quotationApi = {
     link.parentNode?.removeChild(link);
     window.URL.revokeObjectURL(url);
     return blob;
+  },
+
+  sendEmail: async (id: string): Promise<SendQuotationEmailResponseDTO> => {
+    const res = await apiClient.post<SendQuotationEmailResponseDTO>(`/quotations/${id}/send-email`);
+    return res.data;
   },
 
   calculateStateless: async (

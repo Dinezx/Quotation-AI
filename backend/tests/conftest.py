@@ -58,6 +58,19 @@ def isolate_test_storage():
 
 
 @pytest.fixture(autouse=True)
+def isolate_test_email():
+    """
+    Ensure the test suite defaults to isolated FakeEmailService so no external network
+    calls or live Resend email calls are made during automated test execution.
+    """
+    from app.services.email import FakeEmailService, set_email_service
+    fake = FakeEmailService()
+    set_email_service(fake)
+    yield fake
+    set_email_service(None)
+
+
+@pytest.fixture(autouse=True)
 def guard_against_live_azure_calls(monkeypatch):
     """
     CRITICAL TEST SAFETY GUARD:

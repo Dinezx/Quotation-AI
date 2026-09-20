@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     STORAGE_PROVIDER: str = os.getenv("STORAGE_PROVIDER", "supabase") # supabase, local
     QUOTATION_PDF_BUCKET: str = os.getenv("QUOTATION_PDF_BUCKET", "quotation-pdfs")
 
+    # Email Configuration (Resend)
+    EMAIL_PROVIDER: str = os.getenv("EMAIL_PROVIDER", "resend") # resend, fake
+    RESEND_API_KEY: Optional[str] = os.getenv("RESEND_API_KEY", None)
+    RESEND_FROM_EMAIL: Optional[str] = os.getenv("RESEND_FROM_EMAIL", None)
+    RESEND_FROM_NAME: str = os.getenv("RESEND_FROM_NAME", "Quotation AI")
+
     # AI / OCR Extraction & Normalization Configuration
     PO_EXTRACTION_PROVIDER: str = os.getenv("PO_EXTRACTION_PROVIDER", "mock")
     PO_NORMALIZATION_PROVIDER: str = os.getenv("PO_NORMALIZATION_PROVIDER", "mock")

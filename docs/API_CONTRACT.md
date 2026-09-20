@@ -481,4 +481,31 @@ Secure download endpoint for quotation PDF:
   - `Content-Disposition: attachment; filename="QT-2026-0001.pdf"`
   - Response Body: Binary PDF stream.
 
+### `POST /quotations/{id}/send-email`
+Dispatches the official final quotation PDF to the customer's stored email address via Resend.
+
+- **Auth Required**: Yes
+- **Tenant Protection**: Strict company ownership check (returns `403 Forbidden` on cross-tenant requests).
+- **Lifecycle Rule**: Only `FINAL` quotations can be emailed (returns `409 Conflict` if `status == "DRAFT"`).
+- **Recipient Derivation**: Recipient is strictly resolved from `quotation → customer → email`. Frontend request bodies cannot provide or override the recipient.
+- **Document Integrity**: Downloads stored official PDF and verifies SHA-256 matches `quotation.pdf_sha256` before delivery.
+- **Request Body**: None (quotation ID specified via URL path).
+- **Response `200 OK`**:
+  ```json
+  {
+    "quotation_id": "quot-uuid-001",
+    "quotation_number": "QT-2026-0001",
+    "email_status": "SENT",
+    "recipient": "orders@precision-parts.com",
+    "sent_at": "2026-09-20T12:00:00Z",
+    "message": "Quotation sent successfully."
+  }
+  ```
+- **Errors**:
+  - `403 Forbidden`: Cross-company request or deactivated user account.
+  - `404 Not Found`: Quotation not found.
+  - `409 Conflict`: Quotation is in `DRAFT` status, official PDF is unavailable, SHA-256 integrity check failed, or dispatch is already in progress (`SENDING`).
+  - `422 Unprocessable Content`: Customer is missing, or customer email is missing or invalid.
+  - `502 Bad Gateway`: Resend provider network or delivery failure.
+
 

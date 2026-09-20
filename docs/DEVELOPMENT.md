@@ -60,6 +60,12 @@ cd backend
 python -m pytest tests/test_quotation_finalization.py -v
 ```
 
+To run quotation email dispatch, PDF integrity, and Resend delivery tests:
+```bash
+cd backend
+python -m pytest tests/test_quotation_email.py -v
+```
+
 ### PDF Generation & Testing Rules
 - Backend PDF generation is implemented using **ReportLab** (`backend/app/services/pdf/quotation_pdf_service.py`).
 - The PDF generator is strictly **presentation-only**. It never recalculates prices or invokes external AI services.
@@ -74,6 +80,17 @@ python -m pytest tests/test_quotation_finalization.py -v
 - **Hermetic Testing**:
   - The pytest test suite automatically configures `FakeStorageService` in `tests/conftest.py`.
   - Automated tests run completely in-memory without requiring production Supabase credentials or network connectivity.
+
+### Email Configuration & Resend Integration
+- Email delivery is managed through `app.services.email.BaseEmailService`.
+- **Environment Variables**:
+  - `EMAIL_PROVIDER`: `"resend"` (default for production) or `"fake"` (used during testing).
+  - `RESEND_API_KEY`: Secret API key for Resend REST API (kept strictly backend-only).
+  - `RESEND_FROM_EMAIL`: Verified sender address (e.g. `quotes@bharatprecision.co.in`).
+  - `RESEND_FROM_NAME`: Sender display name (defaults to `"Quotation AI"`).
+- **Automated Testing**:
+  - The pytest suite automatically configures `FakeEmailService` via an autouse fixture in `tests/conftest.py`.
+  - Automated tests never contact external Resend servers or deliver real emails.
 
 ### Database Migrations
 When modifying SQLAlchemy models in `app/models/`:

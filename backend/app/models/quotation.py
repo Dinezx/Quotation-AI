@@ -51,6 +51,15 @@ class Quotation(Base, TimestampMixin):
     pdf_sha256: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     finalized_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     finalized_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    
+    # Email dispatch tracking
+    email_status: Mapped[str] = mapped_column(String(50), default="NOT_SENT", nullable=False) # NOT_SENT, SENDING, SENT, FAILED
+    email_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    email_sent_by: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    email_recipient: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    email_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    email_message_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     payment_terms: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     delivery_terms: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -72,6 +81,10 @@ class Quotation(Base, TimestampMixin):
         if self.purchase_order:
             return self.purchase_order.customer_name
         return None
+
+    @property
+    def customer_email(self) -> Optional[str]:
+        return self.customer.email if self.customer else None
 
     @property
     def customer_address(self) -> Optional[str]:

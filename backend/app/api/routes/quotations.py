@@ -16,6 +16,7 @@ from app.schemas.quotation import (
     QuotationUpdate,
     QuotationResponse,
     QuotationPaginationResponse,
+    SendQuotationEmailResponse,
     CalculateQuotationRequest,
 )
 from app.services.calculation.calculation_service import CalculationService
@@ -457,3 +458,61 @@ def generate_quotation_pdf_post(
 ):
     """POST endpoint for generating/downloading quotation PDF."""
     return get_quotation_pdf(quotation_id=quotation_id, current_user=current_user, db=db)
+
+
+@router.post("/{quotation_id}/send-email", response_model=SendQuotationEmailResponse)
+def send_quotation_email(
+    quotation_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Dispatches the official final quotation PDF to the customer's stored email address via Resend.
+    
+    Security & Business Invariants:
+    1. Authenticated user must be active (403 if deactivated).
+    2. Tenant isolation: Quotation must belong to user's company (403 if cross-company).
+    3. Status validation: Only FINAL quotations can be dispatched (409 if DRAFT).
+    4. Recipient isolation: The recipient email address is strictly derived server-side
+       from the quotation's associated customer record. Arbitrary recipient override
+       from frontend request payloads is rejected/ignored.
+    5. Document integrity: The exact stored official PDF is retrieved from Supabase Storage
+       and cryptographically verified against quotation.pdf_sha256 before delivery.
+    6. Zero recalculation: Deterministic pricing is untouched; ReportLab is not re-invoked.
+    7. Full audit trail recorded upon successful or failed dispatch.
+    """
+    if not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is deactivated",
+        )
+
+    quotation = db.query(Quotation).filter(Quotation.id == quotation_id).first()
+    if not quotation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quotation not found",
+        )
+
+    if quotation.company_id != current_user.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Quotation belongs to another company",
+        )
+
+    updated_quote = QuotationService.send_quotation_email(
+        db=db,
+        quotation=quotation,
+        sender_user_id=current_user.id,
+        sender_email=current_user.email,
+    )
+
+    from datetime import datetime
+    return {
+        "quotation_id": updated_quote.id,
+        "quotation_number": updated_quote.quotation_number,
+        "email_status": updated_quote.email_status,
+        "recipient": updated_quote.email_recipient or "",
+        "sent_at": updated_quote.email_sent_at or datetime.utcnow(),
+        "message": "Quotation sent successfully.",
+    }

@@ -15,7 +15,8 @@ import {
   ClipboardCheck, 
   Save, 
   Lock,
-  Printer
+  Printer,
+  Mail
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WorkflowStepper } from '../components/layout/WorkflowStepper';
@@ -35,6 +36,10 @@ export const QuotationPreviewPage: React.FC = () => {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState<boolean>(false);
   const [isFinalizing, setIsFinalizing] = useState<boolean>(false);
+
+  // Email Dispatch Modal state
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false);
+  const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false);
 
   // Finalization Confirmation & Success Modals
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
@@ -128,6 +133,31 @@ export const QuotationPreviewPage: React.FC = () => {
       showToast(`Error: ${msg}`);
     } finally {
       setIsFinalizing(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!quote) return;
+    setIsSendingEmail(true);
+    try {
+      const res = await quotationApi.sendEmail(quote.id);
+      setIsEmailModalOpen(false);
+      setQuote((prev) =>
+        prev
+          ? {
+              ...prev,
+              email_status: res.email_status,
+              email_sent_at: res.sent_at,
+              email_recipient: res.recipient,
+            }
+          : null
+      );
+      showToast(`Quotation ${quote.quotation_number} sent to ${res.recipient} successfully.`);
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || 'Failed to send quotation email.';
+      showToast(`Error: ${msg}`);
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -293,24 +323,54 @@ export const QuotationPreviewPage: React.FC = () => {
                 ? 'Download Final PDF'
                 : 'Download PDF'}
             </Button>
+
+            {isFinal && (
+              <Button
+                variant="primary"
+                size="sm"
+                className="font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+                onClick={() => setIsEmailModalOpen(true)}
+                disabled={isSendingEmail}
+                icon={<Mail className={`w-3.5 h-3.5 ${isSendingEmail ? 'animate-spin' : ''}`} />}
+              >
+                {isSendingEmail
+                  ? 'Sending...'
+                  : quote.email_status === 'SENT'
+                  ? 'Resend Email'
+                  : 'Send Email'}
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Price Tampering / Immutability Status Banner */}
         {isFinal ? (
-          <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 flex items-center justify-between text-xs text-emerald-900">
+          <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-emerald-900">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
                 <strong>Official Finalized Quotation:</strong> This quotation is immutable. Commercial figures and terms have been recorded and the official document is stored securely.
               </span>
             </div>
-            <button
-              onClick={() => navigate('/quotations')}
-              className="text-emerald-700 font-bold hover:underline shrink-0 text-xs ml-3"
-            >
-              Quotation History
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {quote.email_status && quote.email_status !== 'NOT_SENT' && (
+                <span className={`font-mono text-[11px] font-semibold px-2 py-0.5 rounded border ${
+                  quote.email_status === 'SENT'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    : quote.email_status === 'FAILED'
+                    ? 'bg-rose-100 text-rose-800 border-rose-300'
+                    : 'bg-blue-100 text-blue-800 border-blue-300'
+                }`}>
+                  Email: {quote.email_status}
+                </span>
+              )}
+              <button
+                onClick={() => navigate('/quotations')}
+                className="text-emerald-700 font-bold hover:underline text-xs"
+              >
+                Quotation History
+              </button>
+            </div>
           </div>
         ) : (
           <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex items-center justify-between text-xs text-blue-900">
@@ -775,6 +835,70 @@ export const QuotationPreviewPage: React.FC = () => {
               onClick={() => navigate('/quotations')}
             >
               View Quotation History
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Send Email Confirmation Modal */}
+      <Modal
+        isOpen={isEmailModalOpen}
+        onClose={() => !isSendingEmail && setIsEmailModalOpen(false)}
+        title="Send Quotation by Email"
+        description="Deliver the official finalized quotation PDF directly to the customer's registered email address."
+        maxWidth="md"
+      >
+        <div className="space-y-4 pt-2 text-xs">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 font-mono">
+            <div className="flex justify-between">
+              <span className="text-slate-500 font-sans">Customer:</span>
+              <span className="text-slate-900 font-semibold font-sans">{quote.customer_name || 'Customer'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 font-sans">Recipient Email:</span>
+              <span className={`font-semibold ${quote.customer_email ? 'text-blue-700' : 'text-amber-600 italic font-sans'}`}>
+                {quote.customer_email || 'No email on file'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 font-sans">Quotation No:</span>
+              <span className="text-slate-900 font-semibold">{quote.quotation_number}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 font-sans">Attachment:</span>
+              <span className="text-slate-700">{quote.pdf_file_name || `${quote.quotation_number}.pdf`}</span>
+            </div>
+          </div>
+
+          {!quote.customer_email ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-800 text-xs flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <span>Customer email address is missing. Add an email address to the customer record before sending.</span>
+            </div>
+          ) : (
+            <p className="text-slate-600 leading-relaxed">
+              This will send the finalized quotation PDF to the customer's stored email address using Resend.
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEmailModalOpen(false)}
+              disabled={isSendingEmail}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+              onClick={handleSendEmail}
+              disabled={isSendingEmail || !quote.customer_email}
+              icon={<Mail className={`w-3.5 h-3.5 ${isSendingEmail ? 'animate-spin' : ''}`} />}
+            >
+              {isSendingEmail ? 'Sending quotation...' : quote.email_status === 'SENT' ? 'Resend Email' : 'Send Email'}
             </Button>
           </div>
         </div>

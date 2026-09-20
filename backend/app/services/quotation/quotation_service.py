@@ -267,3 +267,151 @@ class QuotationService:
                 detail=f"Failed to persist quotation finalization: {str(exc)}",
             )
 
+    @staticmethod
+    def send_quotation_email(
+        db: Session,
+        quotation: Quotation,
+        sender_user_id: Optional[str] = None,
+        sender_email: Optional[str] = None,
+    ) -> Quotation:
+        """
+        Sends the official FINAL quotation PDF via Resend email:
+        1. Validates quotation status is FINAL (409 Conflict if not)
+        2. Validates associated customer exists and belongs to company (422/403)
+        3. Validates customer email exists and is valid format (422 Unprocessable Content)
+        4. Validates stored official PDF exists in Supabase Storage (409 Conflict)
+        5. Validates stored PDF SHA-256 matches quotation.pdf_sha256 (409 Conflict)
+        6. Guards against concurrent in-flight dispatch (409 Conflict)
+        7. Attaches the exact stored official PDF bytes
+        8. Generates deterministic B2B email template (zero AI / LLM)
+        9. Records email dispatch audit status (SENT / FAILED, recipient, timestamp, message ID)
+        """
+        from fastapi import HTTPException, status
+        import hashlib
+        import re
+        from app.core.config import settings
+        from app.models.customer import Customer
+        from app.services.storage.storage_service import get_storage_service
+        from app.services.email import get_email_service
+        from app.services.email.email_template import generate_quotation_email_content
+
+        # 1. State check: Only FINAL quotations can be emailed
+        if quotation.status != "FINAL":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Only finalized quotations can be sent by email.",
+            )
+
+        # 2. Customer validation: recipient MUST be derived from quotation's customer record
+        customer = quotation.customer
+        if not customer and quotation.customer_id:
+            customer = db.query(Customer).filter(Customer.id == quotation.customer_id).first()
+
+        if not customer:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Quotation customer is missing.",
+            )
+
+        if customer.company_id != quotation.company_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Customer belongs to another company",
+            )
+
+        if not customer.email or not customer.email.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Customer email address is required before sending the quotation.",
+            )
+
+        recipient_email = customer.email.strip()
+        email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+        if not re.match(email_regex, recipient_email):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Customer email address is invalid.",
+            )
+
+        # 3. PDF metadata validation
+        if not quotation.pdf_storage_path or not quotation.pdf_file_name or not quotation.pdf_sha256:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Official quotation PDF is unavailable.",
+            )
+
+        # 4. Download stored official PDF
+        storage = get_storage_service()
+        try:
+            pdf_bytes = storage.download(
+                bucket=settings.QUOTATION_PDF_BUCKET,
+                path=quotation.pdf_storage_path,
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Official quotation PDF is unavailable.",
+            )
+
+        # 5. Cryptographic SHA-256 document integrity check
+        calculated_hash = hashlib.sha256(pdf_bytes).hexdigest()
+        if calculated_hash != quotation.pdf_sha256:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Official quotation PDF integrity check failed.",
+            )
+
+        # 6. Concurrency / In-flight check
+        if quotation.email_status == "SENDING":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Quotation email dispatch is already in progress.",
+            )
+
+        # 7. Generate deterministic B2B email template (zero AI)
+        subject, html_body, text_body = generate_quotation_email_content(quotation)
+
+        # 8. Set status to SENDING
+        quotation.email_status = "SENDING"
+        db.commit()
+
+        # 9. Deliver via EmailService
+        email_service = get_email_service()
+        attachment_filename = quotation.pdf_file_name or f"{quotation.quotation_number}.pdf"
+
+        try:
+            result = email_service.send_email(
+                to=recipient_email,
+                subject=subject,
+                html_body=html_body,
+                text_body=text_body,
+                attachments=[{
+                    "filename": attachment_filename,
+                    "content": pdf_bytes,
+                }],
+            )
+        except Exception as exc:
+            clean_error = str(exc)
+            if settings.RESEND_API_KEY and settings.RESEND_API_KEY in clean_error:
+                clean_error = clean_error.replace(settings.RESEND_API_KEY, "[REDACTED]")
+
+            quotation.email_status = "FAILED"
+            quotation.email_error = clean_error
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to send quotation email: {clean_error}",
+            )
+
+        # 10. Record success audit trail
+        now = datetime.utcnow()
+        quotation.email_status = "SENT"
+        quotation.email_sent_at = now
+        quotation.email_sent_by = sender_email or sender_user_id
+        quotation.email_recipient = recipient_email
+        quotation.email_message_id = result.get("id")
+        quotation.email_error = None
+        db.commit()
+        db.refresh(quotation)
+        return quotation
+

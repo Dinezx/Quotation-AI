@@ -170,7 +170,42 @@ Quotation history provides plant management with a searchable, paginated commerc
 
 ---
 
-## 7. Collaborative Development Division
+## 7. Email Dispatch Architecture (Resend)
 
-- **Developer 1 (Backend)**: Works inside `backend/`. Responsible for FastAPI routes, database models/migrations, JWKS auth, pricing calculations, storage abstraction, backend tests, and document extractors.
+The email dispatch subsystem delivers official finalized quotation documents directly to customers.
+
+```
+Frontend (User Confirms Send)
+    ↓
+POST /api/v1/quotations/{id}/send-email
+    ↓
+User & Tenant Validation (Active User & Company Ownership)
+    ↓
+Quotation Status Check (Status must be FINAL)
+    ↓
+Customer Email Resolution (Derived strictly from Customer record; no frontend override)
+    ↓
+Retrieve Stored Official PDF from Supabase Storage
+    ↓
+Cryptographic Verification (Downloaded PDF SHA-256 == quotation.pdf_sha256)
+    ↓
+Deterministic B2B Email Template Generation (Zero AI / LLM)
+    ↓
+Dispatch via Resend REST API (or FakeEmailService during tests)
+    ↓
+Atomic Audit Update (email_status, email_sent_at, email_sent_by, email_recipient)
+```
+
+### Core Security & Architecture Guarantees:
+1. **Zero Price Recalculation**: Sending an email never recalculates rates, overheads, profits, or taxes.
+2. **Authoritative Official PDF**: The email attachment is the exact binary document stored in Supabase Storage. The PDF is never regenerated at dispatch time.
+3. **Cryptographic Integrity**: If the stored PDF hash does not match `quotation.pdf_sha256`, the email is aborted with a `409 Conflict`.
+4. **Server-Side Recipient Derivation**: The recipient email is strictly read from `customer.email`. Frontend requests cannot redirect delivery to arbitrary email addresses.
+5. **Hermetic Test Driver**: Automated tests utilize `FakeEmailService` in-memory mock, guaranteeing no external network calls or real customer emails are sent during CI/CD.
+
+---
+
+## 8. Collaborative Development Division
+
+- **Developer 1 (Backend)**: Works inside `backend/`. Responsible for FastAPI routes, database models/migrations, JWKS auth, pricing calculations, storage & email abstractions, backend tests, and document extractors.
 - **Developer 2 (Frontend)**: Works inside `frontend/`. Responsible for React UI components, Stitch Industrial Precision aesthetics, React Router navigation, TanStack Query data fetching, and Zod form validation.

@@ -234,6 +234,7 @@ export const QuotationHistoryPage: React.FC = () => {
                   <th className="py-3 px-4 text-right">Total</th>
                   <th className="py-3 px-4">Finalized At</th>
                   <th className="py-3 px-4">Finalized By</th>
+                  <th className="py-3 px-4 text-center">Email</th>
                   <th className="py-3 px-4 text-center">Actions</th>
                 </tr>
               </thead>
@@ -319,6 +320,28 @@ export const QuotationHistoryPage: React.FC = () => {
                       {/* Finalized By */}
                       <td className="py-3.5 px-4 text-[11px] text-slate-600 truncate max-w-[140px]">
                         {q.finalized_by || '—'}
+                      </td>
+
+                      {/* Email Status */}
+                      <td className="py-3.5 px-4 text-center">
+                        {q.email_status === 'SENT' ? (
+                          <span className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            Sent
+                          </span>
+                        ) : q.email_status === 'FAILED' ? (
+                          <span className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+                            <AlertCircle className="w-3 h-3 text-rose-500" />
+                            Failed
+                          </span>
+                        ) : q.email_status === 'SENDING' ? (
+                          <span className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                            <Clock className="w-3 h-3 text-blue-500 animate-spin" />
+                            Sending
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-mono text-[10px]">Not Sent</span>
+                        )}
                       </td>
 
                       {/* Actions */}
