@@ -2,11 +2,17 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Text, DateTime, Numeric, ForeignKey
+from sqlalchemy import String, Text, DateTime, Numeric, ForeignKey, Index
 from app.db.base import Base, TimestampMixin, generate_uuid
 
 class Quotation(Base, TimestampMixin):
     __tablename__ = "quotations"
+    __table_args__ = (
+        Index("ix_quotations_company_created", "company_id", "created_at"),
+        Index("ix_quotations_company_status", "company_id", "status"),
+        Index("ix_quotations_customer_id", "customer_id"),
+        Index("ix_quotations_purchase_order_id", "purchase_order_id"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
     company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)

@@ -90,10 +90,10 @@ export const QuotationPreviewPage: React.FC = () => {
     if (quoteId) {
       loadQuotation(quoteId);
     } else {
-      // If no quoteId in path, list latest quotation
-      quotationApi.list().then((list) => {
-        if (list && list.length > 0) {
-          loadQuotation(list[0].id);
+      // If no quoteId in path, query latest quotation efficiently with page_size=1
+      quotationApi.listPaginated({ page: 1, page_size: 1 }).then((data) => {
+        if (data && data.items && data.items.length > 0) {
+          loadQuotation(data.items[0].id);
         } else {
           setError('No quotation found. Please calculate an approved Purchase Order first.');
           setLoading(false);

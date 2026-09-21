@@ -1,10 +1,14 @@
 from decimal import Decimal
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Numeric, Boolean, ForeignKey
+from sqlalchemy import String, Numeric, Boolean, ForeignKey, Index
 from app.db.base import Base, TimestampMixin, generate_uuid
 
 class Process(Base, TimestampMixin):
     __tablename__ = "processes"
+    __table_args__ = (
+        Index("ix_processes_company_name", "company_id", "name"),
+        Index("ix_processes_company_active", "company_id", "is_active"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
     company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)

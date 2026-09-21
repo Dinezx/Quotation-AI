@@ -372,7 +372,8 @@ def test_cgst_sgst_pdf_rendering(auth_headers, test_db_session):
     text = " ".join([page.extract_text() or "" for page in reader.pages])
     assert "Central GST (CGST" in text
     assert "State GST (SGST" in text
-    assert "1,594.00" in text
+    cgst_str = f"{Decimal(str(cdata['cgst_amount'])):,.2f}"
+    assert cgst_str in text
 
 
 def test_pdf_post_endpoint_succeeds(auth_headers, test_db_session):

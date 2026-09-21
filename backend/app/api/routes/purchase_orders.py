@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, selectinload, defer
 from app.core.security import get_current_company_id, get_current_user, AuthenticatedUser
 from app.db.session import get_db
 from app.models.customer import Customer
@@ -36,7 +36,11 @@ def list_purchase_orders(
     """List purchase orders for the current tenant company."""
     query = (
         db.query(PurchaseOrder)
-        .options(selectinload(PurchaseOrder.items))
+        .options(
+            defer(PurchaseOrder.extracted_data),
+            defer(PurchaseOrder.raw_text),
+            selectinload(PurchaseOrder.items),
+        )
         .filter(PurchaseOrder.company_id == company_id)
     )
     if customer_id:

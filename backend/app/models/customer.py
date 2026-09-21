@@ -1,10 +1,14 @@
 from typing import List, Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Text, Boolean, ForeignKey
+from sqlalchemy import String, Text, Boolean, ForeignKey, Index
 from app.db.base import Base, TimestampMixin, generate_uuid
 
 class Customer(Base, TimestampMixin):
     __tablename__ = "customers"
+    __table_args__ = (
+        Index("ix_customers_company_active", "company_id", "is_active"),
+        Index("ix_customers_company_gstin", "company_id", "gstin"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
     company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)

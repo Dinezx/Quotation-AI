@@ -1,11 +1,16 @@
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy import String, Text, DateTime, ForeignKey, JSON, Index
 from app.db.base import Base, TimestampMixin, generate_uuid
 
 class PurchaseOrder(Base, TimestampMixin):
     __tablename__ = "purchase_orders"
+    __table_args__ = (
+        Index("ix_pos_company_created", "company_id", "created_at"),
+        Index("ix_pos_company_status", "company_id", "status"),
+        Index("ix_pos_customer_id", "customer_id"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
     company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)

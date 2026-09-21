@@ -30,10 +30,20 @@ export const QuotationHistoryPage: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(15);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState<boolean>(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Debounce search query changes by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch paginated quotations from backend
   const fetchQuotations = useCallback(async () => {
@@ -43,7 +53,7 @@ export const QuotationHistoryPage: React.FC = () => {
       const data = await quotationApi.listPaginated({
         page,
         page_size: pageSize,
-        search: searchQuery.trim() || undefined,
+        search: debouncedSearchQuery.trim() || undefined,
         status: statusFilter !== 'ALL' ? statusFilter : undefined,
       });
       setQuotations(data.items || []);
@@ -54,7 +64,7 @@ export const QuotationHistoryPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, searchQuery, statusFilter]);
+  }, [page, pageSize, debouncedSearchQuery, statusFilter]);
 
   useEffect(() => {
     fetchQuotations();

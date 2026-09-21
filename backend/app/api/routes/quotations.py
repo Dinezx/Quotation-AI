@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
 from sqlalchemy import func, or_
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, selectinload, joinedload
 from app.core.config import settings
 from app.core.security import get_current_company_id, get_current_user, AuthenticatedUser
 from app.db.session import get_db
@@ -67,10 +67,9 @@ def list_quotations(
     if page is not None:
         total = query.count()
         items = query.options(
-            selectinload(Quotation.items),
-            selectinload(Quotation.customer),
-            selectinload(Quotation.purchase_order),
-            selectinload(Quotation.company),
+            joinedload(Quotation.customer),
+            joinedload(Quotation.purchase_order),
+            joinedload(Quotation.company),
         ).offset((page - 1) * page_size).limit(page_size).all()
         return {
             "items": items,
@@ -80,10 +79,9 @@ def list_quotations(
         }
 
     return query.options(
-        selectinload(Quotation.items),
-        selectinload(Quotation.customer),
-        selectinload(Quotation.purchase_order),
-        selectinload(Quotation.company),
+        joinedload(Quotation.customer),
+        joinedload(Quotation.purchase_order),
+        joinedload(Quotation.company),
     ).all()
 
 

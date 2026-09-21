@@ -2,7 +2,7 @@ import re
 from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, selectinload, joinedload
 from app.core.security import get_current_company_id
 from app.db.session import get_db
 from app.models.customer import Customer
@@ -349,10 +349,9 @@ def get_customer_quotations(
     return (
         db.query(Quotation)
         .options(
-            selectinload(Quotation.items),
-            selectinload(Quotation.customer),
-            selectinload(Quotation.purchase_order),
-            selectinload(Quotation.company),
+            joinedload(Quotation.customer),
+            joinedload(Quotation.purchase_order),
+            joinedload(Quotation.company),
         )
         .filter(
             Quotation.customer_id == customer_id,

@@ -23,13 +23,24 @@ def generate_uuid() -> str:
     return str(uuid.uuid4())
 
 connect_args = {}
+engine_kwargs = {
+    "pool_pre_ping": True,
+    "pool_size": 25,
+    "max_overflow": 25,
+    "pool_timeout": 30,
+}
+
 if settings.DATABASE_URL.startswith("sqlite"):
     connect_args["check_same_thread"] = False
+else:
+    # Sized for concurrent multi-user load against Supabase transaction pooler (port 6543)
+    engine_kwargs["pool_recycle"] = 1800
+
+engine_kwargs["connect_args"] = connect_args
 
 engine = create_engine(
     settings.DATABASE_URL,
-    connect_args=connect_args,
-    pool_pre_ping=True
+    **engine_kwargs
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

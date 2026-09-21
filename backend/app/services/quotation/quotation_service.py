@@ -89,8 +89,16 @@ class QuotationService:
             Quotation.quotation_number.like(f"{prefix}%")
         ).scalar() or 0
 
-        next_sequence = count + 1
-        return f"{prefix}{next_sequence:04d}"
+        seq = count + 1
+        while True:
+            candidate = f"{prefix}{seq:04d}"
+            exists = db.query(Quotation.id).filter(
+                Quotation.company_id == company_id,
+                Quotation.quotation_number == candidate
+            ).first()
+            if not exists:
+                return candidate
+            seq += 1
 
     @staticmethod
     def resolve_quotation_recipient(quotation: Quotation) -> str:

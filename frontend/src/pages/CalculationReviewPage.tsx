@@ -120,11 +120,14 @@ export const CalculationReviewPage: React.FC = () => {
   }, [overheadPct, profitPct, isInterstate]);
 
   useEffect(() => {
-    if (selectedPoId) {
-      executeCalculation(selectedPoId);
-    } else {
+    if (!selectedPoId) {
       setLoading(false);
+      return;
     }
+    const timer = setTimeout(() => {
+      executeCalculation(selectedPoId);
+    }, 300);
+    return () => clearTimeout(timer);
   }, [selectedPoId, executeCalculation]);
 
   const isBlocked = calcResult?.status === 'BLOCKED';
