@@ -33,7 +33,7 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'PO to Quotation', path: '/upload', icon: FileUp, matchPrefix: ['/upload', '/review', '/calculation', '/quotation'] },
-    { label: 'Rate Management', path: '/rates', icon: Layers },
+    { label: 'Rates & Pricing', path: '/rates', icon: Layers },
     { label: 'Quotation History', path: '/quotations', icon: History, badge: '342' },
     { label: 'Customers', path: '/customers', icon: Users },
     { label: 'Settings', path: '/settings', icon: Settings },

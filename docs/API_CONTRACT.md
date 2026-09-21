@@ -516,11 +516,41 @@ Dispatches the official final quotation PDF to the customer's stored email addre
     "message": "Quotation sent successfully."
   }
   ```
-- **Errors**:
-  - `403 Forbidden`: Cross-company request or deactivated user account.
-  - `404 Not Found`: Quotation not found.
-  - `409 Conflict`: Quotation is in `DRAFT` status, official PDF is unavailable, SHA-256 integrity check failed, or dispatch is already in progress (`SENDING`).
-  - `422 Unprocessable Content`: Customer is missing, or customer email is missing or invalid.
-  - `502 Bad Gateway`: Resend provider network or delivery failure.
+
+---
+
+## 7. Rate Cards & Pricing Master
+
+All rate management and pricing rule endpoints are strictly tenant-isolated (`company_id` derived from JWT authentication).
+
+### Material Master Endpoints
+
+- **`GET /rates/materials`**: Lists all active material rate cards for the tenant. Pass `?include_inactive=true` to view deactivated grades.
+- **`POST /rates/materials`**: Creates a new material rate card. Enforces tenant grade uniqueness (duplicate grade in the same company returns `409 Conflict`). Requires `name`, `grade`, `base_rate >= 0`, `scrap_credit_rate >= 0`.
+- **`GET /rates/materials/{id}`**: Retrieves a single material rate card.
+- **`PUT /rates/materials/{id}`**: Updates material rates, density, or grade. Grade collisions with other items in the same company return `409 Conflict`.
+- **`DELETE /rates/materials/{id}`**: Soft-deactivates material (`is_active = False`). Inactive materials are blocked from future PO calculation rate-matching.
+- **`POST /rates/materials/{id}/reactivate`**: Reactivates a previously deactivated material card.
+
+### Process Master Endpoints
+
+- **`GET /rates/processes`**: Lists all active workstation and machining rate cards. Pass `?include_inactive=true` to view deactivated processes.
+- **`POST /rates/processes`**: Creates a new process rate card. Enforces tenant process name uniqueness (`409 Conflict` on duplicate). Requires `name`, `hourly_rate >= 0`, `setup_cost >= 0`.
+- **`GET /rates/processes/{id}`**: Retrieves a single process rate card.
+- **`PUT /rates/processes/{id}`**: Updates process rates, units, or names.
+- **`DELETE /rates/processes/{id}`**: Soft-deactivates process (`is_active = False`). Inactive processes are blocked from future PO calculation rate-matching.
+- **`POST /rates/processes/{id}/reactivate`**: Reactivates a previously deactivated process card.
+
+### Commercial Pricing Rules Endpoints
+
+- **`GET /rates/pricing-rules`**: Retrieves tenant factory overhead %, commercial profit margin %, and GST configuration from authoritative `Company.settings`.
+- **`PUT /rates/pricing-rules`**: Updates tenant pricing rules. Validates `0 <= overhead <= 100`, `0 <= profit <= 100`, `0 <= default_gst_rate <= 100`, and `gst_type in ('CGST_SGST', 'IGST', 'EXEMPT')`.
+
+### Historical Invariant & Future Calculations
+1. Rate master modifications apply strictly to **future** calculations.
+2. Existing finalized quotations (`status == 'FINAL'`) and their stored PDFs and SHA-256 hashes are **immutable** and never recalculated when master rates change.
+3. Attempting to recalculate a PO that already has a finalized quotation returns `409 Conflict`.
+4. Inactive materials and processes return `MATERIAL_RATE_MISSING` and `PROCESS_RATE_MISSING`, blocking calculation without AI or guessing.
+
 
 

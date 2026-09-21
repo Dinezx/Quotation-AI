@@ -31,6 +31,7 @@ Represents manufacturing plants / precision engineering facilities.
 - `address` (`TEXT`): Registered factory/plant address.
 - `phone` (`VARCHAR(32)`): Contact number.
 - `email` (`VARCHAR(255)`): Official correspondence email.
+- `settings` (`JSONB` / `JSON`): Single authoritative configuration store for tenant commercial pricing rules (`overhead_percentage`, `profit_percentage`, `gst_type`, `default_gst_rate`).
 - `is_active` (`BOOLEAN`, Default: `TRUE`): Tenant active status.
 - `created_at`, `updated_at` (`TIMESTAMP WITH TIME ZONE`).
 

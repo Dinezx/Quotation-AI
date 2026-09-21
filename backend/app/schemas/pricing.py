@@ -43,9 +43,9 @@ class RateMatchItemResult(BaseModel):
 
 
 class POCalculateRequest(BaseModel):
-    overhead_percentage: Decimal = Decimal("10.00")
-    profit_percentage: Decimal = Decimal("15.00")
-    gst_type: str = "CGST_SGST"  # CGST_SGST, IGST, EXEMPT
+    overhead_percentage: Optional[Decimal] = None
+    profit_percentage: Optional[Decimal] = None
+    gst_type: Optional[str] = None  # CGST_SGST, IGST, EXEMPT
     persist_draft: bool = True  # If True, stores calculation as a draft Quotation
 
 

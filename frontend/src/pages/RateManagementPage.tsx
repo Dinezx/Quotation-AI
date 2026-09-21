@@ -59,6 +59,12 @@ export const RateManagementPage: React.FC = () => {
   const [editMaterialModal, setEditMaterialModal] = useState<MaterialRate | null>(null);
   const [addProcessOpen, setAddProcessOpen] = useState(false);
   const [editProcessModal, setEditProcessModal] = useState<ProcessRate | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<{
+    type: 'material' | 'process';
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   // Material Form State
   const [matGrade, setMatGrade] = useState('');
@@ -151,9 +157,46 @@ export const RateManagementPage: React.FC = () => {
     }
   };
 
+  const promptDeactivate = (type: 'material' | 'process', id: string, name: string) => {
+    setDeactivateTarget({ type, id, name });
+  };
+
+  const confirmDeactivation = async () => {
+    if (!deactivateTarget) return;
+    setIsDeactivating(true);
+    try {
+      if (deactivateTarget.type === 'material') {
+        await deleteMaterial(deactivateTarget.id);
+        showToast(`Deactivated material '${deactivateTarget.name}'.`);
+      } else {
+        await deleteProcess(deactivateTarget.id);
+        showToast(`Deactivated process '${deactivateTarget.name}'.`);
+      }
+      setDeactivateTarget(null);
+      if (editMaterialModal && editMaterialModal.id === deactivateTarget.id) {
+        setEditMaterialModal(null);
+      }
+      if (editProcessModal && editProcessModal.id === deactivateTarget.id) {
+        setEditProcessModal(null);
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || 'Deactivation failed';
+      showToast(msg, 'error');
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
+
   const handleUpdateMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editMaterialModal) return;
+    const gradeClean = (editMaterialModal.grade || editMaterialModal.gradeAndSpec || '').trim();
+    const nameClean = (editMaterialModal.name || editMaterialModal.gradeAndSpec || '').trim();
+    if (!gradeClean || !nameClean) {
+      showToast('Grade and Material Name cannot be empty.', 'error');
+      return;
+    }
+
     const baseRateNum = Number(editMaterialModal.baseRatePerKg);
     const scrapCreditNum = Number(editMaterialModal.scrapCreditPerKg);
 
@@ -171,15 +214,16 @@ export const RateManagementPage: React.FC = () => {
       await updateMaterial({
         id: editMaterialModal.id,
         data: {
-          name: editMaterialModal.name || editMaterialModal.gradeAndSpec,
-          grade: editMaterialModal.grade || editMaterialModal.gradeAndSpec,
+          name: nameClean,
+          grade: gradeClean,
           base_rate: baseRateNum,
           scrap_credit_rate: scrapCreditNum,
           density: editMaterialModal.densityGPerCm3,
+          is_active: editMaterialModal.is_active,
         },
       });
       setEditMaterialModal(null);
-      showToast(`Updated material '${editMaterialModal.gradeAndSpec}'.`);
+      showToast(`Updated material '${gradeClean}'.`);
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Failed to update material';
       showToast(msg, 'error');
@@ -189,17 +233,16 @@ export const RateManagementPage: React.FC = () => {
   };
 
   const handleToggleMaterialStatus = async (m: MaterialRate) => {
-    try {
-      if (m.is_active) {
-        await deleteMaterial(m.id);
-        showToast(`Deactivated material '${m.gradeAndSpec}'.`);
-      } else {
+    if (m.is_active) {
+      promptDeactivate('material', m.id, m.name || m.gradeAndSpec);
+    } else {
+      try {
         await reactivateMaterial(m.id);
         showToast(`Reactivated material '${m.gradeAndSpec}'.`);
+      } catch (err: any) {
+        const msg = err.response?.data?.detail || err.message || 'Action failed';
+        showToast(msg, 'error');
       }
-    } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Action failed';
-      showToast(msg, 'error');
     }
   };
 
@@ -253,6 +296,11 @@ export const RateManagementPage: React.FC = () => {
   const handleUpdateProcess = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editProcessModal) return;
+    const nameClean = (editProcessModal.workstationName || '').trim();
+    if (!nameClean) {
+      showToast('Process Name cannot be empty.', 'error');
+      return;
+    }
     const hourlyNum = Number(editProcessModal.hourlyRate);
     const setupNum = Number(editProcessModal.setupCost);
 
@@ -270,13 +318,14 @@ export const RateManagementPage: React.FC = () => {
       await updateProcess({
         id: editProcessModal.id,
         data: {
-          name: editProcessModal.workstationName,
+          name: nameClean,
           hourly_rate: hourlyNum,
           setup_cost: setupNum,
+          is_active: editProcessModal.is_active,
         },
       });
       setEditProcessModal(null);
-      showToast(`Updated process '${editProcessModal.workstationName}'.`);
+      showToast(`Updated process '${nameClean}'.`);
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Failed to update process';
       showToast(msg, 'error');
@@ -286,17 +335,16 @@ export const RateManagementPage: React.FC = () => {
   };
 
   const handleToggleProcessStatus = async (p: ProcessRate) => {
-    try {
-      if (p.is_active) {
-        await deleteProcess(p.id);
-        showToast(`Deactivated process '${p.workstationName}'.`);
-      } else {
+    if (p.is_active) {
+      promptDeactivate('process', p.id, p.workstationName);
+    } else {
+      try {
         await reactivateProcess(p.id);
         showToast(`Reactivated process '${p.workstationName}'.`);
+      } catch (err: any) {
+        const msg = err.response?.data?.detail || err.message || 'Action failed';
+        showToast(msg, 'error');
       }
-    } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Action failed';
-      showToast(msg, 'error');
     }
   };
 
@@ -579,10 +627,10 @@ export const RateManagementPage: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px] tracking-wider">
-                    <th className="py-2.5 px-4">Grade & Spec</th>
-                    <th className="py-2.5 px-4">Material Name</th>
-                    <th className="py-2.5 px-4">Base Rate (₹/kg)</th>
-                    <th className="py-2.5 px-4">Scrap Credit (₹/kg)</th>
+                    <th className="py-2.5 px-4">Material</th>
+                    <th className="py-2.5 px-4">Grade</th>
+                    <th className="py-2.5 px-4">Rate/kg</th>
+                    <th className="py-2.5 px-4">Scrap</th>
                     <th className="py-2.5 px-4">Net Billet Cost</th>
                     <th className="py-2.5 px-4">Density</th>
                     <th className="py-2.5 px-4">Status</th>
@@ -602,13 +650,15 @@ export const RateManagementPage: React.FC = () => {
                       return (
                         <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-3 px-4">
-                            <div className="font-bold text-slate-900">{m.gradeAndSpec}</div>
-                            {m.subSpec && (
+                            <div className="font-bold text-slate-900">{m.name || m.gradeAndSpec}</div>
+                            {m.subSpec && m.subSpec !== m.name && (
                               <div className="text-[10px] text-slate-500 font-mono mt-0.5">{m.subSpec}</div>
                             )}
                           </td>
-                          <td className="py-3 px-4 text-slate-700 font-medium">
-                            {m.name || m.gradeAndSpec}
+                          <td className="py-3 px-4">
+                            <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                              {m.grade || m.gradeAndSpec}
+                            </span>
                           </td>
                           <td className="py-3 px-4 font-mono font-bold text-slate-900">
                             ₹{m.baseRatePerKg.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">/kg</span>
@@ -660,6 +710,21 @@ export const RateManagementPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Materials Table Footer with Prominent Add Button */}
+            <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-medium">
+                Showing {filteredMaterials.length} of {materials.length} registered material grades
+              </span>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Plus className="w-3.5 h-3.5" />}
+                onClick={handleOpenAddMaterial}
+              >
+                Add Material
+              </Button>
+            </div>
           </div>
         )}
 
@@ -700,10 +765,10 @@ export const RateManagementPage: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px] tracking-wider">
-                    <th className="py-2.5 px-4">Process / Workstation</th>
+                    <th className="py-2.5 px-4">Process</th>
+                    <th className="py-2.5 px-4">Hourly Rate</th>
+                    <th className="py-2.5 px-4">Setup Cost</th>
                     <th className="py-2.5 px-4">Unit</th>
-                    <th className="py-2.5 px-4">Hourly Rate (₹/hr)</th>
-                    <th className="py-2.5 px-4">Setup Charge (₹)</th>
                     <th className="py-2.5 px-4">Status</th>
                     <th className="py-2.5 px-4 text-right">Actions</th>
                   </tr>
@@ -722,14 +787,14 @@ export const RateManagementPage: React.FC = () => {
                           <div className="font-bold text-slate-900">{p.workstationName}</div>
                           <div className="text-[10px] font-mono text-slate-400">{p.code}</div>
                         </td>
-                        <td className="py-3 px-4 font-mono text-slate-600">
-                          hour
-                        </td>
                         <td className="py-3 px-4 font-mono font-bold text-slate-900">
                           ₹{p.hourlyRate.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">/hr</span>
                         </td>
                         <td className="py-3 px-4 font-mono text-slate-700">
                           ₹{p.setupCost.toFixed(2)}
+                        </td>
+                        <td className="py-3 px-4 font-mono text-slate-600">
+                          hour
                         </td>
                         <td className="py-3 px-4">
                           <Badge variant={p.is_active ? 'success' : 'slate'} size="sm" dot>
@@ -767,6 +832,21 @@ export const RateManagementPage: React.FC = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Processes Table Footer with Prominent Add Button */}
+            <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-medium">
+                Showing {filteredProcesses.length} of {processes.length} manufacturing process centers
+              </span>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Plus className="w-3.5 h-3.5" />}
+                onClick={handleOpenAddProcess}
+              >
+                Add Process
+              </Button>
             </div>
           </div>
         )}
@@ -1105,7 +1185,26 @@ export const RateManagementPage: React.FC = () => {
           <form onSubmit={handleUpdateMaterial} className="space-y-4 text-xs">
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Material Name
+                Material Grade <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={editMaterialModal.grade || editMaterialModal.gradeAndSpec}
+                onChange={(e) =>
+                  setEditMaterialModal({
+                    ...editMaterialModal,
+                    grade: e.target.value,
+                    gradeAndSpec: e.target.value,
+                  })
+                }
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold uppercase focus:outline-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Material Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -1121,7 +1220,7 @@ export const RateManagementPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Base Rate (₹/kg)
+                  Base Rate (₹/kg) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -1176,6 +1275,24 @@ export const RateManagementPage: React.FC = () => {
                   })
                 }
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-blue-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <div>
+                <span className="font-bold text-slate-800 block text-xs">Active Status</span>
+                <span className="text-[11px] text-slate-500">Active materials are eligible for rate matching in new quotations.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={editMaterialModal.is_active !== false}
+                onChange={(e) =>
+                  setEditMaterialModal({
+                    ...editMaterialModal,
+                    is_active: e.target.checked,
+                  })
+                }
+                className="w-4 h-4 text-blue-600 rounded cursor-pointer"
               />
             </div>
 
@@ -1360,6 +1477,24 @@ export const RateManagementPage: React.FC = () => {
               </div>
             </div>
 
+            <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <div>
+                <span className="font-bold text-slate-800 block text-xs">Active Status</span>
+                <span className="text-[11px] text-slate-500">Active processes are eligible for rate matching in new quotations.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={editProcessModal.is_active !== false}
+                onChange={(e) =>
+                  setEditProcessModal({
+                    ...editProcessModal,
+                    is_active: e.target.checked,
+                  })
+                }
+                className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+              />
+            </div>
+
             <div className="pt-3 flex justify-end gap-2 border-t border-slate-200">
               <Button
                 type="button"
@@ -1380,6 +1515,46 @@ export const RateManagementPage: React.FC = () => {
             </div>
           </form>
         )}
+      </Modal>
+
+      {/* ---------------- MODAL: CONFIRM DEACTIVATION ---------------- */}
+      <Modal
+        isOpen={deactivateTarget !== null}
+        onClose={() => !isDeactivating && setDeactivateTarget(null)}
+        title="Confirm Rate Deactivation"
+        description={`Deactivating this ${deactivateTarget?.type || 'rate'} will block it from future quotation calculations.`}
+        maxWidth="sm"
+      >
+        <div className="space-y-4 text-xs">
+          <p className="text-slate-700 leading-relaxed">
+            Are you sure you want to deactivate <strong className="text-slate-900 font-bold">{deactivateTarget?.name}</strong>?
+          </p>
+
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[11px] leading-relaxed">
+            <strong>Historical Immutability:</strong> All finalized quotations and stored PDFs using this rate remain completely preserved and unchanged. However, future calculations requiring this rate will be blocked until reactivated.
+          </div>
+
+          <div className="pt-3 flex justify-end gap-2 border-t border-slate-200">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeactivateTarget(null)}
+              disabled={isDeactivating}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              loading={isDeactivating}
+              onClick={confirmDeactivation}
+            >
+              Deactivate Rate
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -170,6 +170,42 @@ Quotation history provides plant management with a searchable, paginated commerc
 
 ---
 
+## 6.1. Rate Cards, Pricing Rules & Historical Immutability
+
+The Rate & Pricing Master subsystem serves as the single authoritative commercial source of truth feeding the deterministic calculation engine:
+
+```
+Purchase Order (Approved)
+          ↓
+Tenant-Scoped Rate Matching (PricingService.match_tenant_rates)
+          ↓
+Active Rate Verification (is_active == True)
+[If missing/inactive: BLOCKED (MATERIAL_RATE_MISSING / PROCESS_RATE_MISSING)]
+          ↓
+Authoritative Company Pricing Profile (Company.settings: Overhead %, Profit %, GST)
+          ↓
+Deterministic Decimal Engine (CalculationService)
+          ↓
+Draft Quotation Persistence
+          ↓
+Human Finalization (Quotation finalized -> status == 'FINAL')
+          ↓
+Physical PDF & SHA-256 Storage
+```
+
+### Core Architecture Invariants:
+1. **Zero AI / LLM Pricing**: AI is strictly forbidden from estimating, suggesting, modifying, or determining pricing rates or markups. Rates are configured directly by authorized plant personnel.
+2. **Pure Decimal Precision**: All monetary rates, scrap credit values, overheads, margins, and taxes use `Decimal` arithmetic (`ROUND_HALF_UP`) to prevent floating-point discrepancies.
+3. **Single Authoritative Source**: Factory overhead %, profit margin %, and statutory GST rules belong strictly to `Company.settings`. No competing or duplicated pricing configurations exist.
+4. **Historical Quotation Immutability**:
+   - Master rate changes apply exclusively to **future** calculations.
+   - When a material or process rate changes in the database master, existing `FINAL` quotations and stored PDFs **must not and do not change**.
+   - The system strictly forbids recalculating, modifying, or regenerating PDFs for finalized quotations.
+   - Attempting to recalculate a PO that already has an approved, finalized quotation returns an explicit `409 Conflict`.
+5. **Inactive Rate Isolation**: Deactivated materials and processes are excluded from new calculations. Attempting to quote an inactive rate returns a hard `BLOCKED` status, requiring human review.
+
+---
+
 ## 7. Email Dispatch Architecture (Resend)
 
 The email dispatch subsystem delivers official finalized quotation documents directly to customers.

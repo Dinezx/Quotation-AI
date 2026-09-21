@@ -9,18 +9,21 @@ Comprehensive Unit & Integration Tests for:
 7. Real Sample PO Evaluation: Verifies sample PO is BLOCKED due to PROCESS_MISSING.
 """
 import time
+import hashlib
 from decimal import Decimal
 from unittest.mock import patch, MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.purchase_order import PurchaseOrder
 from app.models.purchase_order_item import PurchaseOrderItem
 from app.models.material import Material
 from app.models.process import Process
 from app.models.quotation import Quotation
+from app.services.storage.storage_service import get_storage_service
 
 client = TestClient(app)
 
@@ -660,3 +663,342 @@ def test_deterministic_calculation_multiple_items(auth_headers, test_db_session)
     assert Decimal(str(data["taxable_amount"])) == Decimal("38798.00")
     assert Decimal(str(data["igst_amount"])) == Decimal("6984.00")
     assert Decimal(str(data["grand_total"])) == Decimal("45782.00")
+
+
+def test_calculation_falls_back_to_authoritative_company_pricing_rules(auth_headers, test_db_session):
+    """
+    Verify that when overhead, profit, or GST type are omitted from POCalculateRequest,
+    PricingService.calculate_purchase_order automatically resolves them from Company.settings
+    as the single authoritative source.
+    """
+    # Configure company pricing rules
+    client.put(
+        "/api/v1/rates/pricing-rules",
+        json={"overhead_percentage": 10.00, "profit_percentage": 15.00, "gst_type": "CGST_SGST", "default_gst_rate": 18.00},
+        headers=auth_headers,
+    )
+
+    # Create approved PO with benchmark items using EN8 and CNC Machining
+    po = _create_test_po(
+        test_db_session,
+        company_id="comp-bpe-pune",
+        status="APPROVED",
+        items_data=[
+            {
+                "part_name": "Standard Machined Spindle",
+                "material_grade": "EN8",
+                "process_name": "CNC Machining",
+                "quantity": 10,
+                "unit": "PCS",
+                "gross_weight_kg": 5.0,
+                "scrap_weight_kg": 0.5,
+                "machining_hours": 1.5,
+                "setup_hours": 0.5,
+            }
+        ],
+    )
+
+    # Call calculate with empty payload {} (omitting overhead, profit, and gst_type)
+    res = client.post(
+        f"/api/v1/purchase-orders/{po.id}/calculate",
+        json={},
+        headers=auth_headers,
+    )
+    assert res.status_code == 200, res.text
+    data = res.json()
+
+    assert data["status"] == "SUCCESS"
+    assert Decimal(str(data["overhead_percentage"])) == Decimal("10.00")
+    assert Decimal(str(data["profit_percentage"])) == Decimal("15.00")
+    assert data["gst_type"] == "CGST_SGST"
+    assert Decimal(str(data["cgst_amount"])) == Decimal("1594.00")
+    assert Decimal(str(data["sgst_amount"])) == Decimal("1594.00")
+    assert Decimal(str(data["grand_total"])) == Decimal("20898.00")
+
+
+def test_inactive_material_blocks_calculation_without_hallucination(auth_headers, test_db_session):
+    """
+    Verify Phase 17: Inactive materials are blocked from rate matching in new calculations.
+    Must return status BLOCKED with code MATERIAL_RATE_MISSING and zero AI guesswork.
+    """
+    unique_grade = f"INACTIVE-MAT-{int(time.time() * 1000)}"
+    mat = Material(
+        company_id="comp-bpe-pune",
+        name=f"Deactivated Alloy {unique_grade}",
+        grade=unique_grade,
+        density=Decimal("7.85"),
+        unit="kg",
+        base_rate=Decimal("150.00"),
+        scrap_credit_rate=Decimal("30.00"),
+        is_active=False,
+    )
+    test_db_session.add(mat)
+    test_db_session.commit()
+
+    po = _create_test_po(
+        test_db_session,
+        company_id="comp-bpe-pune",
+        status="APPROVED",
+        items_data=[
+            {
+                "part_name": "Test Inactive Mat Part",
+                "material_grade": unique_grade,
+                "process_name": "CNC Machining",
+                "quantity": 5,
+                "gross_weight_kg": 2.0,
+                "machining_hours": 1.0,
+            }
+        ],
+    )
+
+    res = client.post(f"/api/v1/purchase-orders/{po.id}/calculate", json={}, headers=auth_headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "BLOCKED"
+    assert any(i["code"] == "MATERIAL_RATE_MISSING" for i in data["issues"])
+
+
+def test_inactive_process_blocks_calculation_without_hallucination(auth_headers, test_db_session):
+    """
+    Verify Phase 17: Inactive processes are blocked from rate matching in new calculations.
+    Must return status BLOCKED with code PROCESS_RATE_MISSING and zero AI guesswork.
+    """
+    unique_proc = f"INACTIVE-PROC-{int(time.time() * 1000)}"
+    proc = Process(
+        company_id="comp-bpe-pune",
+        name=unique_proc,
+        unit="hour",
+        hourly_rate=Decimal("800.00"),
+        setup_cost=Decimal("150.00"),
+        is_active=False,
+    )
+    test_db_session.add(proc)
+    test_db_session.commit()
+
+    po = _create_test_po(
+        test_db_session,
+        company_id="comp-bpe-pune",
+        status="APPROVED",
+        items_data=[
+            {
+                "part_name": "Test Inactive Proc Part",
+                "material_grade": "EN8",
+                "process_name": unique_proc,
+                "quantity": 5,
+                "gross_weight_kg": 2.0,
+                "machining_hours": 1.0,
+            }
+        ],
+    )
+
+    res = client.post(f"/api/v1/purchase-orders/{po.id}/calculate", json={}, headers=auth_headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "BLOCKED"
+    assert any(i["code"] == "PROCESS_RATE_MISSING" for i in data["issues"])
+
+
+def test_mandatory_historical_safety_and_immutability_lifecycle(auth_headers, test_db_session):
+    """
+    MANDATORY TEST (Phases 11, 23, and 25):
+    1. Create quotation using Rate A (EN8 at ₹85/kg, CNC at ₹650/hr).
+    2. Finalize quotation (store PDF/SHA-256).
+    3. Change material/process/pricing rule to Rate B (EN8 at ₹100/kg, CNC at ₹750/hr, overhead 12%, profit 18%).
+    4. Verify FINAL quotation total remains unchanged.
+    5. Verify stored FINAL PDF and SHA-256 remain unchanged.
+    6. Verify attempts to recalculate or mutate FINAL quotation return 409 Conflict.
+    7. Create a new approved PO and calculate quotation using Rate B.
+    8. Verify new calculation reflects Rate B.
+    """
+    unique_suffix = str(int(time.time() * 1000))
+    mat_grade = f"EN8-HIST-{unique_suffix}"
+    proc_name = f"CNC-HIST-{unique_suffix}"
+
+    # 1. Seed Rate A
+    res_mat = client.post(
+        "/api/v1/rates/materials",
+        json={
+            "name": f"Alloy Steel {mat_grade}",
+            "grade": mat_grade,
+            "density": 7.85,
+            "unit": "kg",
+            "base_rate": 85.00,
+            "scrap_credit_rate": 20.00,
+            "is_active": True,
+        },
+        headers=auth_headers,
+    )
+    assert res_mat.status_code == 201
+    mat_id = res_mat.json()["id"]
+
+    res_proc = client.post(
+        "/api/v1/rates/processes",
+        json={
+            "name": proc_name,
+            "unit": "hour",
+            "hourly_rate": 650.00,
+            "setup_cost": 100.00,
+            "is_active": True,
+        },
+        headers=auth_headers,
+    )
+    assert res_proc.status_code == 201
+    proc_id = res_proc.json()["id"]
+
+    # Configure company pricing rules to standard baseline
+    client.put(
+        "/api/v1/rates/pricing-rules",
+        json={
+            "overhead_percentage": 10.00,
+            "profit_percentage": 15.00,
+            "gst_type": "IGST",
+            "default_gst_rate": 18.00,
+        },
+        headers=auth_headers,
+    )
+
+    # 2. Create and calculate PO-1 with Rate A
+    po1 = _create_test_po(
+        test_db_session,
+        company_id="comp-bpe-pune",
+        status="APPROVED",
+        items_data=[
+            {
+                "part_name": "Bearing Housing Historical",
+                "material_grade": mat_grade,
+                "process_name": proc_name,
+                "quantity": 10,
+                "unit": "PCS",
+                "gross_weight_kg": 5.0,
+                "scrap_weight_kg": 0.5,
+                "machining_hours": 1.5,
+                "setup_hours": 0.5,
+            }
+        ],
+    )
+
+    res_calc1 = client.post(
+        f"/api/v1/purchase-orders/{po1.id}/calculate",
+        json={"persist_draft": True},
+        headers=auth_headers,
+    )
+    assert res_calc1.status_code == 200
+    data1 = res_calc1.json()
+    assert data1["status"] == "SUCCESS"
+    original_total = Decimal(str(data1["grand_total"]))
+    assert original_total == Decimal("20898.00")
+    quotation_id = data1["quotation_id"]
+    assert quotation_id is not None
+
+    # 3. Finalize quotation QT-1
+    res_fin = client.post(f"/api/v1/quotations/{quotation_id}/finalize", headers=auth_headers)
+    assert res_fin.status_code == 200
+    fin_data = res_fin.json()
+    assert fin_data["status"] == "FINAL"
+    stored_pdf_path = fin_data["pdf_storage_path"]
+    stored_pdf_sha256 = fin_data["pdf_sha256"]
+    assert stored_pdf_path is not None
+    assert stored_pdf_sha256 is not None
+
+    # Verify physical stored PDF
+    storage = get_storage_service()
+    original_pdf_bytes = storage.download(settings.QUOTATION_PDF_BUCKET, stored_pdf_path)
+    assert hashlib.sha256(original_pdf_bytes).hexdigest() == stored_pdf_sha256
+
+    # 4. Master Rate Change: Update to Rate B
+    # EN8: ₹85 -> ₹100, scrap: ₹20 -> ₹25
+    res_upd_mat = client.put(
+        f"/api/v1/rates/materials/{mat_id}",
+        json={"base_rate": 100.00, "scrap_credit_rate": 25.00},
+        headers=auth_headers,
+    )
+    assert res_upd_mat.status_code == 200
+
+    # CNC Machining: ₹650 -> ₹750, setup: ₹100 -> ₹120
+    res_upd_proc = client.put(
+        f"/api/v1/rates/processes/{proc_id}",
+        json={"hourly_rate": 750.00, "setup_cost": 120.00},
+        headers=auth_headers,
+    )
+    assert res_upd_proc.status_code == 200
+
+    # Pricing rules: 10% -> 12% overhead, 15% -> 18% profit
+    client.put(
+        "/api/v1/rates/pricing-rules",
+        json={
+            "overhead_percentage": 12.00,
+            "profit_percentage": 18.00,
+            "gst_type": "IGST",
+            "default_gst_rate": 18.00,
+        },
+        headers=auth_headers,
+    )
+
+    # 5. VERIFICATION: Historical Finalized Quotation QT-1 MUST NOT CHANGE
+    res_qt_after = client.get(f"/api/v1/quotations/{quotation_id}", headers=auth_headers)
+    assert res_qt_after.status_code == 200
+    qt_after_data = res_qt_after.json()
+    assert qt_after_data["status"] == "FINAL"
+    assert Decimal(str(qt_after_data["final_total"])) == original_total  # Still exactly ₹20,898.00
+    assert qt_after_data["pdf_storage_path"] == stored_pdf_path
+    assert qt_after_data["pdf_sha256"] == stored_pdf_sha256
+
+    # Verify physical stored PDF was NOT altered or regenerated
+    pdf_bytes_after = storage.download(settings.QUOTATION_PDF_BUCKET, stored_pdf_path)
+    assert hashlib.sha256(pdf_bytes_after).hexdigest() == stored_pdf_sha256
+
+    # Verify attempts to recalculate PO-1 return 409 Conflict
+    res_recalc_po1 = client.post(
+        f"/api/v1/purchase-orders/{po1.id}/calculate",
+        json={"persist_draft": True},
+        headers=auth_headers,
+    )
+    assert res_recalc_po1.status_code == 409
+    assert "already has a finalized quotation" in res_recalc_po1.json()["detail"]
+
+    # Verify direct quotation recalculation returns 409 Conflict
+    res_recalc_qt = client.post(
+        f"/api/v1/quotations/{quotation_id}/calculate",
+        json={"items": [], "overhead_percentage": 12, "profit_percentage": 18, "gst_type": "IGST"},
+        headers=auth_headers,
+    )
+    assert res_recalc_qt.status_code == 409
+
+    # 6. VERIFICATION: New calculations MUST use new Rate B
+    po2 = _create_test_po(
+        test_db_session,
+        company_id="comp-bpe-pune",
+        status="APPROVED",
+        items_data=[
+            {
+                "part_name": "Bearing Housing Historical Batch 2",
+                "material_grade": mat_grade,
+                "process_name": proc_name,
+                "quantity": 10,
+                "unit": "PCS",
+                "gross_weight_kg": 5.0,
+                "scrap_weight_kg": 0.5,
+                "machining_hours": 1.5,
+                "setup_hours": 0.5,
+            }
+        ],
+    )
+
+    res_calc2 = client.post(
+        f"/api/v1/purchase-orders/{po2.id}/calculate",
+        json={},
+        headers=auth_headers,
+    )
+    assert res_calc2.status_code == 200
+    data2 = res_calc2.json()
+    assert data2["status"] == "SUCCESS"
+    assert Decimal(str(data2["overhead_percentage"])) == Decimal("12.00")
+    assert Decimal(str(data2["profit_percentage"])) == Decimal("18.00")
+    assert Decimal(str(data2["manufacturing_subtotal"])) == Decimal("16245.00")
+    new_total = Decimal(str(data2["grand_total"]))
+    assert new_total > original_total
+
+    # Final re-check on historical quotation QT-1
+    res_qt_final_check = client.get(f"/api/v1/quotations/{quotation_id}", headers=auth_headers)
+    assert Decimal(str(res_qt_final_check.json()["final_total"])) == original_total
+

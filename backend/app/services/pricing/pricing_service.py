@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
+from app.models.company import Company
 from app.models.purchase_order import PurchaseOrder
 from app.models.purchase_order_item import PurchaseOrderItem
 from app.models.material import Material
@@ -254,11 +255,31 @@ class PricingService:
                 )
             )
 
+        # Resolve commercial pricing rules from company profile if not explicitly overridden
+        company = db.query(Company).filter(Company.id == company_id).first()
+        company_settings = (company.settings or {}) if company else {}
+
+        overhead_pct = (
+            calc_params.overhead_percentage
+            if (calc_params and calc_params.overhead_percentage is not None)
+            else Decimal(str(company_settings.get("overhead_percentage", "10.00")))
+        )
+        profit_pct = (
+            calc_params.profit_percentage
+            if (calc_params and calc_params.profit_percentage is not None)
+            else Decimal(str(company_settings.get("profit_percentage", "15.00")))
+        )
+        gst_mode = (
+            calc_params.gst_type
+            if (calc_params and calc_params.gst_type is not None)
+            else str(company_settings.get("gst_type", "CGST_SGST"))
+        )
+
         engine_request = CalculateQuotationRequest(
             items=calc_inputs,
-            overhead_percentage=calc_params.overhead_percentage,
-            profit_percentage=calc_params.profit_percentage,
-            gst_type=calc_params.gst_type,
+            overhead_percentage=overhead_pct,
+            profit_percentage=profit_pct,
+            gst_type=gst_mode,
         )
 
         calc_result = CalculationService.calculate_quotation(engine_request)
@@ -283,6 +304,12 @@ class PricingService:
                 Quotation.purchase_order_id == po.id,
                 Quotation.company_id == company_id,
             ).first()
+
+            if quotation and quotation.status == "FINAL":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Cannot recalculate draft: Purchase order #{po.po_number} already has a finalized quotation ({quotation.quotation_number}). Finalized quotations are immutable.",
+                )
 
             if not quotation:
                 quotation_number = QuotationService.generate_quotation_number(db, company_id)

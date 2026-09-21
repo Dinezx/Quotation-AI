@@ -4,6 +4,7 @@ import {
   Calculator, 
   ArrowRight, 
   Layers, 
+  Cpu,
   RefreshCw, 
   CheckCircle2, 
   ArrowLeft,
@@ -22,9 +23,10 @@ import { useDensity } from '../context/DensityContext';
 import { 
   purchaseOrderApi, 
   POCalculateResponseDTO, 
-  PurchaseOrderDTO,
+  PurchaseOrderDTO, 
   RateMatchItemDTO 
 } from '../api/purchaseOrderApi';
+import { ratesApi } from '../api/ratesApi';
 
 export const CalculationReviewPage: React.FC = () => {
   const navigate = useNavigate();
@@ -42,11 +44,38 @@ export const CalculationReviewPage: React.FC = () => {
   const [selectedPoId, setSelectedPoId] = useState<string | null>(targetPoId);
   const [calcResult, setCalcResult] = useState<POCalculateResponseDTO | null>(null);
 
-  // Multiplier controls
+  // Multiplier controls initialized from tenant pricing profile
   const [overheadPct, setOverheadPct] = useState<number>(10);
   const [profitPct, setProfitPct] = useState<number>(15);
+  const [companyDefaultOverhead, setCompanyDefaultOverhead] = useState<number>(10);
+  const [companyDefaultProfit, setCompanyDefaultProfit] = useState<number>(15);
   const [isInterstate, setIsInterstate] = useState<boolean>(false);
   const [isRecalculating, setIsRecalculating] = useState<boolean>(false);
+
+  // Fetch authoritative company pricing profile on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadPricingRules() {
+      try {
+        const rules = await ratesApi.getPricingRules();
+        if (isMounted && rules) {
+          const ovh = Number(rules.overhead_percentage) || 10;
+          const prf = Number(rules.profit_percentage) || 15;
+          setOverheadPct(ovh);
+          setProfitPct(prf);
+          setCompanyDefaultOverhead(ovh);
+          setCompanyDefaultProfit(prf);
+          if (rules.gst_type === 'IGST') {
+            setIsInterstate(true);
+          }
+        }
+      } catch (err: any) {
+        console.warn('Could not load company pricing rules, using standard defaults:', err.message);
+      }
+    }
+    loadPricingRules();
+    return () => { isMounted = false; };
+  }, []);
 
   // 1. Load approved PO list if no PO selected
   useEffect(() => {
@@ -330,71 +359,125 @@ export const CalculationReviewPage: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Cost Breakdown Grid */}
+                      {/* Rate Source Visibility & Commercial Cost Breakdown (Phase 13) */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-100 text-xs font-mono">
                         
-                        {/* Material Block */}
+                        {/* Material Rate Master Source & Calculation */}
                         <div className={`p-3.5 rounded-xl border ${
                           item.material_rate ? 'bg-slate-50 border-slate-200/80' : 'bg-red-50/50 border-red-200'
                         }`}>
                           <div className="flex items-center justify-between text-[11px] uppercase text-slate-500 font-sans font-semibold">
-                            <span>Material Billet Cost</span>
-                            {item.material_rate ? (
-                              <span className="text-emerald-700 font-mono font-bold">₹{item.material_rate}/kg</span>
-                            ) : (
-                              <span className="text-red-600 font-sans font-bold">RATE MISSING</span>
-                            )}
+                            <span className="flex items-center gap-1.5">
+                              <Layers className="w-3.5 h-3.5 text-slate-600" />
+                              <span>Material Rate Master</span>
+                            </span>
+                            <span className="text-[10px] font-sans font-medium text-slate-400 bg-slate-200/60 px-1.5 py-0.5 rounded">
+                              Authoritative (Read-only)
+                            </span>
+                          </div>
+
+                          {/* Rate Source Specs */}
+                          <div className="mt-2.5 p-2 bg-white rounded-lg border border-slate-200/70 space-y-1 font-sans text-xs">
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-500 font-medium">Material Grade:</span>
+                              <span className="font-mono font-bold text-slate-900">{item.material || 'UNSPECIFIED'}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-500 font-medium">Base Rate:</span>
+                              {item.material_rate ? (
+                                <span className="font-mono font-bold text-emerald-700">₹{Number(item.material_rate).toFixed(2)} / kg</span>
+                              ) : (
+                                <span className="text-red-600 font-bold">RATE MISSING</span>
+                              )}
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-500 font-medium">Scrap Credit Rate:</span>
+                              <span className="font-mono font-semibold text-slate-700">
+                                ₹{Number(item.scrap_credit_rate || 0).toFixed(2)} / kg
+                              </span>
+                            </div>
                           </div>
                           
-                          {item.net_material_cost !== undefined && item.net_material_cost !== null ? (
-                            <>
-                              <div className="text-slate-950 font-bold text-sm mt-1">
-                                ₹{item.net_material_cost.toLocaleString()}
+                          {/* Deterministic Calculation Result */}
+                          <div className="mt-2.5 pt-2 border-t border-slate-200/60">
+                            {item.net_material_cost !== undefined && item.net_material_cost !== null ? (
+                              <>
+                                <div className="flex justify-between items-baseline">
+                                  <span className="text-[11px] font-sans font-bold uppercase text-slate-600">Net Billet Cost:</span>
+                                  <span className="text-slate-950 font-bold text-sm">₹{Number(item.net_material_cost).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                </div>
+                                <div className="text-[11px] text-slate-500 mt-1 font-sans leading-relaxed">
+                                  Gross {item.gross_weight_kg}kg × ₹{item.material_rate}/kg × {item.quantity} = ₹{item.gross_material_cost}
+                                  {item.scrap_weight_kg > 0 && item.scrap_credit ? (
+                                    <> • Scrap -₹{item.scrap_credit}</>
+                                  ) : null}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-xs text-slate-400 italic font-sans">
+                                {item.gross_weight_kg === 0 ? 'Gross weight missing' : 'Requires rate card match'}
                               </div>
-                              <div className="text-[11px] text-slate-500 mt-0.5 font-sans leading-relaxed">
-                                Gross {item.gross_weight_kg}kg × ₹{item.material_rate}/kg × {item.quantity} = ₹{item.gross_material_cost}
-                                {item.scrap_weight_kg > 0 && item.scrap_credit ? (
-                                  <> • Scrap -₹{item.scrap_credit}</>
-                                ) : null}
-                              </div>
-                            </>
-                          ) : (
-                            <div className="text-xs text-slate-400 mt-2 italic font-sans">
-                              {item.gross_weight_kg === 0 ? 'Gross weight missing' : 'Requires rate card match'}
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
 
-                        {/* Process Block */}
+                        {/* Process Rate Master Source & Calculation */}
                         <div className={`p-3.5 rounded-xl border ${
                           item.process_rate ? 'bg-slate-50 border-slate-200/80' : 'bg-red-50/50 border-red-200'
                         }`}>
                           <div className="flex items-center justify-between text-[11px] uppercase text-slate-500 font-sans font-semibold">
-                            <span>Machining & Setup</span>
-                            {item.process_rate ? (
-                              <span className="text-blue-700 font-mono font-bold">₹{item.process_rate}/hr</span>
-                            ) : (
-                              <span className="text-red-600 font-sans font-bold">
-                                {item.process ? 'RATE MISSING' : 'PROCESS MISSING'}
-                              </span>
-                            )}
+                            <span className="flex items-center gap-1.5">
+                              <Cpu className="w-3.5 h-3.5 text-slate-600" />
+                              <span>Process Rate Master</span>
+                            </span>
+                            <span className="text-[10px] font-sans font-medium text-slate-400 bg-slate-200/60 px-1.5 py-0.5 rounded">
+                              Authoritative (Read-only)
+                            </span>
                           </div>
 
-                          {item.process_cost !== undefined && item.process_cost !== null ? (
-                            <>
-                              <div className="text-slate-950 font-bold text-sm mt-1">
-                                ₹{item.process_cost.toLocaleString()}
-                              </div>
-                              <div className="text-[11px] text-slate-500 mt-0.5 font-sans leading-relaxed">
-                                {item.machining_hours}h × ₹{item.process_rate}/hr × {item.quantity} = ₹{item.machining_cost}
-                                {item.setup_cost ? ` + Setup ₹${item.setup_cost}` : ''}
-                              </div>
-                            </>
-                          ) : (
-                            <div className="text-xs text-slate-400 mt-2 italic font-sans">
-                              {item.process ? 'Process rate card unlisted' : 'Operation must be assigned'}
+                          {/* Rate Source Specs */}
+                          <div className="mt-2.5 p-2 bg-white rounded-lg border border-slate-200/70 space-y-1 font-sans text-xs">
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-500 font-medium">Process Name:</span>
+                              <span className="font-mono font-bold text-slate-900">{item.process || 'UNSPECIFIED'}</span>
                             </div>
-                          )}
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-500 font-medium">Hourly Rate:</span>
+                              {item.process_rate ? (
+                                <span className="font-mono font-bold text-blue-700">₹{Number(item.process_rate).toFixed(2)} / hr</span>
+                              ) : (
+                                <span className="text-red-600 font-bold">
+                                  {item.process ? 'RATE MISSING' : 'PROCESS MISSING'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-500 font-medium">Setup Charge:</span>
+                              <span className="font-mono font-semibold text-slate-700">
+                                ₹{Number(item.setup_cost || 0).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Deterministic Calculation Result */}
+                          <div className="mt-2.5 pt-2 border-t border-slate-200/60">
+                            {item.process_cost !== undefined && item.process_cost !== null ? (
+                              <>
+                                <div className="flex justify-between items-baseline">
+                                  <span className="text-[11px] font-sans font-bold uppercase text-slate-600">Total Machining Cost:</span>
+                                  <span className="text-slate-950 font-bold text-sm">₹{Number(item.process_cost).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                </div>
+                                <div className="text-[11px] text-slate-500 mt-1 font-sans leading-relaxed">
+                                  {item.machining_hours}h × ₹{item.process_rate}/hr × {item.quantity} = ₹{item.machining_cost}
+                                  {item.setup_cost ? ` + Setup ₹${item.setup_cost}` : ''}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-xs text-slate-400 italic font-sans">
+                                {item.process ? 'Process rate card unlisted' : 'Operation must be assigned'}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                       </div>
@@ -473,18 +556,18 @@ export const CalculationReviewPage: React.FC = () => {
                       </div>
                       <input
                         type="range"
-                        min="5"
-                        max="25"
-                        step="1"
+                        min="0"
+                        max="40"
+                        step="0.5"
                         value={overheadPct}
                         onChange={(e) => setOverheadPct(Number(e.target.value))}
                         disabled={isBlocked}
                         className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 disabled:opacity-50"
                       />
                       <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
-                        <span>5%</span>
-                        <span>Default: 10%</span>
-                        <span>25%</span>
+                        <span>0%</span>
+                        <span>Company Default: {companyDefaultOverhead}%</span>
+                        <span>40%</span>
                       </div>
                     </div>
 
@@ -502,18 +585,18 @@ export const CalculationReviewPage: React.FC = () => {
                       </div>
                       <input
                         type="range"
-                        min="5"
-                        max="30"
-                        step="1"
+                        min="0"
+                        max="50"
+                        step="0.5"
                         value={profitPct}
                         onChange={(e) => setProfitPct(Number(e.target.value))}
                         disabled={isBlocked}
                         className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600 disabled:opacity-50"
                       />
                       <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
-                        <span>5%</span>
-                        <span>Default: 15%</span>
-                        <span>30%</span>
+                        <span>0%</span>
+                        <span>Company Default: {companyDefaultProfit}%</span>
+                        <span>50%</span>
                       </div>
                     </div>
                   </div>

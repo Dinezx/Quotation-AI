@@ -346,10 +346,10 @@ def update_pricing_rules(
         raise HTTPException(status_code=404, detail="Company not found")
 
     settings = dict(company.settings or {})
-    settings["overhead_percentage"] = float(rules_in.overhead_percentage)
-    settings["profit_percentage"] = float(rules_in.profit_percentage)
+    settings["overhead_percentage"] = str(rules_in.overhead_percentage)
+    settings["profit_percentage"] = str(rules_in.profit_percentage)
     settings["gst_type"] = rules_in.gst_type
-    settings["default_gst_rate"] = float(rules_in.default_gst_rate)
+    settings["default_gst_rate"] = str(rules_in.default_gst_rate)
 
     company.settings = settings
     db.commit()

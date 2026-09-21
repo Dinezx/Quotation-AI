@@ -106,6 +106,13 @@ class QuotationService:
         Deterministically recalculates quotation commercial totals and synchronizes
         all individual QuotationItem rows atomically within the current database transaction.
         """
+        if quotation.status == "FINAL":
+            from fastapi import HTTPException, status
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Finalized quotations cannot be recalculated or modified.",
+            )
+
         calc_res = CalculationService.calculate_quotation(request)
 
         # 1. Update quotation header financial breakdown

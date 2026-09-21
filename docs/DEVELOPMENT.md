@@ -60,6 +60,12 @@ cd backend
 python -m pytest tests/test_quotation_finalization.py -v
 ```
 
+To run rate cards, tenant pricing rules, and deterministic calculation suites:
+```bash
+cd backend
+python -m pytest tests/test_rates_api.py tests/test_rate_matching_calculation.py -v
+```
+
 To run quotation email dispatch, PDF integrity, and Resend delivery tests:
 ```bash
 cd backend
