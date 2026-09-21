@@ -1,7 +1,15 @@
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Text, JSON
 from app.db.base import Base, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.customer import Customer
+    from app.models.material import Material
+    from app.models.process import Process
+    from app.models.purchase_order import PurchaseOrder
+    from app.models.quotation import Quotation
 
 class Company(Base, TimestampMixin):
     __tablename__ = "companies"
