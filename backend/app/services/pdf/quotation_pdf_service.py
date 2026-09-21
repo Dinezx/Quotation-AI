@@ -32,6 +32,7 @@ from app.models.company import Company
 from app.models.customer import Customer
 from app.models.purchase_order import PurchaseOrder
 from app.services.calculation.calculation_service import CalculationService
+from app.services.pdf.templates import get_template_renderer
 
 
 class NumberedCanvas(canvas.Canvas):
@@ -81,47 +82,166 @@ class QuotationPDFService:
         company: Company,
         customer: Optional[Customer] = None,
         purchase_order: Optional[PurchaseOrder] = None,
+        template_override: Optional[Dict[str, Any]] = None,
     ) -> bytes:
         """
         Generates binary PDF content for the given quotation.
         Presentation-only: reads and displays persisted values.
+        Delegates to the configured template renderer.
         """
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=A4,
-            leftMargin=40,
-            rightMargin=40,
-            topMargin=36,
-            bottomMargin=42,
+        tmpl_config = template_override
+        if not tmpl_config and company:
+            if hasattr(company, "get_template_config"):
+                tmpl_config = company.get_template_config()
+            elif isinstance(company.settings, dict):
+                tmpl_config = company.settings.get("quotation_template")
+        tmpl_config = tmpl_config or {}
+
+        template_id = tmpl_config.get("template_id", "classic_professional")
+        renderer = get_template_renderer(template_id)
+        return renderer.render(
+            quotation=quotation,
+            company=company,
+            customer=customer,
+            purchase_order=purchase_order,
+            config=tmpl_config,
         )
 
-        content = []
-        styles = cls._create_styles()
+    @classmethod
+    def generate_sample_pdf(
+        cls,
+        template_id: str = "classic_professional",
+        config: Optional[Dict[str, Any]] = None,
+        company: Optional[Company] = None,
+    ) -> bytes:
+        """
+        Generates a sample manufacturing quotation A4 PDF for gallery/customizer preview.
+        Uses realistic sample manufacturing data without modifying persisted state or calculation values.
+        """
+        from app.models.quotation_item import QuotationItem
 
-        # 1. Company Header & Quotation Document Meta
-        content.append(cls._build_header_section(quotation, company, styles))
-        content.append(Spacer(1, 10))
+        sample_company = company
+        if not sample_company:
+            sample_company = Company(
+                id="sample-comp-001",
+                name="Bharat Precision Engineering Pvt Ltd",
+                legal_name="Bharat Precision Engineering Pvt Ltd",
+                address="Plot 44, Bhosari MIDC, Sector 7, Pune - 411026, Maharashtra",
+                phone="+91 20 2712 8844",
+                email="quotes@bharatprecision.co.in",
+                gstin="27AABCB2018Q1Z2",
+                settings={
+                    "bank_details": {
+                        "bank_name": "State Bank of India",
+                        "account_name": "Bharat Precision Engineering Pvt Ltd",
+                        "account_number": "39482710492",
+                        "ifsc": "SBIN0001423",
+                        "branch": "Industrial Finance Branch, Pune",
+                        "upi_id": "bharatprecision@sbi",
+                    }
+                }
+            )
 
-        # 2. Customer & Purchase Order Reference Information Block
-        content.append(cls._build_party_reference_section(quotation, customer, purchase_order, styles))
-        content.append(Spacer(1, 10))
+        sample_customer = Customer(
+            id="sample-cust-001",
+            name="Mahindra Precision Agro Pvt Ltd",
+            billing_address="Gate No 341, Chakan MIDC Phase II, Pune - 410501",
+            gstin="27AAACM1234F1Z8",
+        )
+        sample_po = PurchaseOrder(
+            id="sample-po-001",
+            po_number="PO-2026-00123",
+            po_date=datetime(2026, 3, 15),
+            customer_name="Mahindra Precision Agro Pvt Ltd",
+        )
 
-        # 3. Itemized Quotation Line Items Table
-        content.append(cls._build_items_table(quotation, styles))
-        content.append(Spacer(1, 8))
+        sample_quotation = Quotation(
+            id="sample-q-001",
+            quotation_number="QT-2026-0123",
+            quotation_date=datetime(2026, 3, 16),
+            valid_until=datetime(2026, 4, 15),
+            currency="INR",
+            status="DRAFT",
+            material_cost=Decimal("41200.00"),
+            process_cost=Decimal("23180.00"),
+            subtotal=Decimal("64380.00"),
+            overhead_percentage=Decimal("10.00"),
+            overhead_amount=Decimal("6438.00"),
+            profit_percentage=Decimal("15.00"),
+            profit_amount=Decimal("9657.00"),
+            taxable_amount=Decimal("80475.00"),
+            gst_type="CGST_SGST",
+            cgst_rate=Decimal("9.00"),
+            cgst_amount=Decimal("7242.75"),
+            sgst_rate=Decimal("9.00"),
+            sgst_amount=Decimal("7242.75"),
+            igst_rate=Decimal("18.00"),
+            igst_amount=Decimal("0.00"),
+            gst_amount=Decimal("14485.50"),
+            final_total=Decimal("94960.50"),
+            delivery_terms="Ex-Works Factory Bhosari, Pune. Freight extra at actuals.",
+            payment_terms="30 Days from date of supply and inspection.",
+            inspection_terms="Pre-dispatch inspection at manufacturer works.",
+            notes="Dimensions as per drawing. Standard machining tolerances apply.",
+            prepared_by="Rajesh Deshmukh",
+            authorized_signatory="Authorized Signatory",
+        )
+        sample_quotation.company = sample_company
+        sample_quotation.customer = sample_customer
+        sample_quotation.purchase_order = sample_po
 
-        # 4. Financial Cost Summary, Tax Breakdown, Bank Details & Amount in Words
-        content.append(cls._build_commercial_summary_section(quotation, company, styles))
-        content.append(Spacer(1, 10))
+        item1 = QuotationItem(
+            id="sample-item-1",
+            item_number=1,
+            part_name="Shaft - EN8D",
+            specification="CNC Turned Drive Shaft, Dia 45mm x 320mm",
+            drawing_number="DRG-SFT-001-R2",
+            material="EN8D",
+            process="CNC Turning & Cylindrical Grinding",
+            quantity=Decimal("10"),
+            unit="PCS",
+            unit_price=Decimal("1700.00"),
+            total_price=Decimal("17000.00"),
+        )
+        item2 = QuotationItem(
+            id="sample-item-2",
+            item_number=2,
+            part_name="Housing - EN19",
+            specification="High-Pressure Pump Casing (CI Gr.2 / EN19)",
+            drawing_number="DRG-HSG-044-R1",
+            material="EN19",
+            process="VMC Milling & Boring",
+            quantity=Decimal("5"),
+            unit="PCS",
+            unit_price=Decimal("5376.00"),
+            total_price=Decimal("26880.00"),
+        )
+        item3 = QuotationItem(
+            id="sample-item-3",
+            item_number=3,
+            part_name="Cover Plate - MS 2062",
+            specification="Flanged Cover Plate, Laser Cut & Deburred",
+            drawing_number="DRG-PLT-012-R0",
+            material="MS 2062",
+            process="Laser Cutting & Tapping",
+            quantity=Decimal("20"),
+            unit="PCS",
+            unit_price=Decimal("1025.00"),
+            total_price=Decimal("20500.00"),
+        )
+        sample_quotation.items = [item1, item2, item3]
 
-        # 5. Terms & Conditions and Authorization Signatures
-        content.append(cls._build_terms_and_signatures(quotation, company, styles))
+        cfg = dict(config or {})
+        cfg["template_id"] = template_id
+        renderer = get_template_renderer(template_id)
+        return renderer.render(
+            quotation=sample_quotation,
+            company=sample_company,
+            customer=sample_customer,
+            purchase_order=sample_po,
+            config=cfg,
+        )
 
-        doc.build(content, canvasmaker=NumberedCanvas)
-        pdf_bytes = buffer.getvalue()
-        buffer.close()
-        return pdf_bytes
 
     @classmethod
     def _create_styles(cls) -> Dict[str, ParagraphStyle]:

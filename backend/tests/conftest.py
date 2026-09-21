@@ -113,9 +113,20 @@ def setup_test_db():
     Base.metadata.create_all(bind=engine)
     seed_initial_data()
 
-    # Ensure secondary tenant Company B exists for cross-tenancy testing
+    # Ensure baseline company A is reset to canonical state
     db = SessionLocal()
     try:
+        comp_a = db.query(Company).filter(Company.id == "comp-bpe-pune").first()
+        if comp_a:
+            comp_a.name = "Bharat Precision Engineering Pvt. Ltd."
+            comp_a.legal_name = "Bharat Precision Engineering Private Limited"
+            comp_a.address = "Plot W-42, MIDC Industrial Area, Phase II, Bhosari, Pune, Maharashtra - 411026"
+            comp_a.gstin = "27AAACB1234F1Z8"
+            comp_a.phone = "+91 20 2712 8840"
+            comp_a.email = "contact@bharatprecision.co.in"
+            db.commit()
+
+        # Ensure secondary tenant Company B exists for cross-tenancy testing
         comp_b = db.query(Company).filter(Company.id == "comp-other-plant").first()
         if not comp_b:
             comp_b = Company(

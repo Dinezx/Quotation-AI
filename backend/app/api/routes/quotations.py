@@ -112,6 +112,9 @@ def create_quotation(
 
     quotation_number = quotation_in.quotation_number or QuotationService.generate_quotation_number(db, company_id)
 
+    company = db.query(Company).filter(Company.id == company_id).first()
+    defaults = company.get_quotation_defaults() if company and hasattr(company, "get_quotation_defaults") else {}
+
     quotation = Quotation(
         company_id=company_id,
         customer_id=quotation_in.customer_id,
@@ -139,12 +142,12 @@ def create_quotation(
         final_total=quotation_in.final_total,
         status=quotation_in.status,
         pdf_url=quotation_in.pdf_url,
-        notes=quotation_in.notes,
-        payment_terms=quotation_in.payment_terms,
-        delivery_terms=quotation_in.delivery_terms,
-        inspection_terms=quotation_in.inspection_terms,
-        prepared_by=quotation_in.prepared_by,
-        authorized_signatory=quotation_in.authorized_signatory,
+        notes=quotation_in.notes or defaults.get("general_terms"),
+        payment_terms=quotation_in.payment_terms or defaults.get("payment_terms"),
+        delivery_terms=quotation_in.delivery_terms or defaults.get("delivery_terms"),
+        inspection_terms=quotation_in.inspection_terms or defaults.get("inspection_terms"),
+        prepared_by=quotation_in.prepared_by or defaults.get("prepared_by"),
+        authorized_signatory=quotation_in.authorized_signatory or defaults.get("authorized_signatory"),
     )
     db.add(quotation)
     db.flush()

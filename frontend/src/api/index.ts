@@ -3,3 +3,4 @@ export * from './customerApi';
 export * from './purchaseOrderApi';
 export * from './quotationApi';
 export * from './ratesApi';
+export * from './companyApi';

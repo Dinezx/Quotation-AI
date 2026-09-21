@@ -31,7 +31,12 @@ Represents manufacturing plants / precision engineering facilities.
 - `address` (`TEXT`): Registered factory/plant address.
 - `phone` (`VARCHAR(32)`): Contact number.
 - `email` (`VARCHAR(255)`): Official correspondence email.
-- `settings` (`JSONB` / `JSON`): Single authoritative configuration store for tenant commercial pricing rules (`overhead_percentage`, `profit_percentage`, `gst_type`, `default_gst_rate`).
+- `settings` (`JSONB` / `JSON`): Single authoritative configuration store for tenant settings:
+  - **Pricing & Tax**: `overhead_percentage`, `profit_percentage`, `gst_type` (`CGST_SGST` | `IGST` | `EXEMPT`), `default_gst_rate`, `pan`.
+  - **Settlement Bank**: `bank_name`, `account_name`, `account_number`, `bank_account`, `bank_ifsc`, `bank_branch`, `upi_id`.
+  - **Quotation Defaults**: `quotation_validity_days`, `payment_terms`, `delivery_terms`, `inspection_terms`, `general_terms`, `prepared_by`, `authorized_signatory`.
+  - **Quotation Template**: `template_id` (one of 8 standard designs), `primary_color`, `secondary_color`, `font_family`, `logo_position`, `show_logo`, `show_company_contact`, `show_gstin`, `show_bank_details`, `show_terms`, `show_signature`, `footer_text`.
+  - **Logo Storage**: `logo_url`, `logo_storage_path`.
 - `is_active` (`BOOLEAN`, Default: `TRUE`): Tenant active status.
 - `created_at`, `updated_at` (`TIMESTAMP WITH TIME ZONE`).
 

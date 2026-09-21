@@ -241,7 +241,57 @@ Atomic Audit Update (email_status, email_sent_at, email_sent_by, email_recipient
 
 ---
 
-## 8. Collaborative Development Division
+## 9. Company Settings & Multi-Template PDF Architecture
+
+The presentation layer provides multi-template quotation customization while strictly maintaining calculation invariance and historical document immutability.
+
+```
+Purchase Order
+      ↓
+AI Extraction (Azure Doc Intelligence / Mock)
+      ↓
+Gemini Normalization (Strict fallback parser)
+      ↓
+Human PO Review & Approval
+      ↓
+Deterministic Decimal Pricing Engine
+      ↓
+Quotation Data Structure (Decimals, Quantized to 2 places)
+      ↓
+QuotationPDFService
+      ↓
+QuotationTemplateRenderer (Selected Template: 1 of 8)
+      ↓
+ReportLab Single Authoritative PDF Engine
+      ↓
+Quotation Finalization
+      ↓
+Private Supabase Storage + SHA-256 Checksum
+      ↓
+Immutable Stored PDF
+```
+
+### Architectural Guarantees:
+1. **Single Authoritative PDF Engine**: ReportLab is the sole PDF generator. No secondary HTML-to-PDF or headless browser tools exist.
+2. **Deterministic Calculation Invariance**: Template selection affects presentation only (colors, typography, column arrangement, headers, and footer notes). Commercial arithmetic, net material cost, process cost, overheads, profit margins, GST, and totals are computed strictly prior to template dispatch.
+3. **Historical Final PDF Immutability**:
+   - When a quotation transitions to `FINAL`, its generated PDF binary is written to private storage and its cryptographic SHA-256 hash is recorded in `quotations.pdf_sha256`.
+   - Subsequent changes to company settings, bank details, logo, or active templates apply **exclusively to new and draft quotations**.
+   - Finalized PDFs are served directly from storage and are **never** regenerated or altered.
+4. **8 Curated Professional Templates**:
+   - `classic_professional`: Structured corporate hierarchy, navy accents, general manufacturing.
+   - `modern_minimal`: Generous whitespace, restrained accents, contemporary precision shops.
+   - `premium_corporate`: Bold dark header banner, high contrast, established industrial brands.
+   - `elegant_bordered`: Formal bordered container, serif/dignified styling, traditional institutions.
+   - `industrial_bold`: Heavy industrial header, engineering quotation layout, fabrication facilities.
+   - `modern_two_column`: Space-efficient two-column layout, balanced metadata distribution.
+   - `creative_modern`: Contemporary geometric accent bar, distinctive custom branding.
+   - `simple_clean`: Ultra-clean direct quotation format, maximum readability.
+5. **Zero AI Involvement in Formatting & Pricing**: AI is completely absent from company profile settings, template selection, and PDF rendering.
+
+---
+
+## 10. Collaborative Development Division
 
 - **Developer 1 (Backend)**: Works inside `backend/`. Responsible for FastAPI routes, database models/migrations, JWKS auth, pricing calculations, storage & email abstractions, backend tests, and document extractors.
 - **Developer 2 (Frontend)**: Works inside `frontend/`. Responsible for React UI components, Stitch Industrial Precision aesthetics, React Router navigation, TanStack Query data fetching, and Zod form validation.

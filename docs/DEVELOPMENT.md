@@ -72,6 +72,13 @@ cd backend
 python -m pytest tests/test_quotation_email.py -v
 ```
 
+To run company settings, authoritative profile, GST, bank details, logo storage, and 8-template gallery tests:
+```bash
+cd backend
+python -m pytest tests/test_company_settings_and_templates.py -v
+```
+
+
 ### PDF Generation & Testing Rules
 - Backend PDF generation is implemented using **ReportLab** (`backend/app/services/pdf/quotation_pdf_service.py`).
 - The PDF generator is strictly **presentation-only**. It never recalculates prices or invokes external AI services.

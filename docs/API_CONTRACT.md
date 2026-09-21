@@ -552,5 +552,41 @@ All rate management and pricing rule endpoints are strictly tenant-isolated (`co
 3. Attempting to recalculate a PO that already has a finalized quotation returns `409 Conflict`.
 4. Inactive materials and processes return `MATERIAL_RATE_MISSING` and `PROCESS_RATE_MISSING`, blocking calculation without AI or guessing.
 
+---
+
+## 8. Company Settings & Quotation Template Gallery
+
+The manufacturer maintains one authoritative company profile, statutory tax configuration, company bank details, quotation defaults, and customized quotation template selection.
+
+### Authoritative Architecture & Principles
+1. **Single Authoritative Profile**: Company credentials (`name`, `legal_name`, `address`, `phone`, `email`, `website`, `gstin`, `pan`, `logo_url`) are stored at company level. No duplicate company store exists.
+2. **Deterministic Calculation Invariance**: Template selection and styling are presentation layers only. They **never** modify material cost, process cost, overhead, profit margin, GST calculation, taxable amount, or grand total.
+3. **ReportLab Authoritative Engine**: ReportLab is the single authoritative PDF rendering engine. Zero AI involvement in quotation layout generation.
+4. **Historical FINAL PDF Immutability**: Modifying company settings, bank details, logo, or quotation templates **never** alters or regenerates historical `FINAL` quotation PDFs. Stored bytes, SHA-256 integrity, and storage paths remain cryptographically immutable.
+
+### Endpoints
+
+- **`GET /company/settings`**: Retrieves full authoritative company settings (`profile`, `tax`, `bank`, `defaults`, `template`).
+- **`PUT /company/profile`**: Updates company identity, legal name, address, website, PAN, and authorized signatory.
+- **`PUT /company/tax`**: Updates statutory GSTIN, default GST rate, and GST mode (`CGST_SGST`, `IGST`, `EXEMPT`).
+- **`PUT /company/bank`**: Updates company-level settlement bank details (`bank_name`, `account_name`, `account_number`, `ifsc`, `branch`, `upi_id`).
+- **`PUT /company/defaults`**: Updates quotation creation defaults (`quotation_validity_days`, `payment_terms`, `delivery_terms`, `inspection_terms`, `general_terms`, `prepared_by`, `authorized_signatory`).
+- **`GET /company/templates`**: Returns gallery list of 8 professional quotation templates with category, description, and recommended manufacturing sector.
+  1. `classic_professional`: Classic corporate layout, clean blue accents, structured header.
+  2. `modern_minimal`: Generous whitespace, refined typography, minimal visual noise.
+  3. `premium_corporate`: Premium dark header banner, high-contrast branding, luxury summary.
+  4. `elegant_bordered`: Formal bordered container, serif/dignified typography, traditional structure.
+  5. `industrial_bold`: Rugged industrial styling, heavy headers, engineering quotation language.
+  6. `modern_two_column`: Efficient two-column company/quote metadata, balanced layout.
+  7. `creative_modern`: Contemporary geometric accent bar, modern branding headers.
+  8. `simple_clean`: Ultra-minimal direct quotation format, crisp monochrome borders.
+- **`GET /company/template`**: Retrieves current active quotation template ID and presentation customization options.
+- **`PUT /company/template`**: Updates active template ID and customization (`primary_color`, `secondary_color`, `font_family`, `logo_position`, `show_logo`, `show_company_contact`, `show_gstin`, `show_bank_details`, `show_terms`, `show_signature`, `footer_text`).
+- **`POST /company/template/preview-pdf`**: Generates and streams sample A4 PDF for gallery or customizer preview (`application/pdf`).
+- **`GET /company/logo`**: Retrieves current company logo access URL. Returns 404 if no logo configured.
+- **`POST /company/logo`**: Uploads or replaces company logo in company-scoped private storage. Validates image MIME type (`image/png`, `image/jpeg`, `image/webp`) and size (<= 2MB).
+- **`DELETE /company/logo`**: Removes company logo from storage and unlinks `company.settings['logo_url']`.
+
+
 
 
