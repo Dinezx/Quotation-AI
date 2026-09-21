@@ -2,6 +2,8 @@ export type MaterialCategory = 'Ferrous' | 'Non-Ferrous' | 'Alloys' | 'Polymers'
 
 export interface MaterialRate {
   id: string;
+  name?: string;
+  grade?: string;
   gradeAndSpec: string;
   subSpec?: string;
   category: MaterialCategory;
@@ -13,6 +15,7 @@ export interface MaterialRate {
   aiMatchStatus: 'VERIFIED' | 'NEEDS_REVIEW';
   lastUpdated: string;
   isPopular?: boolean;
+  is_active?: boolean;
 }
 
 export interface ProcessRate {
@@ -25,6 +28,7 @@ export interface ProcessRate {
   capacityUtilizationPct: number;
   shiftMode: string;
   lastCalibrated: string;
+  is_active?: boolean;
 }
 
 export interface MultipliersConfig {
@@ -34,6 +38,13 @@ export interface MultipliersConfig {
   defaultGstPct: number;
   mandiLinkStatus: string;
   lastMandiSync: string;
+}
+
+export interface PricingRulesConfig {
+  overhead_percentage: number;
+  profit_percentage: number;
+  gst_type: string;
+  default_gst_rate: number;
 }
 
 export interface HsnGstRule {

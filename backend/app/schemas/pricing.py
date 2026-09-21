@@ -1,6 +1,6 @@
 from decimal import Decimal
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CalculationIssue(BaseModel):
@@ -82,4 +82,29 @@ class POCalculateResponse(BaseModel):
     quotation_number: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PricingRulesResponse(BaseModel):
+    overhead_percentage: Decimal = Decimal("10.00")
+    profit_percentage: Decimal = Decimal("15.00")
+    gst_type: str = "CGST_SGST"
+    default_gst_rate: Decimal = Decimal("18.00")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PricingRulesUpdate(BaseModel):
+    overhead_percentage: Decimal = Field(..., ge=Decimal("0.00"), le=Decimal("100.00"), description="Factory overhead percentage (0-100%)")
+    profit_percentage: Decimal = Field(..., ge=Decimal("0.00"), le=Decimal("100.00"), description="Commercial profit margin percentage (0-100%)")
+    gst_type: str = Field(default="CGST_SGST", description="Default statutory GST classification: CGST_SGST, IGST, or EXEMPT")
+    default_gst_rate: Decimal = Field(default=Decimal("18.00"), ge=Decimal("0.00"), le=Decimal("100.00"), description="Default total GST rate percentage")
+
+    @field_validator("gst_type")
+    @classmethod
+    def validate_gst_mode(cls, v: str) -> str:
+        v_upper = v.strip().upper()
+        if v_upper not in {"CGST_SGST", "IGST", "EXEMPT"}:
+            raise ValueError("gst_type must be one of: 'CGST_SGST', 'IGST', 'EXEMPT'")
+        return v_upper
+
 
