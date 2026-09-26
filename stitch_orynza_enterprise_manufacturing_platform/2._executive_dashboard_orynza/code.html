@@ -1,0 +1,547 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"primary-fixed":"#d9e2fc","secondary":"#8c4f10","error":"#ba1a1a","on-secondary-fixed":"#2e1500","secondary-container":"#fdad67","on-tertiary-fixed-variant":"#38485d","on-surface":"#1b1c19","on-primary-container":"#7f879f","surface-variant":"#e4e2dd","primary-fixed-dim":"#bdc6e0","on-tertiary":"#ffffff","tertiary-fixed-dim":"#b7c8e1","primary-container":"#172033","on-secondary-fixed-variant":"#6d3a00","on-primary-fixed":"#121b2e","error-container":"#ffdad6","outline-variant":"#c6c6cd","secondary-fixed":"#ffdcc2","on-surface-variant":"#45474c","surface-bright":"#fbf9f4","surface-container-high":"#eae8e3","surface-dim":"#dbdad5","background":"#fbf9f4","on-secondary-container":"#763f00","tertiary-container":"#102134","inverse-primary":"#bdc6e0","tertiary":"#000917","surface":"#fbf9f4","surface-container":"#f0eee9","primary":"#01081a","outline":"#76777d","secondary-fixed-dim":"#ffb77b","on-tertiary-container":"#7989a0","inverse-on-surface":"#f2f1ec","surface-container-lowest":"#ffffff","on-background":"#1b1c19","on-primary":"#ffffff","surface-tint":"#555e74","on-tertiary-fixed":"#0b1c30","inverse-surface":"#30312e","on-error":"#ffffff","on-error-container":"#93000a","surface-container-low":"#f5f3ee","on-secondary":"#ffffff","surface-container-highest":"#e4e2dd","tertiary-fixed":"#d3e4fe","on-primary-fixed-variant":"#3e475b"},borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},spacing:{"space-sm":"0.5rem","space-lg":"1.5rem","gutter":"1rem","space-xl":"2rem","space-md":"1rem","space-xs":"0.25rem","margin-mobile":"1rem","gutter-compact":"0.5rem","margin":"1.5rem"},fontFamily:{"label-md":["Inter"],"body-md":["Inter"],"headline-md":["Inter"],"headline-sm":["Inter"],"headline-lg":["Inter"],"display-lg":["Inter"],"metric-mono":["Inter"],"label-lg":["Inter"],"label-sm":["Inter"],"body-sm":["Inter"],"body-lg":["Inter"],"headline-xl":["Inter"]},fontSize:{"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"500"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"headline-md":["18px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"600"}],"headline-sm":["15px",{"lineHeight":"20px","fontWeight":"600"}],"headline-lg":["22px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}],"display-lg":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"700"}],"metric-mono":["24px",{"lineHeight":"28px","letterSpacing":"-0.02em","fontWeight":"600"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"500"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-sm":["12px",{"lineHeight":"16px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}],"headline-xl":["28px",{"lineHeight":"36px","letterSpacing":"-0.015em","fontWeight":"600"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface antialiased flex flex-row min-h-screen w-full m-0 p-0 overflow-x-hidden items-stretch"><aside class="sticky top-0 h-screen w-60 min-w-[240px] max-w-[240px] bg-[#172033] z-40 flex flex-col justify-between overflow-y-auto shrink-0 m-0 p-0 rounded-none border-0 min-h-screen" style="width: 240px !important; min-width: 240px !important; max-width: 240px !important; flex-shrink: 0 !important;"><div class="flex flex-col"><div class="h-[68px] px-4 flex items-center gap-3 bg-[#102134] border-b border-[#1f2d47]"><img alt="Brand logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XpMa07YGsOQxew2o2D6arTC2kS7bCJ1Lc-G1-NVcMP3tOWL70RPdXuHIns7f74dyoBENm-PJsqRviKswql_2yXasZUjk5bMNk_rBuDZhQj1QadmJ59OMQwHoHqMnkSxsn-gViDtWLIlOzdcmUVKiYrVcLP-YJ5Ca10pYT-eCppegdR7IL8vWqrCN1mqYdHDel3Kf1CH6IyJJOjwUz5wvsFMWPVzccfNukJXjhUffsdFbvXmX5eto5uyv8"><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-white font-bold tracking-tight uppercase leading-none">ORYNZA</span><span class="font-label-sm text-[11px] text-[#7f879f] leading-tight mt-0.5">Smarter Manufacturing</span></div></div><nav class="flex flex-col px-3 py-3 space-y-4"><div class="flex flex-col gap-1"><div class="px-2 font-label-sm text-[11px] uppercase tracking-wider text-[#7f879f] font-semibold">Overview</div><a href="#" data-path="dashboard" aria-current="page" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#B87333] text-white font-medium text-sm transition-all shadow-sm"><span class="material-symbols-outlined text-lg">dashboard</span>Dashboard</a></div><div class="flex flex-col gap-1"><div class="px-2 font-label-sm text-[11px] uppercase tracking-wider text-[#7f879f] font-semibold">Work</div><a href="#" data-path="quotations" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">description</span>Quotations</a><a href="#" data-path="purchase-orders" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">shopping_cart</span>Purchase Orders</a><a href="#" data-path="customers" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">group</span>Customers</a></div><div class="flex flex-col gap-1"><div class="px-2 font-label-sm text-[11px] uppercase tracking-wider text-[#7f879f] font-semibold">Operations</div><a href="#" data-path="procurement" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">package_2</span>Procurement</a><a href="#" data-path="inventory" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">warehouse</span>Inventory</a><a href="#" data-path="production" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">precision_manufacturing</span>Production</a><a href="#" data-path="dispatch" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">local_shipping</span>Dispatch</a></div><div class="flex flex-col gap-1"><div class="px-2 font-label-sm text-[11px] uppercase tracking-wider text-[#7f879f] font-semibold">Insights</div><a href="#" data-path="analytics" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">bar_chart</span>Analytics</a></div><div class="flex flex-col gap-1"><div class="px-2 font-label-sm text-[11px] uppercase tracking-wider text-[#7f879f] font-semibold">Masters</div><a href="#" data-path="rates" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">price_change</span>Rates</a><a href="#" data-path="templates" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">draw</span>Templates</a></div><div class="flex flex-col gap-1"><div class="px-2 font-label-sm text-[11px] uppercase tracking-wider text-[#7f879f] font-semibold">Organization</div><a href="#" data-path="company-settings" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">settings</span>Company Settings</a><a href="#" data-path="profile" class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[#bdc6e0] hover:bg-[#1f2d47] hover:text-white transition-colors text-sm font-normal"><span class="material-symbols-outlined text-lg">account_circle</span>My Profile</a></div></nav></div><div class="p-3 bg-[#102134] border-t border-[#1f2d47] flex flex-col gap-2 mt-auto"><a href="#" class="flex items-center gap-2 px-2 py-1.5 rounded text-[#bdc6e0] hover:text-white hover:bg-[#172033] transition-colors text-xs"><span class="material-symbols-outlined text-base">help</span>Help &amp; Support</a><div class="flex items-center justify-between pt-1 border-t border-[#1f2d47]/60"><div class="flex items-center gap-2.5 min-w-0"><img alt="Rajesh Sharma" class="w-8 h-8 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida/AEtjO1VUIsq11LWlS_s0_-WT12WNbX3oHetqTMM14pLntm9rRTgmfCcyPfHqvlK-sW0uzg7WLVkqjY7RoCmGZvTzBd0_NOas8nHDxYx_81D7OOxKHpur2ZC0v4i45nd21hww8D8_ni1DR4IvraROQ6E6arp-e4yMSocElTa_cB0GTd_AeJlvBKOVSVmfXNXJRFtRhL4GvTddYpGODLJ-E3SKaB9JA4ZbfxsiwTUtp5Z2zY04N0Bm2eElIusVFw"><div class="flex flex-col truncate"><span class="text-xs font-medium text-white truncate">Rajesh Sharma</span><span class="text-[10px] text-[#7f879f] truncate">Operations VP</span></div></div><a href="#" data-path="login" title="Sign Out" class="p-1.5 rounded hover:bg-[#172033] text-[#7f879f] hover:text-secondary-container transition-colors shrink-0"><span class="material-symbols-outlined text-base">logout</span></a></div></div></aside><div class="flex-1 min-h-screen flex flex-col w-[calc(100%-240px)]"><header class="sticky top-0 w-full h-[68px] bg-surface-container-lowest z-40 px-space-lg flex items-center justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex items-center gap-space-sm"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Plant 01 (Pune)</span><span class="text-outline-variant font-body-sm text-body-sm">/</span><span class="font-headline-sm text-headline-sm text-on-surface">Manufacturing Console</span></div><div class="w-96"><div class="flex items-center bg-surface-container-low px-space-sm py-1.5 rounded-lg text-on-surface-variant focus-within:text-on-surface focus-within:bg-surface-container"><span class="material-symbols-outlined text-lg mr-space-xs text-outline">search</span><input class="bg-transparent w-full focus:outline-none font-body-sm text-body-sm placeholder:text-outline text-on-surface" placeholder="Search PO, quotation, component... ⌘K" type="text"></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container-high rounded-full"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00bcd4] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[#00bcd4]"></span></span><span class="font-label-sm text-label-sm font-semibold text-on-surface">OEE 88.4%</span></div><div class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container-low rounded-full"><span class="material-symbols-outlined text-sm text-on-surface-variant">layers</span><span class="font-label-sm text-label-sm text-on-surface-variant">14 Lots Active</span></div><button class="relative p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full"></span></button><div class="flex items-center gap-space-sm pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1VUIsq11LWlS_s0_-WT12WNbX3oHetqTMM14pLntm9rRTgmfCcyPfHqvlK-sW0uzg7WLVkqjY7RoCmGZvTzBd0_NOas8nHDxYx_81D7OOxKHpur2ZC0v4i45nd21hww8D8_ni1DR4IvraROQ6E6arp-e4yMSocElTa_cB0GTd_AeJlvBKOVSVmfXNXJRFtRhL4GvTddYpGODLJ-E3SKaB9JA4ZbfxsiwTUtp5Z2zY04N0Bm2eElIusVFw"><div class="hidden xl:flex flex-col text-left"><span class="font-label-md text-label-md text-on-surface leading-none">Rajesh Sharma</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-none mt-1">Operations VP</span></div></div></div></header><main class="w-full flex-1 px-8 py-7 bg-surface"><div class="flex flex-col w-full gap-space-lg pb-12">
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<span class="">Operations Intelligence</span>
+<span class="text-outline-variant font-body-sm text-body-sm">•</span>
+<span class="text-secondary font-semibold">Live Plant Telemetry</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface font-semibold tracking-tight">Good morning, Rajesh.</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Here's what's happening across your manufacturing operations in Pune Plant #1.</p>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm">
+<div class="flex items-center gap-space-xs bg-surface-container-lowest px-space-md py-2 rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-secondary text-lg">precision_manufacturing</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">Pune Plant #1 - Precision Machining</span>
+<span class="material-symbols-outlined text-on-surface-variant text-base cursor-pointer">arrow_drop_down</span>
+</div>
+<div class="flex items-center gap-space-xs bg-surface-container-lowest px-space-md py-2 rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-outline text-lg">calendar_month</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Q4 FY25-26 (Mar '26)</span>
+</div>
+<button class="flex items-center gap-space-xs bg-secondary hover:bg-on-secondary-container text-on-secondary px-space-md py-2 rounded-lg font-label-md text-label-md transition-all shadow-sm">
+<span class="material-symbols-outlined text-lg">add</span>
+<span class="">New Purchase Order</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-space-md">
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-secondary-fixed/30 pointer-events-none transition-transform group-hover:scale-125"></div>
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Total Quotation Value</span>
+<span class="material-symbols-outlined text-secondary text-xl">request_quote</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">₹24,85,000</span>
+</div>
+</div>
+<div class="mt-space-md flex items-center gap-space-xs font-label-sm text-label-sm">
+<span class="flex items-center text-on-tertiary-fixed-variant bg-tertiary-fixed/40 px-1.5 py-0.5 rounded font-semibold">
+<span class="material-symbols-outlined text-xs mr-0.5">trending_up</span>+12.4%
+        </span>
+<span class="text-on-surface-variant font-normal">vs last month</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Pending Actions</span>
+<span class="material-symbols-outlined text-secondary text-xl">pending_actions</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">12</span>
+<span class="font-label-md text-label-md text-on-surface-variant font-normal">Lots</span>
+</div>
+</div>
+<div class="mt-space-md flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface-variant">Awaiting eng. clearance</span>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-secondary-container/40 text-on-secondary-container font-semibold">3 Critical</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Approved Value</span>
+<span class="material-symbols-outlined text-secondary text-xl">verified</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">₹18,40,000</span>
+</div>
+</div>
+<div class="mt-space-md flex flex-col gap-1">
+<div class="flex justify-between items-center font-label-sm text-label-sm">
+<span class="text-on-surface-variant">Schedule Target: 85%</span>
+<span class="text-on-surface font-semibold">91.2%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 91.2%"></div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Active Customers</span>
+<span class="material-symbols-outlined text-secondary text-xl">hub</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">48</span>
+<span class="font-label-md text-label-md text-on-surface-variant font-normal">Tier-1 OEMs</span>
+</div>
+</div>
+<div class="mt-space-md flex items-center gap-space-xs font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-on-surface-variant">6 contracts renewal due</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">This Month Pipeline</span>
+<span class="material-symbols-outlined text-secondary text-xl">insights</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">₹32,75,000</span>
+</div>
+</div>
+<div class="mt-space-md flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface-variant">Win Probability</span>
+<span class="text-on-surface font-semibold">68.2%</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<div class="lg:col-span-8 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest rounded-lg shadow-sm p-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-2xl">table_chart</span>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface font-semibold tracking-tight">Recent Quotations &amp; PO Activity</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Operational orders synchronized with ERP and shop-floor scheduling</p>
+</div>
+</div>
+<div class="flex items-center gap-space-xs">
+<div class="relative w-48 xl:w-64">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-outline text-base">filter_list</span>
+<input class="w-full bg-surface-container-low pl-8 pr-space-sm py-1.5 rounded-lg text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:bg-surface-container" placeholder="Filter OEM or ID..." type="text">
+</div>
+<button class="bg-surface-container-low hover:bg-surface-container px-space-sm py-1.5 rounded-lg text-on-surface font-label-sm text-label-sm flex items-center gap-1">
+<span class="">Tier-1 Only</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-2.5 px-space-sm font-semibold">Identifier</th>
+<th class="py-2.5 px-space-sm font-semibold">Client / Enterprise</th>
+<th class="py-2.5 px-space-sm font-semibold">Component &amp; Spec</th>
+<th class="py-2.5 px-space-sm font-semibold text-right">Qty</th>
+<th class="py-2.5 px-space-sm font-semibold text-right">Order Value</th>
+<th class="py-2.5 px-space-sm font-semibold text-center">Status</th>
+<th class="py-2.5 px-space-sm font-semibold text-right">Action</th>
+</tr>
+</thead>
+<tbody class="text-on-surface">
+<tr class="hover:bg-surface-container-low/70 transition-colors">
+<td class="py-3 px-space-sm font-semibold text-primary-container">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+                    PO-2026-8891
+                  </div>
+</td>
+<td class="py-3 px-space-sm">
+<div class="font-medium text-on-surface">L&amp;T Heavy Eng Ltd</div>
+<div class="text-[11px] text-on-surface-variant">Defense &amp; Aero Unit</div>
+</td>
+<td class="py-3 px-space-sm">
+<div class="text-on-surface">Turbine Shrouds</div>
+<div class="text-[11px] text-on-surface-variant">SS 316L • 5-Axis Milling</div>
+</td>
+<td class="py-3 px-space-sm text-right font-medium">240</td>
+<td class="py-3 px-space-sm text-right font-semibold text-on-surface">₹18,40,000</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-secondary-fixed text-on-secondary-fixed">
+                    Needs Review
+                  </span>
+</td>
+<td class="py-3 px-space-sm text-right">
+<button class="bg-secondary text-on-secondary px-2.5 py-1 rounded font-label-sm text-label-sm font-medium hover:bg-on-secondary-container transition-all">
+                    Verify
+                  </button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/70 transition-colors bg-surface-container-lowest">
+<td class="py-3 px-space-sm font-semibold text-primary-container">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+                    QT-2026-4420
+                  </div>
+</td>
+<td class="py-3 px-space-sm">
+<div class="font-medium text-on-surface">Kirloskar Oil Engines</div>
+<div class="text-[11px] text-on-surface-variant">Power Gen Division</div>
+</td>
+<td class="py-3 px-space-sm">
+<div class="text-on-surface">Crankshaft Pins</div>
+<div class="text-[11px] text-on-surface-variant">EN8D • Heat Treated</div>
+</td>
+<td class="py-3 px-space-sm text-right font-medium">1,200</td>
+<td class="py-3 px-space-sm text-right font-semibold text-on-surface">₹6,33,194</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-container text-on-surface-variant">
+                    Under Costing
+                  </span>
+</td>
+<td class="py-3 px-space-sm text-right">
+<button class="bg-surface-container-high hover:bg-surface-variant text-on-surface px-2.5 py-1 rounded font-label-sm text-label-sm font-medium transition-all">
+                    Recalculate
+                  </button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/70 transition-colors">
+<td class="py-3 px-space-sm font-semibold text-primary-container">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+                    PO-2026-8840
+                  </div>
+</td>
+<td class="py-3 px-space-sm">
+<div class="font-medium text-on-surface">Tata Motors Ltd</div>
+<div class="text-[11px] text-on-surface-variant">EV Commercial Line</div>
+</td>
+<td class="py-3 px-space-sm">
+<div class="text-on-surface">Battery Module Mounting Plates</div>
+<div class="text-[11px] text-on-surface-variant">AL 6061-T6 • Anodized</div>
+</td>
+<td class="py-3 px-space-sm text-right font-medium">4,500</td>
+<td class="py-3 px-space-sm text-right font-semibold text-on-surface">₹24,15,500</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-tertiary-fixed text-on-tertiary-fixed">
+                    Approved
+                  </span>
+</td>
+<td class="py-3 px-space-sm text-right">
+<button class="bg-primary-container text-on-primary px-2.5 py-1 rounded font-label-sm text-label-sm font-medium hover:bg-tertiary-container transition-all">
+                    Job Card
+                  </button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/70 transition-colors bg-surface-container-lowest">
+<td class="py-3 px-space-sm font-semibold text-primary-container">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                    DISP-2026-1092
+                  </div>
+</td>
+<td class="py-3 px-space-sm">
+<div class="font-medium text-on-surface">Bajaj Auto Ltd</div>
+<div class="text-[11px] text-on-surface-variant">Chakan Assembly #2</div>
+</td>
+<td class="py-3 px-space-sm">
+<div class="text-on-surface">Transmission Housings</div>
+<div class="text-[11px] text-on-surface-variant">Cast Aluminum • CNC Turned</div>
+</td>
+<td class="py-3 px-space-sm text-right font-medium">320</td>
+<td class="py-3 px-space-sm text-right font-semibold text-on-surface">₹11,92,400</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-secondary-fixed-dim/60 text-on-secondary-fixed">
+                    Ready Dispatch
+                  </span>
+</td>
+<td class="py-3 px-space-sm text-right">
+<button class="bg-secondary text-on-secondary px-2.5 py-1 rounded font-label-sm text-label-sm font-medium hover:bg-on-secondary-container transition-all">
+                    e-Way Bill
+                  </button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/70 transition-colors">
+<td class="py-3 px-space-sm font-semibold text-primary-container">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+                    PO-2026-8799
+                  </div>
+</td>
+<td class="py-3 px-space-sm">
+<div class="font-medium text-on-surface">Bharat Forge Limited</div>
+<div class="text-[11px] text-on-surface-variant">Mundhwa Machining Unit</div>
+</td>
+<td class="py-3 px-space-sm">
+<div class="text-on-surface">High-Tensile Flange Hubs</div>
+<div class="text-[11px] text-on-surface-variant">Forged 42CrMo4 • Hardened</div>
+</td>
+<td class="py-3 px-space-sm text-right font-medium">850</td>
+<td class="py-3 px-space-sm text-right font-semibold text-on-surface">₹15,20,000</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-container-high text-on-surface-variant">
+                    Dispatched
+                  </span>
+</td>
+<td class="py-3 px-space-sm text-right">
+<button class="bg-surface-container-high hover:bg-surface-variant text-on-surface px-2.5 py-1 rounded font-label-sm text-label-sm font-medium transition-all">
+                    Track PoD
+                  </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pt-space-md flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span class="">Showing 5 of 34 recorded transactions</span>
+<div class="flex items-center gap-space-xs">
+<button class="px-2.5 py-1 bg-surface-container-low rounded hover:bg-surface-container text-on-surface">Previous</button>
+<span class="px-2 text-on-surface font-semibold">1 / 7</span>
+<button class="px-2.5 py-1 bg-surface-container-low rounded hover:bg-surface-container text-on-surface">Next</button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-lg">equalizer</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Batch Scrap &amp; Tolerance Yield</span>
+</div>
+<span class="text-on-surface font-semibold font-label-sm text-label-sm">99.14%</span>
+</div>
+<div class="h-24 w-full flex items-end gap-1.5 pt-2">
+<div class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+<div class="w-full bg-surface-container-high rounded-t hover:bg-secondary transition-all" style="height: 60%"></div>
+<span class="text-[10px] text-on-surface-variant">Mon</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+<div class="w-full bg-surface-container-high rounded-t hover:bg-secondary transition-all" style="height: 75%"></div>
+<span class="text-[10px] text-on-surface-variant">Tue</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+<div class="w-full bg-surface-container-high rounded-t hover:bg-secondary transition-all" style="height: 82%"></div>
+<span class="text-[10px] text-on-surface-variant">Wed</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+<div class="w-full bg-surface-container-high rounded-t hover:bg-secondary transition-all" style="height: 90%"></div>
+<span class="text-[10px] text-on-surface-variant">Thu</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+<div class="w-full bg-secondary rounded-t" style="height: 98%"></div>
+<span class="text-[10px] text-on-surface font-semibold">Today</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+<div class="w-full bg-surface-container-high/40 rounded-t" style="height: 70%"></div>
+<span class="text-[10px] text-outline">Sat</span>
+</div>
+</div>
+<div class="pt-space-xs flex justify-between items-center text-[11px] text-on-surface-variant">
+<span class="">CNC Defect rate: 0.12%</span>
+<span class="text-secondary font-medium">Within Six Sigma specs</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-lg">precision_manufacturing</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Plant Floor Station Load</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">18 / 20 Bays Online</span>
+</div>
+<div class="flex flex-col gap-2 pt-1">
+<div>
+<div class="flex justify-between text-[11px] mb-1">
+<span class="text-on-surface">5-Axis Milling Cells (Lines 1-4)</span>
+<span class="font-semibold text-on-surface">92%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 92%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[11px] mb-1">
+<span class="text-on-surface">CNC Swiss Lathes (Lines 5-8)</span>
+<span class="font-semibold text-on-surface">84%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 84%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[11px] mb-1">
+<span class="text-on-surface">Surface Treatment &amp; Passivation</span>
+<span class="font-semibold text-on-surface">65%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-outline h-full rounded-full" style="width: 65%"></div>
+</div>
+</div>
+</div>
+<div class="pt-space-xs flex justify-between items-center text-[11px] text-on-surface-variant">
+<span class="">Next tooling shift: 14:00 IST</span>
+<span class="text-primary font-medium hover:underline cursor-pointer">Live Gantt →</span>
+</div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-4 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-xl">auto_awesome</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">AI Smart PO Parser</h3>
+</div>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-secondary-fixed text-on-secondary-fixed uppercase">v3.4 Neural</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">
+          Auto-extract BOM line items, geometric GD&amp;T callouts, and metallurgy specs directly into active RFQ matrix.
+        </p>
+<div class="bg-surface-container-low hover:bg-surface-container transition-all rounded-lg p-space-lg flex flex-col items-center justify-center text-center cursor-pointer group" id="drop-area">
+<div class="w-12 h-12 rounded-full bg-secondary-fixed/50 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">cloud_upload</span>
+</div>
+<div class="mt-space-sm font-label-md text-label-md text-on-surface font-semibold">
+            Drop PO file here or <span class="text-secondary underline">Browse</span>
+</div>
+<p class="mt-1 text-[11px] text-on-surface-variant">
+            PDF, DXF, STP, CAD, Excel up to 50MB
+          </p>
+<div class="mt-space-md flex flex-wrap gap-1 justify-center">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest text-[10px] text-on-surface-variant font-medium">Auto-Tolerancing</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest text-[10px] text-on-surface-variant font-medium">BOM Mapping</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest text-[10px] text-on-surface-variant font-medium">Tariff Codes</span>
+</div>
+</div>
+<div class="mt-space-md flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm pt-space-xs">
+<span class="flex items-center gap-1">
+<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00bcd4] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[#00bcd4]"></span></span>
+            Vision Model Online
+          </span>
+<span class="text-[11px]">Avg Parsing: 1.4s</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-error text-xl">priority_high</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Priority Plant Actions</h3>
+</div>
+<span class="px-1.5 py-0.5 bg-error-container text-on-error-container text-[11px] rounded font-semibold">2 Urgent</span>
+</div>
+<div class="flex flex-col gap-space-xs mt-1">
+<div class="p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col gap-1">
+<div class="flex items-start justify-between">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Material Rate Variance Alert</span>
+<span class="text-[10px] uppercase font-bold text-on-error-container bg-error-container px-1 rounded">Action Required</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">SS 316L billet procurement quote jumped +8.2% from Jindal Steel. Re-index active quotes.</p>
+<div class="flex items-center justify-between mt-1 pt-1">
+<span class="text-[11px] text-on-surface-variant">Impact: PO-2026-8891</span>
+<button class="text-secondary font-label-sm text-label-sm font-semibold hover:underline">Update Cost Matrix →</button>
+</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col gap-1">
+<div class="flex items-start justify-between">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">CMM QA Gate Clearance</span>
+<span class="text-[10px] uppercase font-bold text-on-secondary-fixed bg-secondary-fixed px-1 rounded">Pending Approval</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Lot #4092 Zeiss Prismo report has 2 marginal runout flags on transmission housings.</p>
+<div class="flex items-center justify-between mt-1 pt-1">
+<span class="text-[11px] text-on-surface-variant">Quality Eng: S. Deshmukh</span>
+<button class="text-secondary font-label-sm text-label-sm font-semibold hover:underline">Inspect Deviation →</button>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-xl">speed</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Bay Utilization &amp; Telemetry</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">Bay-A CNC</span>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div>
+<div class="font-headline-lg text-headline-lg font-semibold text-on-surface tracking-tight">94.2%</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Spindle Health &amp; Up-time</div>
+</div>
+<div class="w-24 h-10">
+<svg class="w-full h-full text-secondary" fill="none" viewBox="0 0 100 40">
+<path d="M0 32 L15 28 L30 35 L45 18 L60 22 L75 8 L90 14 L100 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M0 32 L15 28 L30 35 L45 18 L60 22 L75 8 L90 14 L100 6 V40 H0 Z" fill="currentColor" fill-opacity="0.1"></path>
+</svg>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-xs pt-space-xs text-[11px] text-on-surface-variant">
+<div class="bg-surface-container-low p-2 rounded">
+<div class="text-outline">Thermal Delta</div>
+<div class="text-on-surface font-semibold mt-0.5">38.4°C (Normal)</div>
+</div>
+<div class="bg-surface-container-low p-2 rounded">
+<div class="text-outline">RPM Peak Shift</div>
+<div class="text-on-surface font-semibold mt-0.5">14,200 RPM</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<img class="w-12 h-12 rounded object-cover" data-alt="High precision CNC turning machine on a modern, brightly lit shop floor with titanium shavings and coolant mist in an industrial manufacturing plant in Pune" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQ6U95HXV7CREkbo3zF-XIaiw6NQd9ZHLGOpr7QRyYVTfyifjE9CI7Zvfg6bpDAFWJNnz8H-PB388ZH2fJZab2XOKxORa6s_p_6IbvfGuca3WJiqOdHpO_KQ-Y4tVpw-OYcIBdCUn6X9K0V_6ZYKKpUSpNtxxFdGr7T3c7Vlj3bvQuhcLSGdzYJOBGespUlq5Z_1H6C_tRtfOWM6sdU_29Nd8YbepsRulYiIKjkh2IikIVhmVMH0BO">
+<div>
+<div class="font-label-md text-label-md font-semibold text-on-surface">Mazak Integrex i-400</div>
+<div class="text-[11px] text-on-surface-variant">Scheduled Maint: In 48 operating hrs</div>
+</div>
+</div>
+<button class="bg-surface-container-low hover:bg-surface-container p-2 rounded-lg text-on-surface">
+<span class="material-symbols-outlined text-base">settings</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const dropArea = document.getElementById('drop-area');
+    if (!dropArea) return;
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropArea.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropArea.classList.add('bg-secondary-fixed/20');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropArea.classList.remove('bg-secondary-fixed/20');
+      }, false);
+    });
+
+    dropArea.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length) {
+        alert('PO File "' + files[0].name + '" received. Ingesting into AI Smart Parser...');
+      }
+    });
+  })();
+</script></main></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body></html>

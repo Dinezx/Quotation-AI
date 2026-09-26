@@ -1,0 +1,672 @@
+<!DOCTYPE html><html lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"primary-fixed":"#d9e2fc","secondary":"#8c4f10","error":"#ba1a1a","on-secondary-fixed":"#2e1500","secondary-container":"#fdad67","on-tertiary-fixed-variant":"#38485d","on-surface":"#1b1c19","on-primary-container":"#7f879f","surface-variant":"#e4e2dd","primary-fixed-dim":"#bdc6e0","on-tertiary":"#ffffff","tertiary-fixed-dim":"#b7c8e1","primary-container":"#172033","on-secondary-fixed-variant":"#6d3a00","on-primary-fixed":"#121b2e","error-container":"#ffdad6","outline-variant":"#c6c6cd","secondary-fixed":"#ffdcc2","on-surface-variant":"#45474c","surface-bright":"#fbf9f4","surface-container-high":"#eae8e3","surface-dim":"#dbdad5","background":"#fbf9f4","on-secondary-container":"#763f00","tertiary-container":"#102134","inverse-primary":"#bdc6e0","tertiary":"#000917","surface":"#fbf9f4","surface-container":"#f0eee9","primary":"#01081a","outline":"#76777d","secondary-fixed-dim":"#ffb77b","on-tertiary-container":"#7989a0","inverse-on-surface":"#f2f1ec","surface-container-lowest":"#ffffff","on-background":"#1b1c19","on-primary":"#ffffff","surface-tint":"#555e74","on-tertiary-fixed":"#0b1c30","inverse-surface":"#30312e","on-error":"#ffffff","on-error-container":"#93000a","surface-container-low":"#f5f3ee","on-secondary":"#ffffff","surface-container-highest":"#e4e2dd","tertiary-fixed":"#d3e4fe","on-primary-fixed-variant":"#3e475b"},borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},spacing:{"space-sm":"0.5rem","space-lg":"1.5rem","gutter":"1rem","space-xl":"2rem","space-md":"1rem","space-xs":"0.25rem","margin-mobile":"1rem","gutter-compact":"0.5rem","margin":"1.5rem"},fontFamily:{"label-md":["Inter"],"body-md":["Inter"],"headline-md":["Inter"],"headline-sm":["Inter"],"headline-lg":["Inter"],"display-lg":["Inter"],"metric-mono":["Inter"],"label-lg":["Inter"],"label-sm":["Inter"],"body-sm":["Inter"],"body-lg":["Inter"],"headline-xl":["Inter"]},fontSize:{"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"500"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"headline-md":["18px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"600"}],"headline-sm":["15px",{"lineHeight":"20px","fontWeight":"600"}],"headline-lg":["22px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}],"display-lg":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"700"}],"metric-mono":["24px",{"lineHeight":"28px","letterSpacing":"-0.02em","fontWeight":"600"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"500"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-sm":["12px",{"lineHeight":"16px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}],"headline-xl":["28px",{"lineHeight":"36px","letterSpacing":"-0.015em","fontWeight":"600"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface antialiased flex min-h-screen"><aside class="w-60 shrink-0 min-h-screen bg-primary-container text-on-primary flex flex-col justify-between sticky top-0 z-40 p-4 border-r border-outline-variant/15 select-none min-w-[240px] max-w-[240px]" style="width: 240px !important; min-width: 240px !important; max-width: 240px !important; flex-shrink: 0 !important;">
+  <!-- Top Branding -->
+  <div class="flex flex-col gap-6">
+    <div class="flex items-center gap-3 px-2 pt-1">
+      <div class="w-8 h-8 rounded bg-secondary flex items-center justify-center text-on-secondary font-bold text-lg shadow-sm">
+        O
+      </div>
+      <div class="flex flex-col">
+        <span class="font-bold text-lg tracking-tight leading-none text-white font-headline-md">ORYNZA</span>
+        <span class="text-[11px] text-outline-variant tracking-normal font-body-sm mt-1">Smarter Manufacturing</span>
+      </div>
+    </div>
+
+    <!-- Nav Tree -->
+    <nav class="flex flex-col gap-5 overflow-y-auto pr-1 text-sm">
+      <!-- Section: OVERVIEW -->
+      <div class="flex flex-col gap-1">
+        <span class="px-2 text-[10px] font-semibold text-outline-variant uppercase tracking-wider">OVERVIEW</span>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">dashboard</span>
+          <span class="font-label-md">Dashboard</span>
+        </a>
+      </div>
+
+      <!-- Section: WORK -->
+      <div class="flex flex-col gap-1">
+        <span class="px-2 text-[10px] font-semibold text-outline-variant uppercase tracking-wider">WORK</span>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded bg-secondary text-on-secondary font-semibold shadow-sm transition-colors">
+          <span class="material-symbols-outlined text-lg">request_quote</span>
+          <span class="font-label-md text-white font-semibold">Quotations</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">shopping_cart</span>
+          <span class="font-label-md">Purchase Orders</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">groups</span>
+          <span class="font-label-md">Customers</span>
+        </a>
+      </div>
+
+      <!-- Section: OPERATIONS -->
+      <div class="flex flex-col gap-1">
+        <span class="px-2 text-[10px] font-semibold text-outline-variant uppercase tracking-wider">OPERATIONS</span>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">inventory</span>
+          <span class="font-label-md">Procurement</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">warehouse</span>
+          <span class="font-label-md">Inventory</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">precision_manufacturing</span>
+          <span class="font-label-md">Production</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">local_shipping</span>
+          <span class="font-label-md">Dispatch</span>
+        </a>
+      </div>
+
+      <!-- Section: INSIGHTS -->
+      <div class="flex flex-col gap-1">
+        <span class="px-2 text-[10px] font-semibold text-outline-variant uppercase tracking-wider">INSIGHTS</span>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">analytics</span>
+          <span class="font-label-md">Analytics</span>
+        </a>
+      </div>
+
+      <!-- Section: MASTERS -->
+      <div class="flex flex-col gap-1">
+        <span class="px-2 text-[10px] font-semibold text-outline-variant uppercase tracking-wider">MASTERS</span>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">price_change</span>
+          <span class="font-label-md">Rates</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">description</span>
+          <span class="font-label-md">Templates</span>
+        </a>
+      </div>
+
+      <!-- Section: ORGANIZATION -->
+      <div class="flex flex-col gap-1">
+        <span class="px-2 text-[10px] font-semibold text-outline-variant uppercase tracking-wider">ORGANIZATION</span>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">settings</span>
+          <span class="font-label-md">Company Settings</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-2.5 py-2 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+          <span class="material-symbols-outlined text-lg">person</span>
+          <span class="font-label-md">My Profile</span>
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Bottom User Profile / Sign Out Area -->
+  <div class="pt-4 mt-auto border-t border-surface-variant/20 flex flex-col gap-2">
+    <a href="#" class="flex items-center gap-3 px-2 py-1.5 rounded text-outline-variant hover:text-white hover:bg-surface-container-lowest/5 transition-colors">
+      <span class="material-symbols-outlined text-lg">help</span>
+      <span class="font-label-md">Help &amp; Support</span>
+    </a>
+    <div class="flex items-center justify-between px-2 py-2 rounded bg-surface-container-lowest/5 mt-1">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <img alt="Rajesh Sharma" class="w-8 h-8 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida/AEtjO1VUIsq11LWlS_s0_-WT12WNbX3oHetqTMM14pLntm9rRTgmfCcyPfHqvlK-sW0uzg7WLVkqjY7RoCmGZvTzBd0_NOas8nHDxYx_81D7OOxKHpur2ZC0v4i45nd21hww8D8_ni1DR4IvraROQ6E6arp-e4yMSocElTa_cB0GTd_AeJlvBKOVSVmfXNXJRFtRhL4GvTddYpGODLJ-E3SKaB9JA4ZbfxsiwTUtp5Z2zY04N0Bm2eElIusVFw">
+        <div class="flex flex-col min-w-0">
+          <span class="text-xs font-semibold text-white truncate leading-none">Rajesh Sharma</span>
+          <span class="text-[11px] text-outline-variant truncate leading-none mt-1">Operations VP</span>
+        </div>
+      </div>
+      <button title="Sign Out" class="text-outline-variant hover:text-white p-1 transition-colors">
+        <span class="material-symbols-outlined text-lg">logout</span>
+      </button>
+    </div>
+  </div>
+</aside><div class="w-full min-w-0"><header class="sticky top-0 h-[68px] bg-surface-container-lowest z-30 px-space-lg flex items-center justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)] w-full"><div class="flex items-center gap-space-sm"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Plant 01 (Pune)</span><span class="text-outline-variant font-body-sm text-body-sm">/</span><span class="font-headline-sm text-headline-sm text-on-surface">Manufacturing Console</span></div><div class="w-96"><div class="flex items-center bg-surface-container-low px-space-sm py-1.5 rounded-lg text-on-surface-variant focus-within:text-on-surface focus-within:bg-surface-container"><span class="material-symbols-outlined text-lg mr-space-xs text-outline">search</span><input class="bg-transparent w-full focus:outline-none font-body-sm text-body-sm placeholder:text-outline text-on-surface" placeholder="Search PO, quotation, component... ⌘K" type="text"></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container-high rounded-full"><span class="w-2 h-2 rounded-full bg-secondary"></span><span class="font-label-sm text-label-sm font-semibold text-on-surface">OEE 88.4%</span></div><div class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container-low rounded-full"><span class="material-symbols-outlined text-sm text-on-surface-variant">layers</span><span class="font-label-sm text-label-sm text-on-surface-variant">14 Lots Active</span></div><button class="relative p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-xl">notifications</span><span class="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full"></span></button><div class="flex items-center gap-space-sm pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1VUIsq11LWlS_s0_-WT12WNbX3oHetqTMM14pLntm9rRTgmfCcyPfHqvlK-sW0uzg7WLVkqjY7RoCmGZvTzBd0_NOas8nHDxYx_81D7OOxKHpur2ZC0v4i45nd21hww8D8_ni1DR4IvraROQ6E6arp-e4yMSocElTa_cB0GTd_AeJlvBKOVSVmfXNXJRFtRhL4GvTddYpGODLJ-E3SKaB9JA4ZbfxsiwTUtp5Z2zY04N0Bm2eElIusVFw"><div class="hidden xl:flex flex-col text-left"><span class="font-label-md text-label-md text-on-surface leading-none">Rajesh Sharma</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-none mt-1">Operations VP</span></div></div></div></header><main class="w-full px-8 py-7 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Centered Workflow Shell (1180px) -->
+<div class="w-full max-w-[1180px] mx-auto flex flex-col gap-6 pb-12">
+<!-- MASTER WORKFLOW STEPPER (Step 3 Active) -->
+<div class="w-full bg-surface-container-lowest rounded-lg p-5 shadow-sm">
+<div class="flex items-center justify-between relative">
+<!-- Connecting Line Background -->
+<div class="absolute left-8 right-8 top-1/2 -translate-y-1/2 h-0.5 bg-surface-variant z-0"></div>
+<!-- Completed Track Line (Steps 1 to 3) -->
+<div class="absolute left-8 w-1/2 top-1/2 -translate-y-1/2 h-0.5 bg-secondary z-0"></div>
+<!-- Step 1: Upload (Completed) -->
+<div class="relative z-10 flex flex-col items-center gap-1.5 bg-surface-container-lowest px-3">
+<div class="w-8 h-8 rounded-full bg-secondary text-on-secondary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-base font-semibold">check</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="font-label-sm text-label-sm text-secondary font-semibold">01</span>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">Upload</span>
+</div>
+</div>
+<!-- Step 2: Review (Completed) -->
+<div class="relative z-10 flex flex-col items-center gap-1.5 bg-surface-container-lowest px-3">
+<div class="w-8 h-8 rounded-full bg-secondary text-on-secondary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-base font-semibold">check</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="font-label-sm text-label-sm text-secondary font-semibold">02</span>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">Review</span>
+</div>
+</div>
+<!-- Step 3: Costing (Active) -->
+<div class="relative z-10 flex flex-col items-center gap-1.5 bg-surface-container-lowest px-3">
+<div class="w-9 h-9 rounded-full bg-secondary text-on-secondary flex items-center justify-center shadow-md ring-4 ring-secondary/20">
+<span class="material-symbols-outlined text-lg">calculate</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="font-label-sm text-label-sm text-secondary font-bold">03</span>
+<span class="font-label-sm text-label-sm text-secondary font-bold tracking-wide">Costing</span>
+</div>
+</div>
+<!-- Step 4: Preview (Inactive) -->
+<div class="relative z-10 flex flex-col items-center gap-1.5 bg-surface-container-lowest px-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-outline flex items-center justify-center">
+<span class="font-label-sm text-label-sm font-semibold">04</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="font-label-sm text-label-sm text-outline">Preview</span>
+</div>
+</div>
+<!-- Step 5: Send (Inactive) -->
+<div class="relative z-10 flex flex-col items-center gap-1.5 bg-surface-container-lowest px-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-outline flex items-center justify-center">
+<span class="font-label-sm text-label-sm font-semibold">05</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="font-label-sm text-label-sm text-outline">Send</span>
+</div>
+</div>
+</div>
+</div>
+<!-- PAGE HEADER -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h1 class="font-headline-xl text-headline-xl text-on-surface font-semibold tracking-tight">Build Quotation</h1>
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label-sm text-label-sm rounded uppercase tracking-wider font-semibold">Workflow v2.4</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5">
+          Review direct and indirect manufacturing costs to finalize commercial pricing and calculate operational margin.
+        </p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-lowest rounded-lg shadow-sm">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">Rate Master: Q1 FY26 Active</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">| Rev 4.12</span>
+</div>
+<button class="p-2 bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant rounded-lg transition-colors shadow-sm" title="Refresh Rates from Master">
+<span class="material-symbols-outlined text-base">sync</span>
+</button>
+</div>
+</div>
+<!-- MAIN WORKFLOW CONTENT CONTAINER (8-col / 4-col split) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- PRIMARY COLUMN (8 COLS) -->
+<div class="lg:col-span-8 flex flex-col gap-5">
+<!-- PO & Order Context Summary Banner -->
+<div class="bg-surface-container-lowest rounded-lg p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl">factory</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2 truncate">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Tata Motors Ltd</span>
+<span class="px-2 py-0.5 bg-surface-container text-on-surface-variant rounded font-label-sm text-label-sm shrink-0">Tier-1 OEM</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm mt-0.5">
+<span class="font-mono text-on-surface font-medium">TML/PO/2026/0942</span>
+<span class="">•</span>
+<span class="">3 Line Items</span>
+<span class="">•</span>
+<span class="text-on-surface font-semibold">870 Finished Units</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="px-3 py-1.5 bg-surface-container hover:bg-surface-variant rounded text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-sm">visibility</span>
+              PO Specs
+            </button>
+<button class="px-3 py-1.5 bg-surface-container hover:bg-surface-variant rounded text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-sm">tune</span>
+              Batch Param
+            </button>
+</div>
+</div>
+<!-- Granular Cost Breakdown Structure (CBS) Section -->
+<div class="bg-surface-container-lowest rounded-lg p-5 shadow-sm flex flex-col gap-4">
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg">schema</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Cost Breakdown Structure (CBS)</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">ISO 9001:2015 AUDITED</span>
+</div>
+<!-- CBS Accordion 1: Direct Material Cost -->
+<div class="rounded-lg bg-surface-container-low p-4 flex flex-col gap-3">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<span class="w-6 h-6 rounded bg-secondary/15 text-secondary flex items-center justify-center font-label-sm text-label-sm font-bold">1</span>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Direct Material Cost</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Allocated mill stock, heat-treated billets &amp; certified blanks</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-on-surface font-mono font-semibold">₹2,08,240</span>
+<span class="block font-label-sm text-label-sm text-secondary font-medium">47.3% of Total COGS</span>
+</div>
+</div>
+<!-- Material Detail Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
+<div class="bg-surface-container-lowest p-2.5 rounded shadow-sm flex flex-col">
+<div class="flex justify-between items-center text-on-surface-variant font-label-sm text-label-sm">
+<span class="">EN8 Bar Stock (Round)</span>
+<span class="font-mono">1,840 kg</span>
+</div>
+<div class="flex justify-between items-baseline mt-1">
+<span class="font-label-sm text-label-sm text-outline">₹60.87 / kg</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface font-mono">₹1,12,000</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded shadow-sm flex flex-col">
+<div class="flex justify-between items-center text-on-surface-variant font-label-sm text-label-sm">
+<span class="">42CrMo4 Precision Forging</span>
+<span class="font-mono">920 kg</span>
+</div>
+<div class="flex justify-between items-baseline mt-1">
+<span class="font-label-sm text-label-sm text-outline">₹74.17 / kg</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface font-mono">₹68,240</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded shadow-sm flex flex-col">
+<div class="flex justify-between items-center text-on-surface-variant font-label-sm text-label-sm">
+<span class="">PB1 Phosphor Bronze Bush</span>
+<span class="font-mono">660 kg</span>
+</div>
+<div class="flex justify-between items-baseline mt-1">
+<span class="font-label-sm text-label-sm text-outline">₹42.42 / kg</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface font-mono">₹28,000</span>
+</div>
+</div>
+</div>
+<!-- Material Spec Meta -->
+<div class="flex flex-wrap items-center justify-between text-on-surface-variant font-label-sm text-label-sm pt-1 px-1">
+<span class="flex items-center gap-1 font-mono">
+<span class="material-symbols-outlined text-sm text-secondary">inventory_2</span> Total Scrap Reclaim: ₹14,200 offset applied
+              </span>
+<span class="font-mono">3,420 kg certified net weight • Mandi basis Pune Zone</span>
+</div>
+</div>
+<!-- CBS Accordion 2: Machining & Spindle Processing -->
+<div class="rounded-lg bg-surface-container-low p-4 flex flex-col gap-3">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<span class="w-6 h-6 rounded bg-secondary/15 text-secondary flex items-center justify-center font-label-sm text-label-sm font-bold">2</span>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Machining &amp; Processing Operations</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Active machine hours, feed setup &amp; surface induction</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-on-surface font-mono font-semibold">₹1,55,200</span>
+<span class="block font-label-sm text-label-sm text-secondary font-medium">35.3% of Total COGS</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
+<div class="bg-surface-container-lowest p-2.5 rounded shadow-sm flex flex-col">
+<div class="flex justify-between items-center text-on-surface-variant font-label-sm text-label-sm">
+<span class="">CNC Turning (Line 2)</span>
+<span class="font-mono">42.0 hrs</span>
+</div>
+<div class="flex justify-between items-baseline mt-1">
+<span class="font-label-sm text-label-sm text-outline">₹1,400 / hr</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface font-mono">₹58,800</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded shadow-sm flex flex-col">
+<div class="flex justify-between items-center text-on-surface-variant font-label-sm text-label-sm">
+<span class="">4-Axis VMC Milling</span>
+<span class="font-mono">36.0 hrs</span>
+</div>
+<div class="flex justify-between items-baseline mt-1">
+<span class="font-label-sm text-label-sm text-outline">₹1,800 / hr</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface font-mono">₹64,800</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded shadow-sm flex flex-col">
+<div class="flex justify-between items-center text-on-surface-variant font-label-sm text-label-sm">
+<span class="">Induction Case Hardening</span>
+<span class="font-mono">870 units</span>
+</div>
+<div class="flex justify-between items-baseline mt-1">
+<span class="font-label-sm text-label-sm text-outline">58-62 HRC</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface font-mono">₹31,600</span>
+</div>
+</div>
+</div>
+<div class="flex flex-wrap items-center justify-between text-on-surface-variant font-label-sm text-label-sm pt-1 px-1">
+<span class="flex items-center gap-1 font-mono">
+<span class="material-symbols-outlined text-sm text-secondary">precision_manufacturing</span> 78 Total Spindle Hours • OEE factored at 88.4%
+              </span>
+<span class="font-mono">Rate Master rev: Shopfloor Index B</span>
+</div>
+</div>
+<!-- CBS Accordion 3: Labour & Metrology Inspection -->
+<div class="rounded-lg bg-surface-container-low p-4 flex flex-col gap-3">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<span class="w-6 h-6 rounded bg-secondary/15 text-secondary flex items-center justify-center font-label-sm text-label-sm font-bold">3</span>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Labour &amp; Metrology Quality Control</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Carl Zeiss CMM inspection, tool jig setup &amp; deburr manual labour</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-on-surface font-mono font-semibold">₹48,400</span>
+<span class="block font-label-sm text-label-sm text-secondary font-medium">11.0% of Total COGS</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+<div class="bg-surface-container-lowest p-2.5 rounded shadow-sm flex flex-col">
+<div class="flex justify-between items-center text-on-surface-variant font-label-sm text-label-sm">
+<span class="">Carl Zeiss CMM Multi-Point Tolerancing</span>
+<span class="font-mono">100% Critical Run</span>
+</div>
+<div class="flex justify-between items-baseline mt-1">
+<span class="font-label-sm text-label-sm text-outline">Tolerance: ±0.005mm</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface font-mono">₹18,400</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded shadow-sm flex flex-col">
+<div class="flex justify-between items-center text-on-surface-variant font-label-sm text-label-sm">
+<span class="">Fixture Alignment &amp; Line Setup Labour</span>
+<span class="font-mono">3 Tech Specialists</span>
+</div>
+<div class="flex justify-between items-baseline mt-1">
+<span class="font-label-sm text-label-sm text-outline">Batch Initiation</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface font-mono">₹30,000</span>
+</div>
+</div>
+</div>
+</div>
+<!-- CBS Accordion 4: Overheads, Tooling & Consumables -->
+<div class="rounded-lg bg-surface-container-low p-4 flex flex-col gap-3">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<span class="w-6 h-6 rounded bg-secondary/15 text-secondary flex items-center justify-center font-label-sm text-label-sm font-bold">4</span>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Factory Overheads &amp; Specialized Tooling</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Carbide inserts amortization, synthetic coolants &amp; packaging</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-on-surface font-mono font-semibold">₹28,000</span>
+<span class="block font-label-sm text-label-sm text-secondary font-medium">6.4% of Total COGS</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded shadow-sm flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-secondary">handyman</span>
+                CoroTurn Prime inserts + Semi-synthetic emulsion wear factor (Standard amortization pool)
+              </span>
+<span class="font-body-md text-body-md font-semibold text-on-surface font-mono">₹28,000</span>
+</div>
+</div>
+<!-- Direct Manufacturing Cost COGS Summary Bar -->
+<div class="mt-2 p-4 bg-primary-container text-on-primary rounded-lg flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded bg-surface-container-lowest/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary-container">inventory</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-primary-container">Total Direct Manufacturing Cost</span>
+<h4 class="font-headline-md text-headline-md text-on-primary">Cost of Goods Sold (COGS Base)</h4>
+</div>
+</div>
+<div class="text-right">
+<span class="font-display-lg text-display-lg font-mono font-bold leading-none text-on-primary">₹4,39,840</span>
+<span class="block font-label-sm text-label-sm text-on-primary-container mt-1 font-mono">₹505.56 / finished unit base</span>
+</div>
+</div>
+</div>
+<!-- Margin Configuration & Commercial Matrix (Interactive) -->
+<div class="bg-surface-container-lowest rounded-lg p-5 shadow-sm flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg">trending_up</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Commercial Margin &amp; Dynamic Pricing Matrix</h2>
+</div>
+<span class="px-2 py-0.5 bg-surface-container text-on-surface-variant font-label-sm text-label-sm rounded font-mono">Target: 22.0%</span>
+</div>
+<div class="p-4 bg-surface-container-low rounded-lg flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<label class="font-headline-sm text-headline-sm text-on-surface" for="marginRange">Target Operating EBITDA Margin</label>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Recommended plant benchmark: 20.0% – 25.0% for Tier-1 automotive shafts</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-metric-mono text-metric-mono font-bold text-secondary font-mono" id="marginDisplay">22.0%</span>
+<span class="px-1.5 py-0.5 bg-secondary/15 text-secondary text-label-sm font-label-sm rounded font-semibold">OPTIMAL</span>
+</div>
+</div>
+<!-- Slider Control -->
+<div class="flex flex-col gap-2">
+<input class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-secondary focus:outline-none" id="marginRange" max="35" min="10" step="0.5" type="range" value="22">
+<div class="flex justify-between text-on-surface-variant font-label-sm text-label-sm font-mono px-0.5">
+<span class="">Min: 10.0%</span>
+<span class="">Break-Even: 14.5%</span>
+<span class="">Plant Target: 22.0%</span>
+<span class="">Max: 35.0%</span>
+</div>
+</div>
+<!-- Dynamic Computation Display -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+<div class="p-3 bg-surface-container-lowest rounded shadow-sm flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Calculated Margin Value</span>
+<span class="font-headline-md text-headline-md font-mono font-bold text-secondary mt-0.5" id="marginAmount">₹96,765</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5 font-mono">₹111.22 / component</span>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded shadow-sm flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ex-Factory Selling Price</span>
+<span class="font-headline-md text-headline-md font-mono font-bold text-on-surface mt-0.5" id="exFactoryPrice">₹5,36,605</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5 font-mono">Pre-tax quotation subtotal</span>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded shadow-sm flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Net Contribution / Machine Hr</span>
+<span class="font-headline-md text-headline-md font-mono font-bold text-on-surface mt-0.5">₹1,240.58</span>
+<span class="font-label-sm text-label-sm text-secondary mt-0.5 font-mono">Above target (+₹180/hr)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- SECONDARY COLUMN: FINANCIAL SUMMARY CARD & AUDITS (4 COLS) -->
+<div class="lg:col-span-4 flex flex-col gap-5">
+<!-- Prominent Sticky Financial Ledger Card -->
+<div class="bg-surface-container-lowest rounded-lg p-5 shadow-md flex flex-col gap-4 sticky top-[84px]">
+<div class="flex items-center justify-between pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg">receipt_long</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Quotation Summary</h3>
+</div>
+<span class="px-2 py-0.5 bg-surface-container-high text-on-surface font-label-sm text-label-sm rounded font-mono font-semibold">TML-Q1-2026</span>
+</div>
+<!-- Ledger Table -->
+<div class="flex flex-col gap-2.5">
+<div class="flex justify-between items-center text-body-md font-body-md">
+<span class="text-on-surface-variant">Total Mfg Cost (COGS)</span>
+<span class="font-mono font-medium text-on-surface">₹4,39,840</span>
+</div>
+<div class="flex justify-between items-center text-body-md font-body-md">
+<span class="text-on-surface-variant flex items-center gap-1">
+                Operating Margin <span class="font-label-sm text-label-sm text-secondary font-mono" id="summaryMarginPct">(22.0%)</span>
+</span>
+<span class="font-mono font-medium text-secondary" id="summaryMarginVal">₹96,765</span>
+</div>
+<div class="pt-2 flex justify-between items-center text-body-md font-body-md">
+<span class="font-semibold text-on-surface">Net Commercial Selling</span>
+<span class="font-mono font-bold text-on-surface" id="summarySubtotal">₹5,36,605</span>
+</div>
+<div class="flex justify-between items-center text-body-sm font-body-sm text-on-surface-variant">
+<span class="">IGST / CGST+SGST (18.0%)</span>
+<span class="font-mono font-medium text-on-surface" id="summaryTax">₹96,589</span>
+</div>
+<div class="flex justify-between items-center text-body-sm font-body-sm text-on-surface-variant">
+<span class="">Transit &amp; Freight Allowance</span>
+<span class="font-mono font-medium text-on-surface">₹0.00 (Ex-Works)</span>
+</div>
+</div>
+<!-- Total Highlight Box (Refined Copper Accents) -->
+<div class="p-4 bg-secondary/10 rounded-lg flex flex-col gap-1.5">
+<div class="flex justify-between items-baseline">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-bold">Final Quotation Value</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">Tax Inclusive</span>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="font-headline-xl text-headline-xl text-secondary font-bold font-mono tracking-tight" id="finalQuotationTotal">₹6,33,194</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold font-mono">INR</span>
+</div>
+<div class="flex justify-between items-center pt-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Unit Landed Price:</span>
+<span class="font-label-md text-label-md font-mono font-bold text-on-surface" id="unitLandedPrice">₹727.81 / pc</span>
+</div>
+</div>
+<!-- Cost Distribution Stack Bar -->
+<div class="flex flex-col gap-2 pt-1">
+<div class="flex justify-between items-center font-label-sm text-label-sm">
+<span class="text-on-surface-variant font-medium">Cost Distribution Profile</span>
+<span class="font-mono text-outline">100% Normalized</span>
+</div>
+<!-- Multi-colored segment bar -->
+<div class="w-full h-2 rounded-full overflow-hidden flex bg-surface-container">
+<div class="bg-secondary h-full" style="width: 47.3%" title="Material: 47.3%"></div>
+<div class="bg-primary-container h-full" style="width: 35.3%" title="Machining: 35.3%"></div>
+<div class="bg-secondary-container h-full" style="width: 11.0%" title="Metrology: 11.0%"></div>
+<div class="bg-outline h-full" style="width: 6.4%" title="Tooling: 6.4%"></div>
+</div>
+<div class="grid grid-cols-2 gap-y-1 text-label-sm font-label-sm text-on-surface-variant font-mono pt-0.5">
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-secondary"></span> Material (47.3%)</span>
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-primary-container"></span> Machining (35.3%)</span>
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-secondary-container"></span> Metrology (11.0%)</span>
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-outline"></span> Tooling (6.4%)</span>
+</div>
+</div>
+<!-- Automated Audit Compliance Checks -->
+<div class="bg-surface-container-low rounded-lg p-3.5 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold uppercase tracking-wider">Automated Audit Matrix</span>
+<span class="material-symbols-outlined text-secondary text-base">verified</span>
+</div>
+<div class="flex flex-col gap-1.5">
+<div class="flex items-start gap-2 text-body-sm font-body-sm">
+<span class="material-symbols-outlined text-secondary text-sm shrink-0 mt-0.5">check_circle</span>
+<span class="text-on-surface-variant">Raw material benchmarked to Feb 2026 Mumbai Mandi spot</span>
+</div>
+<div class="flex items-start gap-2 text-body-sm font-body-sm">
+<span class="material-symbols-outlined text-secondary text-sm shrink-0 mt-0.5">check_circle</span>
+<span class="text-on-surface-variant">Machine hour rate matched against active Rate Master FY26</span>
+</div>
+<div class="flex items-start gap-2 text-body-sm font-body-sm">
+<span class="material-symbols-outlined text-secondary text-sm shrink-0 mt-0.5">check_circle</span>
+<span class="text-on-surface-variant">TML credit risk limit verified (<strong class="text-on-surface">AAA / ₹1.2 Cr</strong> available)</span>
+</div>
+</div>
+</div>
+<!-- Dispatch Meta Card -->
+<div class="p-3 bg-surface-container rounded-lg flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-base">schedule</span>
+<span class="">Lead Time: 14 Working Days</span>
+</div>
+<span class="font-semibold text-on-surface">Ex-Works Pune</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ACTION FOOTER BAR -->
+<div class="w-full bg-surface-container-lowest rounded-lg p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 mt-2">
+<!-- Left Operational Actions -->
+<div class="flex items-center gap-2.5 w-full sm:w-auto">
+<a class="px-4 py-2 bg-surface-container hover:bg-surface-container-high rounded text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" data-path="ai-review" href="#">
+<span class="material-symbols-outlined text-base">arrow_back</span>
+          Back to Line Items
+        </a>
+<button class="px-4 py-2 bg-surface-container hover:bg-surface-container-high rounded text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-base">save</span>
+          Save Calculation Draft
+        </button>
+</div>
+<!-- Right Submission Status & CTA -->
+<div class="flex items-center gap-4 w-full sm:w-auto justify-end">
+<div class="hidden md:flex flex-col text-right">
+<span class="font-label-sm text-label-sm text-secondary font-semibold flex items-center gap-1 justify-end">
+<span class="w-1.5 h-1.5 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse"></span>
+            Ready for Customer Review
+          </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Quotation Version 1.0 Draft</span>
+</div>
+<a class="px-5 py-2.5 bg-secondary hover:bg-secondary/90 text-on-secondary rounded font-headline-sm text-headline-sm flex items-center gap-2 shadow-sm transition-all hover:gap-3" data-path="quotation-dispatch" href="#">
+<span class="">Generate Quotation Preview</span>
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Client-side Interactive Margin Calculator Script -->
+<script>
+    (function initCostingCalculator() {
+      const cogsBase = 439840;
+      const totalUnits = 870;
+      const taxRate = 0.18;
+
+      const slider = document.getElementById('marginRange');
+      const marginDisplay = document.getElementById('marginDisplay');
+      const marginAmount = document.getElementById('marginAmount');
+      const exFactoryPrice = document.getElementById('exFactoryPrice');
+      const summaryMarginPct = document.getElementById('summaryMarginPct');
+      const summaryMarginVal = document.getElementById('summaryMarginVal');
+      const summarySubtotal = document.getElementById('summarySubtotal');
+      const summaryTax = document.getElementById('summaryTax');
+      const finalQuotationTotal = document.getElementById('finalQuotationTotal');
+      const unitLandedPrice = document.getElementById('unitLandedPrice');
+
+      if (!slider) return;
+
+      function updatePricing() {
+        const marginPct = parseFloat(slider.value) / 100;
+        
+        // Margin calculated on top of COGS Base
+        const marginVal = Math.round(cogsBase * marginPct);
+        const subtotal = cogsBase + marginVal;
+        const taxVal = Math.round(subtotal * taxRate);
+        const total = subtotal + taxVal;
+        const unitRate = (total / totalUnits).toFixed(2);
+
+        // Update displays
+        marginDisplay.innerText = parseFloat(slider.value).toFixed(1) + '%';
+        marginAmount.innerText = '₹' + marginVal.toLocaleString('en-IN');
+        exFactoryPrice.innerText = '₹' + subtotal.toLocaleString('en-IN');
+        
+        summaryMarginPct.innerText = '(' + parseFloat(slider.value).toFixed(1) + '%)';
+        summaryMarginVal.innerText = '₹' + marginVal.toLocaleString('en-IN');
+        summarySubtotal.innerText = '₹' + subtotal.toLocaleString('en-IN');
+        summaryTax.innerText = '₹' + taxVal.toLocaleString('en-IN');
+        finalQuotationTotal.innerText = '₹' + total.toLocaleString('en-IN');
+        unitLandedPrice.innerText = '₹' + unitRate + ' / pc';
+      }
+
+      slider.addEventListener('input', updatePricing);
+    })();
+  </script>
+</div></main></div>
+
+
+
+
+
+
+
+</body></html>
