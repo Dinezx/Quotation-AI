@@ -10,9 +10,11 @@ const RateManagementPage = lazy(() => import('../pages/RateManagementPage').then
 const CalculationReviewPage = lazy(() => import('../pages/CalculationReviewPage').then(m => ({ default: m.CalculationReviewPage })));
 const QuotationHistoryPage = lazy(() => import('../pages/QuotationHistoryPage').then(m => ({ default: m.QuotationHistoryPage })));
 const QuotationPreviewPage = lazy(() => import('../pages/QuotationPreviewPage').then(m => ({ default: m.QuotationPreviewPage })));
+const QuotationDispatchPage = lazy(() => import('../pages/QuotationDispatchPage').then(m => ({ default: m.QuotationDispatchPage })));
 const CustomersPage = lazy(() => import('../pages/CustomersPage').then(m => ({ default: m.CustomersPage })));
 const CustomerDetailPage = lazy(() => import('../pages/CustomerDetailPage').then(m => ({ default: m.CustomerDetailPage })));
 const SettingsPage = lazy(() => import('../pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const LoginPage = lazy(() => import('../pages/LoginPage').then(m => ({ default: m.LoginPage })));
 
 const RouteLoadingFallback: React.FC = () => (
   <div className="flex items-center justify-center min-h-[50vh]">
@@ -27,6 +29,7 @@ export const AppRoutes: React.FC = () => {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="upload" element={<PoUploadPage />} />
@@ -38,6 +41,8 @@ export const AppRoutes: React.FC = () => {
           <Route path="quotation" element={<QuotationPreviewPage />} />
           <Route path="quotation/:quoteId" element={<QuotationPreviewPage />} />
           <Route path="quotations" element={<QuotationHistoryPage />} />
+          <Route path="dispatch" element={<QuotationDispatchPage />} />
+          <Route path="dispatch/:quoteId" element={<QuotationDispatchPage />} />
 
           <Route path="customers" element={<CustomersPage />} />
           <Route path="customers/:customerId" element={<CustomerDetailPage />} />

@@ -12,7 +12,7 @@ export const AppShell: React.FC = () => {
 
   return (
     <DensityProvider>
-      <div className="flex h-screen w-screen overflow-hidden bg-slate-100/60">
+      <div className="flex h-screen w-screen overflow-hidden bg-[#fbf9f4]">
         {/* Desktop Persistent Left Nav with Collapse support */}
         <div className="hidden md:flex h-full shrink-0">
           <SideNavBar 
@@ -30,14 +30,14 @@ export const AppShell: React.FC = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setMobileNavOpen(false)}
-                className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs"
+                className="fixed inset-0 bg-[#172033]/60 backdrop-blur-xs"
               />
               <motion.div
                 initial={{ x: '-100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="relative w-64 max-w-[80vw] h-full z-10"
+                className="relative w-60 max-w-[85vw] h-full z-10"
               >
                 <SideNavBar onCloseMobile={() => setMobileNavOpen(false)} />
               </motion.div>
@@ -50,14 +50,14 @@ export const AppShell: React.FC = () => {
           <TopNavBar onOpenMobileMenu={() => setMobileNavOpen(true)} />
 
           {/* Content Area with Fluid Page Transition */}
-          <main className="flex-1 overflow-y-auto relative bg-[#f8fafc]">
+          <main className="flex-1 overflow-y-auto relative bg-[#fbf9f4]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
-                initial={{ opacity: 0, y: 6 }}
+                initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
                 className="min-h-full"
               >
                 <Outlet />
