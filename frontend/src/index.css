@@ -5,10 +5,22 @@
 @layer base {
   :root {
     --font-mono: 'JetBrains Mono', monospace;
+    --canvas-bg: #fbf9f4;
+    --copper-primary: #B87333;
+    --copper-hover: #A46328;
+    --navy-primary: #172033;
+    --navy-header: #102134;
+    --border-line: #E5E1D8;
+    --text-primary: #1b1c19;
+    --text-secondary: #64748B;
   }
 
   body {
-    @apply bg-slate-50 text-slate-800 antialiased;
+    background-color: #fbf9f4;
+    color: #1b1c19;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -18,14 +30,14 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: #f0eee9;
   }
   ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: #dbdad5;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: #76777d;
   }
 }
 
