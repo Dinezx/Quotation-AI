@@ -614,7 +614,7 @@ export const PoUploadPage: React.FC = () => {
         {/* ACTION FOOTER BAR */}
         <div className="mt-8 pt-6 border-t border-[#eae8e3] flex flex-col sm:flex-row items-center justify-between gap-4">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             className="flex items-center gap-2 text-xs font-semibold text-[#45474c] hover:text-[#1b1c19] transition-colors py-2 px-1 cursor-pointer focus:outline-none"
           >
             <ArrowLeft className="w-4 h-4" />

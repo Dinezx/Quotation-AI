@@ -55,7 +55,7 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
     {
       title: 'Overview',
       items: [
-        { label: 'Dashboard', path: '/', icon: LayoutDashboard }
+        { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard }
       ]
     },
     {

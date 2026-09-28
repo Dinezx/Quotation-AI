@@ -1294,7 +1294,7 @@ export const LandingPage: React.FC = () => {
               },
               {
                 q: "How are statutory GST and bank remittance details formatted on the PDF?",
-                a: "The engine supports Central GST + State GST (18%) or Interstate IGST (18%). The generated DIN A4 PDF automatically formats bank name, branch, account number, IFSC code for RTGS/NEFT, and writes out the final total in official Indian Rupee words."
+                a: "The engine supports CGST (9%) + SGST (9%) or Interstate IGST (18%) with statutory HSN/SAC codes (8483/7326). The generated DIN A4 PDF automatically formats bank name, branch, account number, IFSC code for RTGS/NEFT, and writes out the final total in official Indian Rupee words."
               },
               {
                 q: "Is our proprietary plant rate card data safe from competitors?",
@@ -1463,14 +1463,19 @@ export const LandingPage: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="pilot-modal-title"
               className="relative bg-white rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl z-10 border border-[#E5E1D8] text-[#111827]"
             >
               <div className="flex items-center justify-between pb-4 border-b border-[#E5E1D8]">
                 <div>
-                  <h3 className="font-bold text-lg text-[#111827]">Request 14-Day Plant Pilot</h3>
+                  <h3 id="pilot-modal-title" className="font-bold text-lg text-[#111827]">Request 14-Day Plant Pilot</h3>
                   <p className="text-xs text-[#64748B] mt-0.5">Evaluate Quotation AI on your real customer purchase orders.</p>
                 </div>
                 <button
+                  type="button"
+                  aria-label="Close modal"
                   onClick={() => setIsPilotModalOpen(false)}
                   className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
                 >

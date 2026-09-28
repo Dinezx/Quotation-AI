@@ -24,7 +24,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({ onOpenMobileMenu }) => {
 
   const getPageTitle = () => {
     const path = location.pathname;
-    if (path === '/') return 'Manufacturing Console';
+    if (path === '/' || path === '/dashboard') return 'Manufacturing Console';
     if (path.startsWith('/upload')) return 'Purchase Order Ingestion';
     if (path.startsWith('/review')) return 'AI Extraction Review';
     if (path.startsWith('/calculation')) return 'Quotation Costing & Calculation';

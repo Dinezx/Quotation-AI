@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Building2, 
   KeyRound, 
@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, user, isAuthenticated } = useAuth();
 
   const [email, setEmail] = useState(user?.email || 'r.deshmukh@bharatprecision.co.in');
@@ -28,9 +29,10 @@ export const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/', { replace: true });
+      const from = (location.state as any)?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +44,8 @@ export const LoginPage: React.FC = () => {
     setErrorMessage(null);
     try {
       await login(email.trim(), password || undefined);
-      navigate('/');
+      const from = (location.state as any)?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Invalid enterprise credentials or inactive tenant.';
       setErrorMessage(msg);

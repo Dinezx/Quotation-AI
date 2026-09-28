@@ -4,6 +4,7 @@ import { AppShell } from '../layouts/AppShell';
 import { ProtectedRoute } from './ProtectedRoute';
 
 // Route-level code splitting for production bundle optimization
+const LandingPage = lazy(() => import('../pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const PoUploadPage = lazy(() => import('../pages/PoUploadPage').then(m => ({ default: m.PoUploadPage })));
 const PoReviewPage = lazy(() => import('../pages/PoReviewPage').then(m => ({ default: m.PoReviewPage })));
@@ -30,33 +31,40 @@ export const AppRoutes: React.FC = () => {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
       <Routes>
+        {/* Public SaaS Landing Page */}
+        <Route path="/" element={<LandingPage />} />
+
+        {/* Public Enterprise Sign In */}
         <Route path="/login" element={<LoginPage />} />
+
+        {/* Authenticated Manufacturing Console */}
         <Route
-          path="/"
           element={
             <ProtectedRoute>
               <AppShell />
             </ProtectedRoute>
           }
         >
-          <Route index element={<DashboardPage />} />
-          <Route path="upload" element={<PoUploadPage />} />
-          <Route path="review" element={<PoReviewPage />} />
-          <Route path="review/:poId" element={<PoReviewPage />} />
-          <Route path="rates" element={<RateManagementPage />} />
-          <Route path="calculation" element={<CalculationReviewPage />} />
-          <Route path="calculation/:quoteId" element={<CalculationReviewPage />} />
-          <Route path="quotation" element={<QuotationPreviewPage />} />
-          <Route path="quotation/:quoteId" element={<QuotationPreviewPage />} />
-          <Route path="quotations" element={<QuotationHistoryPage />} />
-          <Route path="dispatch" element={<QuotationDispatchPage />} />
-          <Route path="dispatch/:quoteId" element={<QuotationDispatchPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/upload" element={<PoUploadPage />} />
+          <Route path="/review" element={<PoReviewPage />} />
+          <Route path="/review/:poId" element={<PoReviewPage />} />
+          <Route path="/rates" element={<RateManagementPage />} />
+          <Route path="/calculation" element={<CalculationReviewPage />} />
+          <Route path="/calculation/:quoteId" element={<CalculationReviewPage />} />
+          <Route path="/quotation" element={<QuotationPreviewPage />} />
+          <Route path="/quotation/:quoteId" element={<QuotationPreviewPage />} />
+          <Route path="/quotations" element={<QuotationHistoryPage />} />
+          <Route path="/dispatch" element={<QuotationDispatchPage />} />
+          <Route path="/dispatch/:quoteId" element={<QuotationDispatchPage />} />
 
-          <Route path="customers" element={<CustomersPage />} />
-          <Route path="customers/:customerId" element={<CustomerDetailPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/customers/:customerId" element={<CustomerDetailPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
+
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );
