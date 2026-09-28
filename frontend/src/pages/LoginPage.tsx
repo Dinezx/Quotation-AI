@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Building2, 
@@ -17,24 +17,35 @@ import { useAuth } from '../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, user } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
 
-  const [email, setEmail] = useState(user?.email || 'rajesh.sharma@orynza-mfg.in');
-  const [password, setPassword] = useState('••••••••••••••••');
+  const [email, setEmail] = useState(user?.email || 'r.deshmukh@bharatprecision.co.in');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberSession, setRememberSession] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim()) {
+      setErrorMessage('Please enter your work email.');
+      return;
+    }
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
-      if (login) {
-        await login('demo-enterprise-session-token');
-      }
+      await login(email.trim(), password || undefined);
       navigate('/');
-    } catch (err) {
-      console.error('[LoginPage] Sign in error:', err);
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || 'Invalid enterprise credentials or inactive tenant.';
+      setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -196,6 +207,19 @@ export const LoginPage: React.FC = () => {
 
               {/* Form Interface */}
               <form onSubmit={handleSubmit} className="space-y-4 my-6">
+                {errorMessage && (
+                  <div className="bg-[#ffdad6] border border-[#ba1a1a]/30 text-[#93000a] px-3.5 py-2.5 rounded-lg text-xs flex items-center justify-between">
+                    <span>{errorMessage}</span>
+                    <button
+                      type="button"
+                      onClick={() => setErrorMessage(null)}
+                      className="text-[#93000a] font-bold ml-2 hover:opacity-75"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 {/* Corporate Work Email Input */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-[#1b1c19]" htmlFor="workEmail">

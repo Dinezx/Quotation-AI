@@ -116,107 +116,7 @@ export const CalculationReviewPage: React.FC = () => {
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Calculation request failed';
       setError(msg);
-      // Fallback mock result so the user can review UI even without running backend
-      setCalcResult({
-        po_id: poId,
-        po_number: 'TML/PO/2026/0942',
-        quotation_id: 'qt-demo-2026',
-        quotation_number: 'QT-2026-0482',
-        status: 'SUCCESS',
-        currency: 'INR',
-        material_cost: 382000,
-        process_cost: 168400,
-        manufacturing_subtotal: 550400,
-        overhead_amount: 55040,
-        profit_amount: 90816,
-        taxable_amount: 696256,
-        cgst_amount: isInterstate ? 0 : 62663.04,
-        sgst_amount: isInterstate ? 0 : 62663.04,
-        igst_amount: isInterstate ? 125326.08 : 0,
-        grand_total: 821582.08,
-        final_total_in_words: 'Eight Lakh Twenty-One Thousand Five Hundred Eighty-Two Rupees and Eight Paise Only',
-        issues: [],
-        items: [
-          {
-            item_id: 'item-1',
-            item_number: 1,
-            part_name: 'Flange Drive Shaft Ø140 x 380mm',
-            material: 'EN8 / AISI 1045',
-            process: 'CNC Turning & Spline Milling',
-            quantity: 120,
-            unit: 'Nos',
-            material_rate: 68.5,
-            scrap_credit_rate: 22.0,
-            gross_weight_kg: 18.5,
-            net_weight_kg: 14.2,
-            scrap_weight_kg: 4.3,
-            gross_material_cost: 152070,
-            scrap_credit: 11352,
-            net_material_cost: 140718,
-            process_rate: 850,
-            machining_hours: 0.85,
-            setup_cost: 2500,
-            machining_cost: 86700,
-            process_cost: 89200,
-            subtotal: 229918,
-            unit_cost: 1915.98,
-            rate_match_status: 'MATCHED',
-            rate_match_messages: [],
-          },
-          {
-            item_id: 'item-2',
-            item_number: 2,
-            part_name: 'Heavy Pinion Hub Housing',
-            material: '42CrMo4 Forged',
-            process: 'Induction Hardening & Precision Boring',
-            quantity: 65,
-            unit: 'Nos',
-            material_rate: 112.0,
-            scrap_credit_rate: 28.0,
-            gross_weight_kg: 24.0,
-            net_weight_kg: 19.5,
-            scrap_weight_kg: 4.5,
-            gross_material_cost: 174720,
-            scrap_credit: 8190,
-            net_material_cost: 166530,
-            process_rate: 1200,
-            machining_hours: 0.65,
-            setup_cost: 3200,
-            machining_cost: 50700,
-            process_cost: 53900,
-            subtotal: 220430,
-            unit_cost: 3391.23,
-            rate_match_status: 'MATCHED',
-            rate_match_messages: [],
-          },
-          {
-            item_id: 'item-3',
-            item_number: 3,
-            part_name: 'High-Tensile Spindle Adapter',
-            material: 'CuSn8 Bronze',
-            process: 'Precision Turning & Grooving',
-            quantity: 180,
-            unit: 'Nos',
-            material_rate: 420.0,
-            scrap_credit_rate: 180.0,
-            gross_weight_kg: 1.2,
-            net_weight_kg: 0.95,
-            scrap_weight_kg: 0.25,
-            gross_material_cost: 90720,
-            scrap_credit: 8100,
-            net_material_cost: 82620,
-            process_rate: 650,
-            machining_hours: 0.2,
-            setup_cost: 1800,
-            machining_cost: 23400,
-            process_cost: 25200,
-            subtotal: 107820,
-            unit_cost: 599.0,
-            rate_match_status: 'MATCHED',
-            rate_match_messages: [],
-          },
-        ],
-      });
+      setCalcResult(null);
     } finally {
       setIsRecalculating(false);
       setLoading(false);
@@ -239,6 +139,7 @@ export const CalculationReviewPage: React.FC = () => {
   };
 
   const isBlocked = calcResult?.status === 'BLOCKED';
+  const selectedPo = approvedPOs.find(p => p.id === selectedPoId);
 
   return (
     <div className="w-full bg-[#fbf9f4] p-6 md:p-8 font-sans antialiased text-[#1b1c19] min-h-screen">
@@ -292,7 +193,7 @@ export const CalculationReviewPage: React.FC = () => {
             {/* Step 4: Preview (Inactive) */}
             <div 
               onClick={() => {
-                if (calcResult?.quotation_id) {
+                if (calcResult?.quotation_id && !isBlocked) {
                   navigate(`/quotation/${calcResult.quotation_id}`);
                 }
               }}
@@ -318,6 +219,55 @@ export const CalculationReviewPage: React.FC = () => {
           </div>
         </div>
 
+        {/* FEEDBACK BANNERS */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-900 flex items-start justify-between gap-3 shadow-xs">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-sm">Calculation Error</h3>
+                <p className="text-xs text-red-700 mt-0.5">{error}</p>
+              </div>
+            </div>
+            {selectedPoId && (
+              <Button size="sm" variant="outline" onClick={() => executeCalculation(selectedPoId)}>
+                Retry
+              </Button>
+            )}
+          </div>
+        )}
+
+        {isBlocked && (
+          <div className="bg-amber-50 border border-amber-300 rounded-xl p-5 flex flex-col gap-3 shadow-xs">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-sm text-amber-900">Cost Calculation Blocked — Missing Rate Master Entries</h3>
+                <p className="text-xs text-amber-800 mt-1">
+                  Deterministic pricing cannot invent or substitute rates. The following required rates are missing from your active company rate cards:
+                </p>
+                <div className="mt-2 space-y-1">
+                  {(calcResult?.issues || []).map((iss, i) => (
+                    <div key={i} className="text-xs font-medium text-amber-900 bg-amber-100/60 px-3 py-1.5 rounded border border-amber-200">
+                      • {typeof iss === 'string' ? iss : (iss.message || JSON.stringify(iss))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="pt-1 flex gap-3">
+              <Button size="sm" onClick={() => navigate('/rates')}>
+                Configure Missing Rates in Rate Master
+              </Button>
+              {selectedPoId && (
+                <Button size="sm" variant="outline" onClick={() => executeCalculation(selectedPoId)}>
+                  Re-evaluate Rates
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* PAGE HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col">
@@ -326,19 +276,18 @@ export const CalculationReviewPage: React.FC = () => {
                 Build Quotation
               </h1>
               <span className="px-2 py-0.5 bg-[#B87333]/10 text-[#B87333] text-xs font-semibold rounded uppercase tracking-wider">
-                Workflow v2.4
+                Deterministic Engine
               </span>
             </div>
             <p className="text-sm text-[#45474c] mt-0.5">
-              Review direct and indirect manufacturing costs to finalize commercial pricing and calculate operational margin.
+              Review direct material and process machining costs calculated strictly per database rate masters.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg shadow-xs border border-[#E5E1D8]">
               <span className="w-2 h-2 rounded-full bg-[#B87333]"></span>
-              <span className="text-xs font-semibold text-[#1b1c19]">Rate Master: Q1 FY26 Active</span>
-              <span className="text-xs text-[#76777d] font-mono">| Rev 4.12</span>
+              <span className="text-xs font-semibold text-[#1b1c19]">Rate Master Active</span>
             </div>
             <button 
               onClick={() => selectedPoId && executeCalculation(selectedPoId)}
@@ -358,17 +307,19 @@ export const CalculationReviewPage: React.FC = () => {
             </div>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2 truncate">
-                <span className="text-base font-semibold text-[#1b1c19] truncate">Tata Motors Ltd</span>
+                <span className="text-base font-semibold text-[#1b1c19] truncate">
+                  {selectedPo?.customer_name || 'Manufacturing Client'}
+                </span>
                 <span className="px-2 py-0.5 bg-[#f0eee9] text-[#45474c] rounded text-[11px] font-semibold shrink-0">
-                  Tier-1 OEM
+                  Approved PO
                 </span>
               </div>
               <div className="flex items-center gap-2 text-[#45474c] text-xs mt-0.5">
-                <span className="font-mono text-[#1b1c19] font-medium">{calcResult?.po_number || 'TML/PO/2026/0942'}</span>
+                <span className="font-mono text-[#1b1c19] font-medium">
+                  {calcResult?.po_number || selectedPo?.po_number || 'PO Ref'}
+                </span>
                 <span>•</span>
-                <span>Pune Plant 01</span>
-                <span>•</span>
-                <span>{calcResult?.items.length || 3} Line Items</span>
+                <span>{calcResult?.items?.length || selectedPo?.items?.length || 0} Line Items</span>
               </div>
             </div>
           </div>
@@ -390,8 +341,34 @@ export const CalculationReviewPage: React.FC = () => {
           </div>
         </div>
 
-        {/* MAIN WORKFLOW CONTENT CONTAINER (8-col / 4-col split) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {loading ? (
+          <div className="bg-white rounded-xl p-16 border border-[#E5E1D8] flex flex-col items-center justify-center gap-3 shadow-xs">
+            <RefreshCw className="w-8 h-8 text-[#B87333] animate-spin" />
+            <span className="text-sm font-medium text-[#45474c]">Computing deterministic cost breakdown from rate cards...</span>
+          </div>
+        ) : approvedPOs.length === 0 && !selectedPoId ? (
+          <div className="bg-white rounded-xl p-12 border border-[#E5E1D8] flex flex-col items-center justify-center text-center gap-4 shadow-xs">
+            <div className="w-14 h-14 rounded-full bg-[#B87333]/10 text-[#B87333] flex items-center justify-center">
+              <Calculator className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-[#1b1c19]">No Approved Purchase Orders Ready for Costing</h3>
+              <p className="text-xs text-[#76777d] mt-1 max-w-md">
+                Review and approve an uploaded Purchase Order first to generate deterministic manufacturing pricing and bill of quantities.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-2">
+              <Button onClick={() => navigate('/review')}>
+                Go to PO Review
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/upload')}>
+                Upload Purchase Order
+              </Button>
+            </div>
+          </div>
+        ) : (
+          /* MAIN WORKFLOW CONTENT CONTAINER (8-col / 4-col split) */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
           {/* PRIMARY COLUMN (8 COLS) */}
           <div className="lg:col-span-8 flex flex-col gap-5">
@@ -404,12 +381,12 @@ export const CalculationReviewPage: React.FC = () => {
                   <span className="text-sm font-bold text-[#1b1c19]">Itemized Engineering Cost Breakdown</span>
                 </div>
                 <span className="text-xs font-mono text-[#76777d]">
-                  {calcResult?.items.length || 0} Parts Verified
+                  {calcResult?.items?.length || 0} Parts Verified
                 </span>
               </div>
 
               <div className="divide-y divide-[#eae8e3]">
-                {calcResult?.items.map((item, idx) => {
+                {(calcResult?.items || []).map((item, idx) => {
                   const isExpanded = expandedItems[item.item_id || String(idx)] ?? true;
                   const itemBlocked = item.rate_match_status !== 'MATCHED';
 
@@ -695,13 +672,19 @@ export const CalculationReviewPage: React.FC = () => {
               {/* Action Buttons */}
               <div className="space-y-2 pt-1">
                 <button
+                  disabled={isBlocked || !calcResult?.quotation_id}
                   onClick={() => {
-                    const qId = calcResult?.quotation_id || 'qt-demo-2026';
-                    navigate(`/quotation/${qId}`);
+                    if (calcResult?.quotation_id) {
+                      navigate(`/quotation/${calcResult.quotation_id}`);
+                    }
                   }}
-                  className="w-full py-2.5 bg-[#B87333] hover:bg-[#A46328] text-white font-bold text-xs rounded-lg transition-all shadow-md shadow-[#B87333]/20 flex items-center justify-center gap-2 group"
+                  className={`w-full py-2.5 text-white font-bold text-xs rounded-lg transition-all shadow-md flex items-center justify-center gap-2 group ${
+                    isBlocked || !calcResult?.quotation_id
+                      ? 'bg-slate-400 cursor-not-allowed shadow-none'
+                      : 'bg-[#B87333] hover:bg-[#A46328] shadow-[#B87333]/20 active:scale-[0.99]'
+                  }`}
                 >
-                  <span>Continue to Quotation Preview</span>
+                  <span>{isBlocked ? 'Resolve Missing Rates to Proceed' : 'Continue to Quotation Preview'}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </button>
 
@@ -723,6 +706,7 @@ export const CalculationReviewPage: React.FC = () => {
           </div>
 
         </div>
+        )}
 
       </div>
     </div>

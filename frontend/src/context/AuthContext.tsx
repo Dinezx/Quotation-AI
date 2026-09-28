@@ -1,11 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../lib/apiClient';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 export interface AuthUser {
   id: string;
   email: string;
   fullName?: string;
-  role: 'ADMIN' | 'COSTING_ENGINEER' | 'VIEWER';
+  role: 'ADMIN' | 'COSTING_ENGINEER' | 'VIEWER' | string;
   companyId: string;
 }
 
@@ -17,88 +18,203 @@ export interface AuthCompany {
   address?: string;
   phone?: string;
   email?: string;
+  settings?: Record<string, any>;
 }
 
 interface AuthContextType {
-  user: AuthUser;
-  company: AuthCompany;
+  user: AuthUser | null;
+  company: AuthCompany | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   token: string | null;
-  login: (token: string) => Promise<void>;
-  logout: () => void;
+  login: (emailOrToken: string, password?: string) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 }
-
-const DEFAULT_DEMO_USER: AuthUser = {
-  id: 'usr-bpe-001',
-  email: 'r.deshmukh@bharatprecision.co.in',
-  fullName: 'Rajesh Deshmukh',
-  role: 'COSTING_ENGINEER',
-  companyId: 'comp-bpe-pune',
-};
-
-const DEFAULT_DEMO_COMPANY: AuthCompany = {
-  id: 'comp-bpe-pune',
-  name: 'Bharat Precision Engineering Pvt. Ltd.',
-  legalName: 'Bharat Precision Engineering Private Limited',
-  gstin: '27AAACB1234F1Z8',
-  address: 'Plot W-42, MIDC Industrial Area, Phase II, Bhosari, Pune, MH - 411026',
-  phone: '+91 20 2712 8840',
-  email: 'contact@bharatprecision.co.in',
-};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser>(DEFAULT_DEMO_USER);
-  const [company, setCompany] = useState<AuthCompany>(DEFAULT_DEMO_COMPANY);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('quotation_ai_auth_token'));
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [company, setCompany] = useState<AuthCompany | null>(null);
+  const [token, setToken] = useState<string | null>(
+    () => localStorage.getItem('quotation_ai_auth_token')
+  );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Synchronize authenticated session profile with backend
+  const verifyAndSyncBackend = useCallback(async (authToken: string | null) => {
+    if (!authToken) {
+      setUser(null);
+      setCompany(null);
+      setIsLoading(false);
+      return false;
+    }
+
+    try {
+      const res = await apiClient.get('/auth/me', {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (res.data?.user && res.data?.company) {
+        setUser({
+          id: res.data.user.id,
+          email: res.data.user.email,
+          fullName: res.data.user.full_name || undefined,
+          role: res.data.user.role,
+          companyId: res.data.user.company_id,
+        });
+
+        setCompany({
+          id: res.data.company.id,
+          name: res.data.company.name,
+          legalName: res.data.company.legal_name || undefined,
+          gstin: res.data.company.gstin || undefined,
+          address: res.data.company.address || undefined,
+          phone: res.data.company.phone || undefined,
+          email: res.data.company.email || undefined,
+          settings: res.data.company.settings || {},
+        });
+        return true;
+      }
+      throw new Error('Invalid authentication response structure');
+    } catch (err: any) {
+      console.warn('[AuthContext] Backend token verification failed:', err.response?.data?.detail || err.message);
+      localStorage.removeItem('quotation_ai_auth_token');
+      setToken(null);
+      setUser(null);
+      setCompany(null);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initial session hydration
   useEffect(() => {
-    async function syncAuth() {
-      try {
-        const res = await apiClient.get('/auth/me');
-        if (res.data?.user) {
-          setUser({
-            id: res.data.user.id,
-            email: res.data.user.email,
-            fullName: res.data.user.full_name,
-            role: res.data.user.role,
-            companyId: res.data.user.company_id,
-          });
+    let isMounted = true;
+
+    async function initSession() {
+      // 1. If Supabase configured, check active Supabase session
+      if (isSupabaseConfigured) {
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (!error && session?.access_token) {
+            if (isMounted) {
+              localStorage.setItem('quotation_ai_auth_token', session.access_token);
+              setToken(session.access_token);
+              await verifyAndSyncBackend(session.access_token);
+              return;
+            }
+          }
+        } catch (supabaseErr) {
+          console.debug('[AuthContext] Supabase session retrieval error:', supabaseErr);
         }
-        if (res.data?.company) {
-          setCompany({
-            id: res.data.company.id,
-            name: res.data.company.name,
-            legalName: res.data.company.legal_name,
-            gstin: res.data.company.gstin,
-            address: res.data.company.address,
-            phone: res.data.company.phone,
-            email: res.data.company.email,
-          });
-        }
-      } catch (err) {
-        // Fallback gracefully to default tenant credentials
-        console.debug('[AuthContext] Backend offline or using demo state:', err);
-      } finally {
-        setIsLoading(false);
+      }
+
+      // 2. Check local storage token
+      const savedToken = localStorage.getItem('quotation_ai_auth_token');
+      if (isMounted) {
+        await verifyAndSyncBackend(savedToken);
       }
     }
-    syncAuth();
-  }, [token]);
 
-  const login = async (newToken: string) => {
-    localStorage.setItem('quotation_ai_auth_token', newToken);
-    setToken(newToken);
+    initSession();
+
+    // 3. Listen to Supabase Auth State changes
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    if (isSupabaseConfigured) {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (session?.access_token) {
+            localStorage.setItem('quotation_ai_auth_token', session.access_token);
+            setToken(session.access_token);
+            await verifyAndSyncBackend(session.access_token);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          localStorage.removeItem('quotation_ai_auth_token');
+          setToken(null);
+          setUser(null);
+          setCompany(null);
+          setIsLoading(false);
+        }
+      });
+      authSubscription = data.subscription;
+    }
+
+    return () => {
+      isMounted = false;
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+    };
+  }, [verifyAndSyncBackend]);
+
+  const login = async (emailOrToken: string, password?: string) => {
+    setIsLoading(true);
+
+    try {
+      // Case A: Supabase Auth Email/Password login
+      if (password !== undefined && isSupabaseConfigured) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: emailOrToken,
+          password,
+        });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        const accessToken = data.session?.access_token;
+        if (!accessToken) {
+          throw new Error('Supabase did not return an access token');
+        }
+
+        localStorage.setItem('quotation_ai_auth_token', accessToken);
+        setToken(accessToken);
+        const verified = await verifyAndSyncBackend(accessToken);
+        if (!verified) {
+          throw new Error('Authentication verified with Supabase, but no active tenant is linked in the Quotation AI database.');
+        }
+        return;
+      }
+
+      // Case B: Direct token login or JWT token passed directly
+      const rawToken = emailOrToken;
+      localStorage.setItem('quotation_ai_auth_token', rawToken);
+      setToken(rawToken);
+      const verified = await verifyAndSyncBackend(rawToken);
+      if (!verified) {
+        throw new Error('Session token rejected by Quotation AI backend authentication service.');
+      }
+    } catch (err) {
+      setIsLoading(false);
+      throw err;
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem('quotation_ai_auth_token');
-    setToken(null);
-    setUser(DEFAULT_DEMO_USER);
-    setCompany(DEFAULT_DEMO_COMPANY);
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.auth.signOut();
+      }
+    } catch (err) {
+      console.debug('[AuthContext] Sign out error:', err);
+    } finally {
+      localStorage.removeItem('quotation_ai_auth_token');
+      setToken(null);
+      setUser(null);
+      setCompany(null);
+      setIsLoading(false);
+    }
+  };
+
+  const refreshSession = async () => {
+    const currentToken = localStorage.getItem('quotation_ai_auth_token');
+    await verifyAndSyncBackend(currentToken);
   };
 
   return (
@@ -106,11 +222,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         company,
-        isAuthenticated: true,
+        isAuthenticated: Boolean(user && company),
         isLoading,
         token,
         login,
         logout,
+        refreshSession,
       }}
     >
       {children}
@@ -125,3 +242,5 @@ export function useAuth() {
   }
   return context;
 }
+
+export default AuthContext;

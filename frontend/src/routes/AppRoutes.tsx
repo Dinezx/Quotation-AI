@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from '../layouts/AppShell';
+import { ProtectedRoute } from './ProtectedRoute';
 
 // Route-level code splitting for production bundle optimization
 const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
@@ -30,7 +31,14 @@ export const AppRoutes: React.FC = () => {
     <Suspense fallback={<RouteLoadingFallback />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<AppShell />}>
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <AppShell />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<DashboardPage />} />
           <Route path="upload" element={<PoUploadPage />} />
           <Route path="review" element={<PoReviewPage />} />

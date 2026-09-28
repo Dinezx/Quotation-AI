@@ -1,11 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { purchaseOrderApi, PurchaseOrderDTO, PurchaseOrderItemDTO } from '../services/api/purchaseOrderApi';
-import { poService } from '../services/poService';
+import { purchaseOrderApi, PurchaseOrderDTO, PurchaseOrderItemDTO } from '../api/purchaseOrderApi';
 import { PurchaseOrder, BoqItem } from '../types/po';
 
 export function dtoToPurchaseOrder(dto: PurchaseOrderDTO): PurchaseOrder {
-  const currentFallback = poService.getCurrentPO();
-
   const items: BoqItem[] = (dto.items || []).map((it, idx) => ({
     id: it.id,
     sNo: String(it.item_number || idx + 1).padStart(2, '0'),
@@ -37,17 +34,17 @@ export function dtoToPurchaseOrder(dto: PurchaseOrderDTO): PurchaseOrder {
     confidenceScore: 94.8,
     status: dto.status === 'UPLOADED' ? 'NEEDS_REVIEW' : (dto.status as any) || 'NEEDS_REVIEW',
     metadata: {
-      name: dto.customer_name || 'Mahindra & Mahindra Ltd.',
+      name: dto.customer_name || 'Customer Master',
       gstin: '27AAACM0012P1ZX',
       poNumber: dto.po_number,
-      poDate: dto.po_date ? new Date(dto.po_date).toLocaleDateString('en-GB') : '14 Aug 2026',
-      deliveryDueDate: dto.delivery_date ? new Date(dto.delivery_date).toLocaleDateString('en-GB') : '28 Sep 2026',
-      billingAddress: 'Chakan Plant II, Pune, MH',
-      contactPerson: 'Vikram Malhotra',
-      email: 'procurement@mahindra.com',
-      phone: '+91 22 2490 1441',
+      poDate: dto.po_date ? new Date(dto.po_date).toLocaleDateString('en-GB') : '',
+      deliveryDueDate: dto.delivery_date ? new Date(dto.delivery_date).toLocaleDateString('en-GB') : '',
+      billingAddress: dto.delivery_terms || 'Factory Works',
+      contactPerson: 'Procurement Department',
+      email: 'procurement@customer.com',
+      phone: '',
     },
-    items: items.length > 0 ? items : currentFallback.items,
+    items: items,
     leadTimeDays: 21,
     taxComplianceNote: 'GSTIN verified against GSTN live portal.',
     rawMaterialIndexNote: 'Base raw material prices indexed to Mandi benchmark.',
@@ -62,13 +59,10 @@ export function usePurchaseOrders(statusFilter?: string) {
     queryFn: async () => {
       try {
         const dtoList = await purchaseOrderApi.list(statusFilter);
-        if (dtoList && dtoList.length > 0) {
-          return dtoList.map(dtoToPurchaseOrder);
-        }
-        return [poService.getCurrentPO()];
+        return (dtoList || []).map(dtoToPurchaseOrder);
       } catch (err) {
-        console.warn('[usePurchaseOrders] Falling back to current PO:', err);
-        return [poService.getCurrentPO()];
+        console.error('[usePurchaseOrders] Error loading purchase orders:', err);
+        return [];
       }
     },
   });
@@ -97,8 +91,8 @@ export function usePurchaseOrders(statusFilter?: string) {
   });
 
   return {
-    purchaseOrders: listQuery.data || [poService.getCurrentPO()],
-    currentPO: listQuery.data?.[0] || poService.getCurrentPO(),
+    purchaseOrders: listQuery.data || [],
+    currentPO: listQuery.data?.[0] || null,
     isLoading: listQuery.isLoading,
     isError: listQuery.isError,
     refetch: listQuery.refetch,

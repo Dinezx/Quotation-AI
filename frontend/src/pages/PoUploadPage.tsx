@@ -20,7 +20,6 @@ import {
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { poService } from '../services/poService';
 import { purchaseOrderApi } from '../api/purchaseOrderApi';
 
 interface StagedPO {
@@ -49,13 +48,14 @@ export const PoUploadPage: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [stagedFile, setStagedFile] = useState<StagedPO | null>(DEFAULT_SAMPLE_PO);
+  const [stagedFile, setStagedFile] = useState<StagedPO | null>(null);
   const [actualFile, setActualFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractProgress, setExtractProgress] = useState(0);
   const [extractStepText, setExtractStepText] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -82,69 +82,91 @@ export const PoUploadPage: React.FC = () => {
   };
 
   const processSelectedFile = (file: File) => {
+    setUploadError(null);
     setActualFile(file);
-    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
     setStagedFile({
       name: file.name,
       size: `${sizeMb} MB`,
-      lineItems: 6,
+      lineItems: 3,
       customerName: 'Tata Motors Commercial Vehicle Div',
       gstin: '27AAACT2727Q1ZW',
       vendorCode: 'TM-PUN-09142',
-      location: 'Chinchwad, Pune Works',
-      contractNote: 'Pre-linked to active customer master, tiered volume rebates, and standard Net-60 credit terms.',
+      location: 'Chakan Works, Pune',
+      contractNote: 'Matched with customer catalog, standard Net-60 credit terms, Tier-1 manufacturing specifications.',
     });
   };
 
-  const handleLoadSample = () => {
-    setActualFile(null);
-    setStagedFile(DEFAULT_SAMPLE_PO);
-    poService.resetSamplePO();
+  const handleLoadSample = async () => {
+    try {
+      setUploadError(null);
+      const res = await fetch('/sample_manufacturing_purchase_order.pdf');
+      if (!res.ok) {
+        throw new Error('Failed to load sample PO document');
+      }
+      const blob = await res.blob();
+      const sampleFile = new File([blob], 'sample_manufacturing_purchase_order.pdf', {
+        type: 'application/pdf',
+      });
+      processSelectedFile(sampleFile);
+    } catch (err: any) {
+      setUploadError('Could not load sample file: ' + err.message);
+    }
   };
 
   const handleRemoveFile = () => {
     setStagedFile(null);
     setActualFile(null);
+    setUploadError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   const handleStartExtraction = async () => {
-    if (!stagedFile) return;
+    if (!stagedFile || !actualFile) {
+      setUploadError('Please select or drop a valid Purchase Order file (PDF or image).');
+      return;
+    }
 
     setIsExtracting(true);
+    setUploadError(null);
     setExtractProgress(15);
     setExtractStepText('Ingesting PO document into neural OCR pipeline...');
 
-    // Attempt real API upload in background if an actual file was selected
-    if (actualFile) {
-      try {
-        await purchaseOrderApi.uploadDocument(actualFile);
-      } catch (err) {
-        console.debug('[PoUploadPage] API upload fallback:', err);
-      }
-    }
-
-    setTimeout(() => {
+    const timer1 = setTimeout(() => {
       setExtractProgress(45);
       setExtractStepText('Reading geometric GD&T callouts and BOM table structures...');
-    }, 600);
+    }, 500);
 
-    setTimeout(() => {
+    const timer2 = setTimeout(() => {
       setExtractProgress(75);
-      setExtractStepText('Cross-referencing metallurgy grades with Pune rate cards...');
-    }, 1200);
+      setExtractStepText('Cross-referencing metallurgy grades with database rate masters...');
+    }, 1100);
 
-    setTimeout(() => {
+    try {
+      const res = await purchaseOrderApi.uploadDocument(actualFile);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       setExtractProgress(100);
       setExtractStepText('Extraction complete. Navigating to verification review...');
-    }, 1800);
 
-    setTimeout(() => {
+      setTimeout(() => {
+        setIsExtracting(false);
+        const poId = res.purchase_order_id || res.purchase_order?.id;
+        if (poId) {
+          navigate(`/review/${poId}`);
+        } else {
+          navigate('/review');
+        }
+      }, 600);
+    } catch (err: any) {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       setIsExtracting(false);
-      navigate('/review');
-    }, 2200);
+      const msg = err.response?.data?.detail || err.message || 'PO extraction failed. Check document format or API connectivity.';
+      setUploadError(msg);
+    }
   };
 
   return (

@@ -83,9 +83,8 @@ class QuotationService:
         year = datetime.utcnow().strftime("%Y")
         prefix = f"QT-{year}-"
         
-        # Count existing quotations for this year and company
+        # Count existing quotations for this year globally to match column unique constraint
         count = db.query(func.count(Quotation.id)).filter(
-            Quotation.company_id == company_id,
             Quotation.quotation_number.like(f"{prefix}%")
         ).scalar() or 0
 
@@ -93,7 +92,6 @@ class QuotationService:
         while True:
             candidate = f"{prefix}{seq:04d}"
             exists = db.query(Quotation.id).filter(
-                Quotation.company_id == company_id,
                 Quotation.quotation_number == candidate
             ).first()
             if not exists:

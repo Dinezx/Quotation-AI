@@ -13,17 +13,17 @@ export interface PurchaseOrderItemDTO {
   unit: string;
   material_id?: string;
   material_grade?: string;
-  gross_weight_kg: number;
-  net_weight_kg: number;
-  scrap_weight_kg: number;
+  gross_weight_kg?: number;
+  net_weight_kg?: number;
+  scrap_weight_kg?: number;
   process_id?: string;
   process_name?: string;
-  machining_hours: number;
-  setup_hours: number;
-  confidence: number;
+  machining_hours?: number;
+  setup_hours?: number;
+  confidence?: number;
   review_flags?: string[];
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface PurchaseOrderDTO {
@@ -74,6 +74,7 @@ export interface RateMatchItemDTO {
   quantity: number;
   unit: string;
   gross_weight_kg: number;
+  net_weight_kg?: number;
   scrap_weight_kg: number;
   machining_hours: number;
   setup_hours: number;
@@ -162,9 +163,16 @@ export const purchaseOrderApi = {
     return res.data;
   },
 
-  approve: async (id: string, notes?: string): Promise<PurchaseOrderDTO> => {
+  approve: async (
+    id: string,
+    notesOrPayload?: string | { notes?: string; approval_notes?: string }
+  ): Promise<PurchaseOrderDTO> => {
+    const approval_notes =
+      typeof notesOrPayload === 'string'
+        ? notesOrPayload
+        : notesOrPayload?.approval_notes || notesOrPayload?.notes || undefined;
     const res = await apiClient.post<PurchaseOrderDTO>(`/purchase-orders/${id}/approve`, {
-      approval_notes: notes || undefined,
+      approval_notes,
     });
     return res.data;
   },

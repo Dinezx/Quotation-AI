@@ -59,117 +59,49 @@ export const PoReviewPage: React.FC = () => {
   const [inspectModalOpen, setInspectModalOpen] = useState(false);
 
   // PO State
-  const [po, setPo] = useState<PurchaseOrderDTO>({
-    id: poId || 'demo-po',
-    company_id: 'comp-bpe-pune',
-    po_number: 'TML/PO/2026/0942',
-    po_date: '2026-02-14T00:00:00',
-    customer_name: 'Tata Motors Limited',
-    supplier_name: 'ORYNZA Industrial Systems India Pvt. Ltd.',
-    delivery_terms: 'Chakan Industrial Area, Phase II',
-    payment_terms: '60 Days Net from Delivery',
-    inspection_clauses: 'Standard SLA Tier-1 Verified',
-    general_notes: 'Components machined strictly to DIN 7168 medium tolerances.',
-    status: 'NEEDS_REVIEW',
-    review_status: 'NEEDS_REVIEW',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    items: [
-      {
-        id: 'item-1',
-        purchase_order_id: poId || 'demo-po',
-        item_number: 1,
-        part_name: 'TM-FL-902 CNC Flange Hub 120mm Dia',
-        specification: 'EN8 / AISI 1045',
-        drawing_number: 'DWG-A1',
-        description: 'CNC Flange Hub 120mm Dia (Turned face, dual chamfer)',
-        quantity: 250,
-        unit: 'Pcs',
-        material_grade: 'EN8',
-        process_name: 'CNC Turning',
-        gross_weight_kg: 2.8,
-        net_weight_kg: 2.4,
-        scrap_weight_kg: 0.4,
-        machining_hours: 0.35,
-        setup_hours: 0.5,
-        confidence: 0.994,
-        review_flags: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        id: 'item-2',
-        purchase_order_id: poId || 'demo-po',
-        item_number: 2,
-        part_name: 'TM-SH-441 Spline Drive Shaft 450mm',
-        specification: '42CrMo4 Forged',
-        drawing_number: 'DWG-C4',
-        description: 'Spline Drive Shaft 450mm (16-tooth involute spline)',
-        quantity: 120,
-        unit: 'Pcs',
-        material_grade: '42CrMo4',
-        process_name: 'Spline Milling & Hardening',
-        gross_weight_kg: 4.5,
-        net_weight_kg: 3.9,
-        scrap_weight_kg: 0.6,
-        machining_hours: 0.75,
-        setup_hours: 1.0,
-        confidence: 0.988,
-        review_flags: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        id: 'item-3',
-        purchase_order_id: poId || 'demo-po',
-        item_number: 3,
-        part_name: 'TM-BR-110 Bronze Bushing Sleeve',
-        specification: 'CuSn8 Bronze',
-        drawing_number: 'DWG-B2',
-        description: 'Bronze Bushing Sleeve (Oil impregnated bearing surface)',
-        quantity: 500,
-        unit: 'Pcs',
-        material_grade: 'CuSn8',
-        process_name: 'Precision Turning & Grooving',
-        gross_weight_kg: 0.8,
-        net_weight_kg: 0.65,
-        scrap_weight_kg: 0.15,
-        machining_hours: 0.2,
-        setup_hours: 0.3,
-        confidence: 0.975,
-        review_flags: ['NEEDS_REVIEW'],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    ],
-  });
-
-  const [confirmedItems, setConfirmedItems] = useState<Record<string, boolean>>({
-    'item-1': true,
-    'item-2': true,
-    'item-3': false,
-  });
+  const [po, setPo] = useState<PurchaseOrderDTO | null>(null);
+  const [availablePOs, setAvailablePOs] = useState<PurchaseOrderDTO[]>([]);
+  const [confirmedItems, setConfirmedItems] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let isMounted = true;
     async function loadPO() {
-      if (!poId) {
-        setLoading(false);
-        return;
-      }
+      setLoading(true);
+      setErrorMessage(null);
       try {
-        setLoading(true);
-        const data = await purchaseOrderApi.get(poId);
-        if (isMounted) {
-          setPo(data);
-          const initialConfirmed: Record<string, boolean> = {};
-          data.items.forEach(it => {
-            initialConfirmed[it.id] = (it.confidence || 0) >= 0.98;
-          });
-          setConfirmedItems(initialConfirmed);
+        if (poId) {
+          const data = await purchaseOrderApi.get(poId);
+          if (isMounted) {
+            setPo(data);
+            const initialConfirmed: Record<string, boolean> = {};
+            data.items.forEach(it => {
+              initialConfirmed[it.id] = (it.confidence || 0) >= 0.95;
+            });
+            setConfirmedItems(initialConfirmed);
+          }
+        } else {
+          // If no poId in URL, fetch list of uploaded POs
+          const list = await purchaseOrderApi.list();
+          if (isMounted) {
+            setAvailablePOs(list);
+            if (list.length > 0) {
+              const active = list.find(p => p.status === 'NEEDS_REVIEW' || p.status === 'UPLOADED') || list[0];
+              setPo(active);
+              const initialConfirmed: Record<string, boolean> = {};
+              active.items.forEach(it => {
+                initialConfirmed[it.id] = (it.confidence || 0) >= 0.95;
+              });
+              setConfirmedItems(initialConfirmed);
+            } else {
+              setPo(null);
+            }
+          }
         }
       } catch (err: any) {
-        console.warn('Could not load PO from backend, using active template PO:', err.message);
+        if (isMounted) {
+          setErrorMessage(err.response?.data?.detail || err.message || 'Failed to load purchase order.');
+          setPo(null);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -179,7 +111,7 @@ export const PoReviewPage: React.FC = () => {
   }, [poId]);
 
   const handleHeaderChange = (field: keyof PurchaseOrderDTO, value: any) => {
-    setPo(prev => ({ ...prev, [field]: value }));
+    setPo(prev => (prev ? { ...prev, [field]: value } : null));
   };
 
   const toggleConfirmItem = (itemId: string) => {
@@ -190,30 +122,20 @@ export const PoReviewPage: React.FC = () => {
   };
 
   const handleSaveDraft = async () => {
+    if (!po) return;
     setSaving(true);
     setErrorMessage(null);
     try {
-      if (poId && poId !== 'demo-po') {
-        await purchaseOrderApi.update(po.id, {
-          customer_name: po.customer_name,
-          supplier_name: po.supplier_name,
-          delivery_terms: po.delivery_terms,
-          payment_terms: po.payment_terms,
-          inspection_clauses: po.inspection_clauses,
-          general_notes: po.general_notes,
-          items: po.items.map(it => ({
-            id: it.id,
-            part_name: it.part_name,
-            specification: it.specification,
-            drawing_number: it.drawing_number,
-            description: it.description,
-            quantity: it.quantity,
-            unit: it.unit,
-            material_grade: it.material_grade,
-            process_name: it.process_name,
-          })),
-        });
-      }
+      const updated = await purchaseOrderApi.update(po.id, {
+        customer_name: po.customer_name,
+        supplier_name: po.supplier_name,
+        delivery_terms: po.delivery_terms,
+        payment_terms: po.payment_terms,
+        inspection_clauses: po.inspection_clauses,
+        general_notes: po.general_notes,
+        items: po.items,
+      });
+      setPo(updated);
       setSuccessMessage('Purchase Order review changes saved successfully.');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
@@ -224,26 +146,25 @@ export const PoReviewPage: React.FC = () => {
   };
 
   const handleApproveAndProceed = async () => {
+    if (!po) return;
     setApproving(true);
     setErrorMessage(null);
     try {
-      if (poId && poId !== 'demo-po') {
-        await purchaseOrderApi.approve(po.id, { notes: approvalNotes || 'Reviewed and confirmed by operations engineer.' });
-      }
+      await purchaseOrderApi.approve(po.id, { notes: approvalNotes || 'Reviewed and confirmed by operations engineer.' });
       setSuccessMessage('PO verified and approved! Redirecting to costing matrix...');
       setTimeout(() => {
         navigate(`/calculation?po_id=${po.id}`);
-      }, 800);
+      }, 600);
     } catch (err: any) {
-      navigate(`/calculation?po_id=${po.id}`);
+      setErrorMessage(err.response?.data?.detail || err.message || 'Failed to approve PO');
     } finally {
       setApproving(false);
       setApproveModalOpen(false);
     }
   };
 
-  const totalQuantity = po.items.reduce((acc, it) => acc + (it.quantity || 0), 0);
-  const avgConfidence = po.items.length > 0 
+  const totalQuantity = po?.items ? po.items.reduce((acc, it) => acc + (it.quantity || 0), 0) : 0;
+  const avgConfidence = po?.items && po.items.length > 0 
     ? (po.items.reduce((acc, it) => acc + (it.confidence || 0.98), 0) / po.items.length * 100).toFixed(1)
     : '98.6';
 
@@ -284,7 +205,7 @@ export const PoReviewPage: React.FC = () => {
 
             {/* Step 3: Inactive */}
             <div 
-              onClick={() => navigate(`/calculation?po_id=${po.id}`)}
+              onClick={() => po && navigate(`/calculation?po_id=${po.id}`)}
               className="relative z-10 flex items-center gap-3 justify-center cursor-pointer group"
             >
               <div className="w-8 h-8 rounded-full bg-[#f0eee9] text-[#76777d] flex items-center justify-center font-semibold text-xs font-mono group-hover:bg-[#E5E1D8]">
@@ -368,8 +289,35 @@ export const PoReviewPage: React.FC = () => {
           </div>
         )}
 
-        {/* MAIN WORKFLOW CONTAINER (8-COL / 4-COL) */}
-        <div className="grid grid-cols-12 gap-6 items-start">
+        {loading ? (
+          <div className="bg-white rounded-xl p-16 border border-[#E5E1D8] flex flex-col items-center justify-center gap-3 shadow-xs">
+            <RefreshCw className="w-8 h-8 text-[#B87333] animate-spin" />
+            <span className="text-sm font-medium text-[#45474c]">Loading extracted Purchase Order details...</span>
+          </div>
+        ) : !po ? (
+          <div className="bg-white rounded-xl p-12 border border-[#E5E1D8] flex flex-col items-center justify-center text-center gap-4 shadow-xs">
+            <div className="w-14 h-14 rounded-full bg-[#B87333]/10 text-[#B87333] flex items-center justify-center">
+              <FileText className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-[#1b1c19]">No Purchase Order Loaded</h3>
+              <p className="text-xs text-[#76777d] mt-1 max-w-md">
+                Upload a customer Purchase Order (PDF or image) to extract line items, verify metallurgy, and proceed with costing.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-2">
+              <Button onClick={() => navigate('/upload')}>
+                Upload Purchase Order
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/quotations')}>
+                View Quotations
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* MAIN WORKFLOW CONTAINER (8-COL / 4-COL) */}
+            <div className="grid grid-cols-12 gap-6 items-start">
 
           {/* LEFT 8-COLUMN PRIMARY WORK AREA */}
           <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
@@ -473,6 +421,7 @@ export const PoReviewPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => {
+                      if (!po) return;
                       const newId = `item-${po.items.length + 1}`;
                       const newItem: PurchaseOrderItemDTO = {
                         id: newId,
@@ -490,7 +439,7 @@ export const PoReviewPage: React.FC = () => {
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString(),
                       };
-                      setPo(prev => ({ ...prev, items: [...prev.items, newItem] }));
+                      setPo(prev => (prev ? { ...prev, items: [...prev.items, newItem] } : null));
                     }}
                     className="px-3 py-1.5 bg-white text-[#1b1c19] text-xs font-medium rounded-lg border border-[#E5E1D8] hover:bg-[#f0eee9] transition-colors flex items-center gap-1"
                   >
@@ -755,6 +704,8 @@ export const PoReviewPage: React.FC = () => {
             </button>
           </div>
         </div>
+        </>
+        )}
 
       </div>
 
@@ -769,7 +720,7 @@ export const PoReviewPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border border-[#E5E1D8] rounded-xl overflow-hidden bg-slate-900 flex flex-col">
               <div className="bg-[#172033] px-3 py-2 text-xs text-white font-mono flex justify-between">
-                <span>PO-TML-2026-CHAKAN.pdf</span>
+                <span>{po?.source_file_name || 'Purchase_Order.pdf'}</span>
                 <span>Zoom: 100%</span>
               </div>
               <div className="relative p-2 aspect-[3/4] flex items-center justify-center">
@@ -783,10 +734,10 @@ export const PoReviewPage: React.FC = () => {
             <div className="border border-[#E5E1D8] rounded-xl p-4 bg-[#f5f3ee] flex flex-col gap-3">
               <h4 className="font-semibold text-sm text-[#1b1c19]">Verified Vision Bounding Boxes</h4>
               <p className="text-xs text-[#45474c]">
-                The optical character recognition model has verified 3 line items, buyer terms, and delivery address with 0 OCR contradictions.
+                The optical character recognition model has verified line items, buyer terms, and delivery address.
               </p>
               <div className="space-y-2 mt-2">
-                {po.items.map((it, i) => (
+                {(po?.items || []).map((it, i) => (
                   <div key={it.id} className="p-2.5 bg-white rounded-lg border border-[#E5E1D8] text-xs">
                     <div className="font-semibold text-[#1b1c19]">Row {i + 1}: {it.part_name}</div>
                     <div className="text-[#76777d] mt-0.5">Qty: {it.quantity} {it.unit} • Grade: {it.material_grade}</div>
@@ -813,7 +764,7 @@ export const PoReviewPage: React.FC = () => {
             <label className="text-xs font-semibold text-[#45474c] block mb-1">Customer Entity</label>
             <input
               type="text"
-              value={po.customer_name || ''}
+              value={po?.customer_name || ''}
               onChange={(e) => handleHeaderChange('customer_name', e.target.value)}
               className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19] focus:outline-none focus:border-[#B87333]"
             />
@@ -822,7 +773,7 @@ export const PoReviewPage: React.FC = () => {
             <label className="text-xs font-semibold text-[#45474c] block mb-1">PO Identification Number</label>
             <input
               type="text"
-              value={po.po_number || ''}
+              value={po?.po_number || ''}
               onChange={(e) => handleHeaderChange('po_number', e.target.value)}
               className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19] font-mono focus:outline-none focus:border-[#B87333]"
             />
@@ -831,7 +782,7 @@ export const PoReviewPage: React.FC = () => {
             <label className="text-xs font-semibold text-[#45474c] block mb-1">Delivery Destination</label>
             <input
               type="text"
-              value={po.delivery_terms || ''}
+              value={po?.delivery_terms || ''}
               onChange={(e) => handleHeaderChange('delivery_terms', e.target.value)}
               className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19] focus:outline-none focus:border-[#B87333]"
             />
@@ -840,7 +791,7 @@ export const PoReviewPage: React.FC = () => {
             <label className="text-xs font-semibold text-[#45474c] block mb-1">Payment Terms</label>
             <input
               type="text"
-              value={po.payment_terms || ''}
+              value={po?.payment_terms || ''}
               onChange={(e) => handleHeaderChange('payment_terms', e.target.value)}
               className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19] focus:outline-none focus:border-[#B87333]"
             />

@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { customerApi, CustomerDTO, CustomerCreateDTO } from '../services/api/customerApi';
-import { mockCustomersList } from '../services/mockData';
+import { customerApi, CustomerDTO, CustomerCreateDTO } from '../api/customerApi';
 import { Customer } from '../types/customer';
 
 // Adapter to convert between backend CustomerDTO and frontend Customer model
@@ -44,13 +43,10 @@ export function useCustomers() {
     queryFn: async () => {
       try {
         const dtoList = await customerApi.list();
-        if (dtoList && dtoList.length > 0) {
-          return dtoList.map(dtoToCustomer);
-        }
-        return mockCustomersList;
+        return (dtoList || []).map(dtoToCustomer);
       } catch (err) {
-        console.warn('[useCustomers] Falling back to local customer dataset:', err);
-        return mockCustomersList;
+        console.error('[useCustomers] Failed to fetch customer list:', err);
+        return [];
       }
     },
   });
@@ -83,7 +79,7 @@ export function useCustomers() {
   });
 
   return {
-    customers: query.data || mockCustomersList,
+    customers: query.data || [],
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

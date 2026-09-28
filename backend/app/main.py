@@ -1,4 +1,5 @@
 import os
+import json
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,6 +49,51 @@ def health_check():
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
     }
+
+@app.get("/health/ready", tags=["Health"])
+def readiness_check():
+    from fastapi import Response, status
+    from sqlalchemy import text
+    from app.db.session import SessionLocal
+
+    res_data = {
+        "status": "ready",
+        "service": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "database": "connected",
+        "storage": "accessible",
+    }
+    
+    # 1. Database readiness check
+    try:
+        db = SessionLocal()
+        try:
+            db.execute(text("SELECT 1"))
+        finally:
+            db.close()
+    except Exception as e:
+        res_data["status"] = "unready"
+        res_data["database"] = f"error: {str(e)}"
+        return Response(
+            content=json.dumps(res_data) if 'json' in globals() else str(res_data),
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            media_type="application/json"
+        )
+
+    # 2. Local uploads directory storage readiness check
+    try:
+        if not os.path.exists(uploads_dir):
+            os.makedirs(uploads_dir, exist_ok=True)
+    except Exception as e:
+        res_data["status"] = "unready"
+        res_data["storage"] = f"error: {str(e)}"
+        return Response(
+            content=json.dumps(res_data) if 'json' in globals() else str(res_data),
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            media_type="application/json"
+        )
+
+    return res_data
 
 @app.get("/", tags=["Health"])
 def root():

@@ -4,3 +4,4 @@ export * from './purchaseOrderApi';
 export * from './quotationApi';
 export * from './ratesApi';
 export * from './companyApi';
+export * from './dashboardApi';

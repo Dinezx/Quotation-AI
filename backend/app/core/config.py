@@ -56,6 +56,15 @@ class Settings(BaseSettings):
         "http://localhost:3000",
     ]
 
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v):
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, list):
+            return v
+        return v
+
     @property
     def SUPABASE_JWKS_URL(self) -> str:
         base = self.SUPABASE_URL.rstrip("/")

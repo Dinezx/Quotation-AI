@@ -22,6 +22,7 @@ export interface QuotationItemDTO {
   unit_cost: number;
   unit_price: number;
   total_price: number;
+  hsn_code?: string;
   created_at: string;
   updated_at: string;
 }
@@ -38,6 +39,7 @@ export interface QuotationDTO {
   material_cost: number;
   process_cost: number;
   subtotal: number;
+  base_amount?: number;
   overhead_percentage: number;
   overhead_amount: number;
   profit_percentage: number;
@@ -52,6 +54,8 @@ export interface QuotationDTO {
   igst_amount: number;
   gst_amount: number;
   final_total: number;
+  grand_total?: number;
+  final_total_in_words?: string;
   status: string;
   pdf_url?: string;
   pdf_storage_path?: string;

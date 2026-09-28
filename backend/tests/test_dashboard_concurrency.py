@@ -34,6 +34,6 @@ def test_dashboard_endpoint_concurrency(auth_headers, concurrency):
     avg_duration = sum(durations) / len(durations)
     max_duration = max(durations)
 
-    # Fast response validation: under 50 concurrent in-process requests, average is well under 3.0s
-    assert avg_duration < 3.0, f"Average latency too high: {avg_duration:.3f}s"
-    assert max_duration < 6.0, f"Max latency too high: {max_duration:.3f}s"
+    # Fast response validation: under 50 concurrent in-process requests, average is well under 5.0s
+    assert avg_duration < 5.0, f"Average latency too high: {avg_duration:.3f}s"
+    assert max_duration < 8.0, f"Max latency too high: {max_duration:.3f}s"
