@@ -78,6 +78,13 @@ cd backend
 python -m pytest tests/test_company_settings_and_templates.py -v
 ```
 
+To run Executive Dashboard & Business Analytics tests (KPIs, date periods, activity trends, concurrency):
+```bash
+cd backend
+python -m pytest tests/test_dashboard_api.py tests/test_dashboard_concurrency.py -v
+```
+
+
 
 ### PDF Generation & Testing Rules
 - Backend PDF generation is implemented using **ReportLab** (`backend/app/services/pdf/quotation_pdf_service.py`).

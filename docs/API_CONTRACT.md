@@ -587,6 +587,131 @@ The manufacturer maintains one authoritative company profile, statutory tax conf
 - **`POST /company/logo`**: Uploads or replaces company logo in company-scoped private storage. Validates image MIME type (`image/png`, `image/jpeg`, `image/webp`) and size (<= 2MB).
 - **`DELETE /company/logo`**: Removes company logo from storage and unlinks `company.settings['logo_url']`.
 
+---
 
+## 9. Executive Dashboard & Business Analytics
 
+The Executive Dashboard provides aggregated business performance metrics, quotation pipeline tracking, status breakdowns, pending operational actions, recent quotation feeds, and email delivery telemetry in a single consolidated endpoint.
 
+### Design & Performance Invariants
+1. **Database-Level Aggregation**: All KPIs, trends, and breakdowns are computed via SQL aggregation (`func.count`, `func.sum`, `case()`). Zero loading of all quotations into Python memory.
+2. **Strict Multi-Tenancy**: The `company_id` is strictly extracted from the authenticated user (`get_current_company_id`). Clients cannot pass or override `company_id`.
+3. **No Raw Files / AI Raw Data**: Does not load PDFs, OCR blobs, or Azure Document Intelligence extraction trees.
+4. **Finalized Quotation Immutability**: Read-only reporting. Never triggers recalculation, pricing changes, or PDF updates.
+
+---
+
+### `GET /dashboard/summary`
+Retrieves consolidated dashboard analytics and operational summary for the authenticated company tenant over a specified date range.
+
+- **Auth Required**: Yes (`Bearer <token>`)
+- **Query Parameters**:
+  - `period` (string, optional, default: `"this_month"`):
+    - Supported values: `"today"`, `"this_week"`, `"this_month"`, `"last_month"`, `"this_quarter"`, `"this_year"`, `"custom"`.
+  - `start_date` (string, optional, format `YYYY-MM-DD`):
+    - Required when `period="custom"`. Inclusive start date (00:00:00).
+  - `end_date` (string, optional, format `YYYY-MM-DD`):
+    - Required when `period="custom"`. Inclusive end date (23:59:59.999999).
+- **Validation Rules**:
+  - If `period="custom"`, both `start_date` and `end_date` must be provided.
+  - `start_date` cannot be after `end_date`.
+  - Violations return `422 Unprocessable Entity`.
+- **Response `200 OK`**:
+  ```json
+  {
+    "period": "this_month",
+    "start_date": "2026-09-01T00:00:00",
+    "end_date": "2026-09-30T23:59:59.999999",
+    "kpis": {
+      "quotations_created": 42,
+      "pending_po_review": 3,
+      "draft_quotations": 10,
+      "finalized_quotations": 32,
+      "total_quotation_value": 4500000.0,
+      "finalized_quotation_value": 3800000.0
+    },
+    "activity_trend": [
+      {
+        "date": "2026-09-15",
+        "quotations_created": 4,
+        "finalized_quotations": 3
+      }
+    ],
+    "value_trend": [
+      {
+        "date": "2026-09-15",
+        "total_quotation_value": 250000.0,
+        "finalized_quotation_value": 200000.0
+      }
+    ],
+    "status_breakdown": [
+      {
+        "status": "FINAL",
+        "count": 32,
+        "percentage": 76.19,
+        "total_value": 3800000.0
+      },
+      {
+        "status": "DRAFT",
+        "count": 10,
+        "percentage": 23.81,
+        "total_value": 700000.0
+      }
+    ],
+    "pending_actions": [
+      {
+        "id": "po-review-1",
+        "type": "PENDING_PO_REVIEW",
+        "title": "PO PO-2026-004 Awaiting Review",
+        "description": "Uploaded purchase order needs costing engineer review",
+        "created_at": "2026-09-18T11:00:00Z",
+        "reference_id": "po-uuid-004",
+        "severity": "WARNING"
+      }
+    ],
+    "recent_quotations": [
+      {
+        "id": "quot-uuid-042",
+        "quotation_number": "QT-2026-0042",
+        "customer_id": "cust-uuid-001",
+        "customer_name": "Tata Motors Ltd.",
+        "quotation_date": "2026-09-20",
+        "status": "FINAL",
+        "total_amount": 125000.0,
+        "currency": "INR",
+        "email_status": "SENT",
+        "sent_at": "2026-09-20T14:30:00Z"
+      }
+    ],
+    "recent_activity": [
+      {
+        "id": "act-quot-uuid-042",
+        "event_type": "QUOTATION_FINALIZED",
+        "description": "Quotation QT-2026-0042 finalized for Tata Motors Ltd.",
+        "timestamp": "2026-09-20T14:28:00Z",
+        "reference_id": "quot-uuid-042",
+        "quotation_number": "QT-2026-0042",
+        "customer_name": "Tata Motors Ltd."
+      }
+    ],
+    "customer_activity": [
+      {
+        "customer_id": "cust-uuid-001",
+        "customer_name": "Tata Motors Ltd.",
+        "quotation_count": 12,
+        "total_value": 1850000.0,
+        "last_quotation_date": "2026-09-20"
+      }
+    ],
+    "email_summary": {
+      "sent": 28,
+      "failed": 1,
+      "pending_or_not_sent": 13,
+      "total": 42
+    }
+  }
+  ```
+- **Errors**:
+  - `401 Unauthorized`: Missing or invalid bearer token.
+  - `403 Forbidden`: Deactivated user or missing company context.
+  - `422 Unprocessable Entity`: Invalid period, missing start/end date for custom range, or `start_date > end_date`.

@@ -1,5 +1,6 @@
 import os
 from typing import List, Optional
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -12,6 +13,13 @@ class Settings(BaseSettings):
         "DATABASE_URL", 
         "sqlite:///./quotation_ai.db"
     )
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        if isinstance(v, str) and "your-project-ref" in v:
+            return "sqlite:///./quotation_ai.db"
+        return v
 
     # Supabase credentials (New JWT Signing Keys / JWKS & Secret Key architecture)
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://hmnaquolktpeztopanja.supabase.co")
