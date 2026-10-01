@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 from enum import Enum
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 
 class NotificationType(str, Enum):
@@ -50,6 +50,20 @@ class NotificationResponse(NotificationBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @field_serializer("created_at")
+    def serialize_created_at(self, dt: datetime, _info) -> str:
+        if dt.tzinfo is None:
+            return dt.isoformat() + "Z"
+        return dt.isoformat()
+
+    @field_serializer("read_at")
+    def serialize_read_at(self, dt: Optional[datetime], _info) -> Optional[str]:
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            return dt.isoformat() + "Z"
+        return dt.isoformat()
+
 
 class NotificationPaginationResponse(BaseModel):
     items: List[NotificationResponse]
@@ -71,3 +85,13 @@ class NotificationMarkReadResponse(BaseModel):
 class NotificationReadAllResponse(BaseModel):
     success: bool
     marked_count: int
+
+
+class NotificationDeleteResponse(BaseModel):
+    success: bool
+    deleted_id: str
+
+
+class NotificationClearAllResponse(BaseModel):
+    success: bool
+    cleared_count: int

@@ -585,14 +585,19 @@ def calculate_purchase_order(
     )
 
     if getattr(calc_result, "status", None) == "BLOCKED" or (getattr(calc_result, "issues", None) and len(calc_result.issues) > 0):
-        issue_str = calc_result.issues[0] if getattr(calc_result, "issues", None) else "Missing master pricing rates."
+        first_issue = calc_result.issues[0] if getattr(calc_result, "issues", None) else None
+        if first_issue:
+            issue_msg = getattr(first_issue, "message", str(first_issue))
+        else:
+            issue_msg = "Missing master pricing rates."
+
         NotificationService.create_notification(
             db=db,
             company_id=current_user.company_id,
             user_id=current_user.id,
             type=NotificationType.CALCULATION_BLOCKED.value,
-            title="Calculation Blocked — Rate Required",
-            message=f"Calculation blocked for PO {po.po_number}: {issue_str}",
+            title="Calculation Blocked - Rate Required",
+            message=f"Calculation blocked for PO {po.po_number}: {issue_msg}",
             entity_type="RATE",
             entity_id=po.id,
             severity="WARNING",

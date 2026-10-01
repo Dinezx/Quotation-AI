@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  Trash2,
 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { NotificationItemView } from './NotificationItemView';
@@ -37,6 +38,9 @@ export const AllNotificationsModal: React.FC<AllNotificationsModalProps> = ({
     markAsRead,
     markAllAsRead,
     isMarkingAllRead,
+    clearNotification,
+    clearAllNotifications,
+    isClearingAll,
   } = useNotifications({
     page,
     page_size: 10,
@@ -87,10 +91,27 @@ export const AllNotificationsModal: React.FC<AllNotificationsModalProps> = ({
               <button
                 onClick={() => markAllAsRead()}
                 disabled={isMarkingAllRead}
+                data-testid="modal-mark-all-read-button"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
               >
                 <CheckCheck className="w-3.5 h-3.5 text-[#2563EB]" />
                 Mark all read
+              </button>
+            )}
+
+            {total > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearAllNotifications();
+                }}
+                disabled={isClearingAll}
+                data-testid="modal-clear-all-notifications-button"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white hover:text-rose-600 hover:bg-rose-50 border border-slate-200 rounded-lg transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {isClearingAll ? 'Clearing…' : 'Clear all'}
               </button>
             )}
 
@@ -200,6 +221,7 @@ export const AllNotificationsModal: React.FC<AllNotificationsModalProps> = ({
                 notification={notif}
                 onNavigate={handleItemNavigate}
                 onMarkRead={(id) => markAsRead(id)}
+                onClear={(id) => clearNotification(id)}
               />
             ))
           )}

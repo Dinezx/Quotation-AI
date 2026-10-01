@@ -70,26 +70,31 @@ Customer PO (PDF/Scan)
 - Node.js 20+ and npm 10+
 - PostgreSQL database (or Supabase project)
 
-### 1. Backend Setup
+### 1. Unified Local Development Startup (Recommended)
+From the repository root, start both the FastAPI backend and Vite frontend concurrently:
+```bash
+# Starts FastAPI (http://localhost:8000) and Vite (http://localhost:5173) together
+npm run dev
+```
+
+### 2. Manual / Granular Startup
+If you prefer running services in dedicated terminals:
+
+**Backend:**
 ```bash
 cd backend
 python -m venv .venv
 source .venv/bin/activate       # On Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-
-# Configure environment (do NOT overwrite production .env)
-# Create backend/.env with your Supabase, Azure, Gemini, and Resend credentials
 uvicorn app.main:app --reload --port 8000
 ```
 - API Documentation: `http://localhost:8000/docs`
 - Health/Readiness Check: `http://localhost:8000/health/ready`
 
-### 2. Frontend Setup
+**Frontend:**
 ```bash
 cd frontend
 npm install
-
-# Start Vite local development server
 npm run dev
 ```
 - Web Application: `http://localhost:5173`

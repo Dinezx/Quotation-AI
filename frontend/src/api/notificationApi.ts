@@ -71,6 +71,20 @@ export const notificationApi = {
     );
     return response.data;
   },
+
+  clearNotification: async (id: string): Promise<{ success: boolean; deleted_id: string }> => {
+    const response = await apiClient.delete<{ success: boolean; deleted_id: string }>(
+      `/notifications/${id}`
+    );
+    return response.data;
+  },
+
+  clearAllNotifications: async (): Promise<{ success: boolean; cleared_count: number }> => {
+    const response = await apiClient.delete<{ success: boolean; cleared_count: number }>(
+      '/notifications/clear-all'
+    );
+    return response.data;
+  },
 };
 
 export default notificationApi;

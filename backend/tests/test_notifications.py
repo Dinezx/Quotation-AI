@@ -254,3 +254,98 @@ def test_duplicate_prevention():
         assert count == 1
     finally:
         db.close()
+
+
+def test_delete_single_notification(auth_headers, auth_headers_company_b):
+    """Test deleting a single notification with strict tenant isolation."""
+    db = SessionLocal()
+    try:
+        notif = NotificationService.create_notification(
+            db=db,
+            company_id="comp-bpe-pune",
+            type=NotificationType.PO_UPLOADED.value,
+            title="PO to Delete",
+            message="This notification will be cleared.",
+            entity_type="PURCHASE_ORDER",
+            entity_id=f"po-del-{int(time.time())}",
+            severity="INFO",
+        )
+        notif_id = notif.id
+    finally:
+        db.close()
+
+    # Company B attempting to delete Company A's notification -> 404
+    res_cross = client.delete(f"/api/v1/notifications/{notif_id}", headers=auth_headers_company_b)
+    assert res_cross.status_code == 404
+
+    # Company A deleting its own notification -> 200
+    res_del = client.delete(f"/api/v1/notifications/{notif_id}", headers=auth_headers)
+    assert res_del.status_code == 200
+    data = res_del.json()
+    assert data["success"] is True
+    assert data["deleted_id"] == notif_id
+
+    # Trying to delete again -> 404
+    res_del_again = client.delete(f"/api/v1/notifications/{notif_id}", headers=auth_headers)
+    assert res_del_again.status_code == 404
+
+
+def test_clear_all_notifications(auth_headers, auth_headers_company_b):
+    """Test clearing all notifications for a tenant without affecting other tenants."""
+    db = SessionLocal()
+    try:
+        # Create notifications for Company A
+        NotificationService.create_notification(
+            db=db,
+            company_id="comp-bpe-pune",
+            type=NotificationType.QUOTATION_DRAFT_CREATED.value,
+            title="Draft 1",
+            message="Quotation draft created.",
+            entity_id=f"q-1-{int(time.time())}",
+        )
+        NotificationService.create_notification(
+            db=db,
+            company_id="comp-bpe-pune",
+            type=NotificationType.QUOTATION_FINALIZED.value,
+            title="Draft 2",
+            message="Quotation finalized.",
+            entity_id=f"q-2-{int(time.time())}",
+        )
+        # Create notification for Company B
+        notif_b = NotificationService.create_notification(
+            db=db,
+            company_id="comp-other-plant",
+            type=NotificationType.PO_UPLOADED.value,
+            title="Company B PO",
+            message="Company B upload.",
+            entity_id=f"po-b-preserve-{int(time.time())}",
+        )
+        notif_b_id = notif_b.id
+    finally:
+        db.close()
+
+    # Company A clears all notifications
+    res_clear = client.delete("/api/v1/notifications/clear-all", headers=auth_headers)
+    assert res_clear.status_code == 200
+    clear_data = res_clear.json()
+    assert clear_data["success"] is True
+    assert clear_data["cleared_count"] >= 2
+
+    # Company A should now have 0 notifications
+    res_a = client.get("/api/v1/notifications", headers=auth_headers)
+    assert res_a.status_code == 200
+    assert res_a.json()["total"] == 0
+
+    # Company B's notifications must be intact (strictly isolated)
+    db_check = SessionLocal()
+    try:
+        b_in_db = db_check.query(Notification).filter(Notification.id == notif_b_id).first()
+        assert b_in_db is not None
+        assert b_in_db.company_id == "comp-other-plant"
+    finally:
+        db_check.close()
+
+    res_b = client.get("/api/v1/notifications?page_size=100", headers=auth_headers_company_b)
+    assert res_b.status_code == 200
+    b_ids = [n["id"] for n in res_b.json()["items"]]
+    assert notif_b_id in b_ids

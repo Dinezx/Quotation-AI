@@ -66,24 +66,33 @@ describe('Notification System Components', () => {
     },
   ];
 
+  const createMockHook = (overrides = {}) => ({
+    notifications: sampleNotifications,
+    total: 3,
+    unreadCount: 2,
+    page: 1,
+    pageSize: 15,
+    isLoading: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+    markAsRead: vi.fn(),
+    markAsReadAsync: vi.fn(),
+    isMarkingRead: false,
+    markAllAsRead: vi.fn(),
+    markAllAsReadAsync: vi.fn(),
+    isMarkingAllRead: false,
+    clearNotification: vi.fn(),
+    clearNotificationAsync: vi.fn(),
+    isClearing: false,
+    clearAllNotifications: vi.fn(),
+    clearAllNotificationsAsync: vi.fn(),
+    isClearingAll: false,
+    ...overrides,
+  });
+
   it('renders unread badge when unread notifications exist', () => {
-    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue({
-      notifications: sampleNotifications,
-      total: 3,
-      unreadCount: 2,
-      page: 1,
-      pageSize: 15,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-      markAsRead: vi.fn(),
-      markAsReadAsync: vi.fn(),
-      isMarkingRead: false,
-      markAllAsRead: vi.fn(),
-      markAllAsReadAsync: vi.fn(),
-      isMarkingAllRead: false,
-    });
+    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue(createMockHook());
 
     render(
       <MemoryRouter>
@@ -97,23 +106,9 @@ describe('Notification System Components', () => {
   });
 
   it('hides unread badge when unreadCount is 0', () => {
-    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue({
-      notifications: [],
-      total: 0,
-      unreadCount: 0,
-      page: 1,
-      pageSize: 15,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-      markAsRead: vi.fn(),
-      markAsReadAsync: vi.fn(),
-      isMarkingRead: false,
-      markAllAsRead: vi.fn(),
-      markAllAsReadAsync: vi.fn(),
-      isMarkingAllRead: false,
-    });
+    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue(
+      createMockHook({ notifications: [], total: 0, unreadCount: 0 })
+    );
 
     render(
       <MemoryRouter>
@@ -127,23 +122,9 @@ describe('Notification System Components', () => {
   it('opens dropdown and displays grouped workflow notifications', () => {
     const markAllAsReadMock = vi.fn();
 
-    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue({
-      notifications: sampleNotifications,
-      total: 3,
-      unreadCount: 2,
-      page: 1,
-      pageSize: 15,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-      markAsRead: vi.fn(),
-      markAsReadAsync: vi.fn(),
-      isMarkingRead: false,
-      markAllAsRead: markAllAsReadMock,
-      markAllAsReadAsync: vi.fn(),
-      isMarkingAllRead: false,
-    });
+    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue(
+      createMockHook({ markAllAsRead: markAllAsReadMock })
+    );
 
     render(
       <MemoryRouter>
@@ -224,23 +205,9 @@ describe('Notification System Components', () => {
   });
 
   it('renders "You\'re all caught up" empty state when no notifications exist', () => {
-    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue({
-      notifications: [],
-      total: 0,
-      unreadCount: 0,
-      page: 1,
-      pageSize: 15,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-      markAsRead: vi.fn(),
-      markAsReadAsync: vi.fn(),
-      isMarkingRead: false,
-      markAllAsRead: vi.fn(),
-      markAllAsReadAsync: vi.fn(),
-      isMarkingAllRead: false,
-    });
+    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue(
+      createMockHook({ notifications: [], total: 0, unreadCount: 0 })
+    );
 
     render(
       <MemoryRouter>
@@ -255,23 +222,16 @@ describe('Notification System Components', () => {
   it('renders error state and provides retry action on failure', () => {
     const refetchMock = vi.fn();
 
-    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue({
-      notifications: [],
-      total: 0,
-      unreadCount: 0,
-      page: 1,
-      pageSize: 15,
-      isLoading: false,
-      isError: true,
-      error: new Error('API Network Failure'),
-      refetch: refetchMock,
-      markAsRead: vi.fn(),
-      markAsReadAsync: vi.fn(),
-      isMarkingRead: false,
-      markAllAsRead: vi.fn(),
-      markAllAsReadAsync: vi.fn(),
-      isMarkingAllRead: false,
-    });
+    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue(
+      createMockHook({
+        notifications: [],
+        total: 0,
+        unreadCount: 0,
+        isError: true,
+        error: new Error('API Network Failure'),
+        refetch: refetchMock,
+      })
+    );
 
     render(
       <MemoryRouter>
@@ -288,23 +248,9 @@ describe('Notification System Components', () => {
   });
 
   it('renders AllNotificationsModal with pagination controls and filter options', () => {
-    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue({
-      notifications: sampleNotifications,
-      total: 25,
-      unreadCount: 2,
-      page: 1,
-      pageSize: 10,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-      markAsRead: vi.fn(),
-      markAsReadAsync: vi.fn(),
-      isMarkingRead: false,
-      markAllAsRead: vi.fn(),
-      markAllAsReadAsync: vi.fn(),
-      isMarkingAllRead: false,
-    });
+    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue(
+      createMockHook({ total: 25, pageSize: 10 })
+    );
 
     render(
       <AllNotificationsModal
@@ -318,5 +264,103 @@ describe('Notification System Components', () => {
     expect(screen.getByText('All (25)')).toBeInTheDocument();
     expect(screen.getByText('Unread only (2)')).toBeInTheDocument();
     expect(screen.getByText('Page 1 of 3 (25 total)')).toBeInTheDocument();
+  });
+
+  it('triggers clearNotification when clear button is clicked on an item', () => {
+    const clearNotificationMock = vi.fn();
+
+    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue({
+      notifications: sampleNotifications,
+      total: 3,
+      unreadCount: 2,
+      page: 1,
+      pageSize: 15,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+      markAsRead: vi.fn(),
+      markAsReadAsync: vi.fn(),
+      isMarkingRead: false,
+      markAllAsRead: vi.fn(),
+      markAllAsReadAsync: vi.fn(),
+      isMarkingAllRead: false,
+      clearNotification: clearNotificationMock,
+      clearNotificationAsync: vi.fn(),
+      isClearing: false,
+      clearAllNotifications: vi.fn(),
+      clearAllNotificationsAsync: vi.fn(),
+      isClearingAll: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <NotificationDropdown />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByTestId('notification-bell-button'));
+    const clearBtn = screen.getByTestId('clear-notification-notif-1');
+    expect(clearBtn).toBeInTheDocument();
+    fireEvent.click(clearBtn);
+
+    expect(clearNotificationMock).toHaveBeenCalledWith('notif-1');
+  });
+
+  it('triggers clearAllNotifications when Clear all button is clicked in dropdown and modal', () => {
+    const clearAllMock = vi.fn();
+
+    vi.spyOn(useNotificationsModule, 'useNotifications').mockReturnValue({
+      notifications: sampleNotifications,
+      total: 3,
+      unreadCount: 2,
+      page: 1,
+      pageSize: 15,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+      markAsRead: vi.fn(),
+      markAsReadAsync: vi.fn(),
+      isMarkingRead: false,
+      markAllAsRead: vi.fn(),
+      markAllAsReadAsync: vi.fn(),
+      isMarkingAllRead: false,
+      clearNotification: vi.fn(),
+      clearNotificationAsync: vi.fn(),
+      isClearing: false,
+      clearAllNotifications: clearAllMock,
+      clearAllNotificationsAsync: vi.fn(),
+      isClearingAll: false,
+    });
+
+    // Test dropdown Clear all
+    const { unmount } = render(
+      <MemoryRouter>
+        <NotificationDropdown />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByTestId('notification-bell-button'));
+    const clearAllBtn = screen.getByTestId('clear-all-notifications-button');
+    expect(clearAllBtn).toBeInTheDocument();
+    fireEvent.click(clearAllBtn);
+    expect(clearAllMock).toHaveBeenCalledTimes(1);
+
+    unmount();
+
+    // Test modal Clear all
+    render(
+      <AllNotificationsModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onNavigate={vi.fn()}
+      />
+    );
+
+    const modalClearAllBtn = screen.getByTestId('modal-clear-all-notifications-button');
+    expect(modalClearAllBtn).toBeInTheDocument();
+    fireEvent.click(modalClearAllBtn);
+    expect(clearAllMock).toHaveBeenCalledTimes(2);
   });
 });

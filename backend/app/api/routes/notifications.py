@@ -10,6 +10,8 @@ from app.schemas.notification import (
     NotificationUnreadCountResponse,
     NotificationMarkReadResponse,
     NotificationReadAllResponse,
+    NotificationDeleteResponse,
+    NotificationClearAllResponse,
 )
 from app.services.notification.notification_service import NotificationService
 
@@ -104,3 +106,40 @@ def mark_all_notifications_read(
     """
     count = NotificationService.mark_all_as_read(db=db, company_id=company_id)
     return NotificationReadAllResponse(success=True, marked_count=count)
+
+
+@router.delete("/clear-all", response_model=NotificationClearAllResponse)
+@router.delete("", response_model=NotificationClearAllResponse)
+def clear_all_notifications(
+    company_id: str = Depends(get_current_company_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Clears all workflow notifications for the authenticated company tenant.
+    Enforces strict tenant isolation.
+    """
+    cleared = NotificationService.clear_all_notifications(db=db, company_id=company_id)
+    return NotificationClearAllResponse(success=True, cleared_count=cleared)
+
+
+@router.delete("/{notification_id}", response_model=NotificationDeleteResponse)
+def delete_notification(
+    notification_id: str,
+    company_id: str = Depends(get_current_company_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Deletes a single workflow notification.
+    Enforces strict tenant isolation (returns 404 if notification belongs to another company).
+    """
+    success = NotificationService.delete_notification(
+        db=db,
+        company_id=company_id,
+        notification_id=notification_id,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notification not found",
+        )
+    return NotificationDeleteResponse(success=True, deleted_id=notification_id)

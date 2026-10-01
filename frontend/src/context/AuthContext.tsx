@@ -34,6 +34,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   needsOnboarding: boolean;
   isLoading: boolean;
+  backendAvailable: boolean;
   token: string | null;
   login: (emailOrToken: string, password?: string) => Promise<SyncResult>;
   signUp: (data: {
@@ -76,6 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     () => localStorage.getItem('quotation_ai_auth_token')
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
 
   // Synchronize authenticated session profile with backend
   const verifyAndSyncBackend = useCallback(async (authToken: string | null): Promise<SyncResult> => {
@@ -120,6 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           settings: res.data.company.settings || {},
         });
         setNeedsOnboarding(false);
+        setBackendAvailable(true);
         console.debug('[Auth] /auth/me result: User associated with company', res.data.company.name);
         return { success: true, needsOnboarding: false };
       }
@@ -152,6 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
           setCompany(null);
           setNeedsOnboarding(true);
+          setBackendAvailable(true);
           return { success: true, needsOnboarding: true };
         }
       }
@@ -167,20 +172,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           err.message.includes('Failed to fetch')
         ));
 
-      const friendlyError = isNetworkError
+      const isServerError = typeof errStatus === 'number' && errStatus >= 500;
+
+      const friendlyError = (isNetworkError || isServerError)
         ? 'Quotation AI services are temporarily unavailable.'
         : (err.response?.data?.detail || err.message || 'Authentication verification failed.');
 
       console.warn('[Auth] Backend token verification failed:', friendlyError);
-      localStorage.removeItem('quotation_ai_auth_token');
-      setToken(null);
-      setUser(null);
-      setCompany(null);
-      setNeedsOnboarding(false);
+
+      if (isNetworkError || isServerError) {
+        setBackendAvailable(false);
+        // PHASE 4 RULE: Never destroy the valid Supabase session just because backend is down!
+        // The user remains authenticated with Supabase.
+        return { 
+          success: false, 
+          needsOnboarding: false, 
+          errorStatus: isNetworkError ? 0 : errStatus, 
+          errorDetail: friendlyError
+        };
+      }
+
+      // Only on explicit 401 Unauthorized (token invalid / expired / revoked): wipe session
+      if (errStatus === 401) {
+        localStorage.removeItem('quotation_ai_auth_token');
+        setToken(null);
+        setUser(null);
+        setCompany(null);
+        setNeedsOnboarding(false);
+      }
+
       return { 
         success: false, 
         needsOnboarding: false, 
-        errorStatus: isNetworkError ? 0 : errStatus, 
+        errorStatus: errStatus, 
         errorDetail: friendlyError
       };
     } finally {
@@ -508,6 +532,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: Boolean(user && company),
         needsOnboarding,
         isLoading,
+        backendAvailable,
         token,
         login,
         signUp,

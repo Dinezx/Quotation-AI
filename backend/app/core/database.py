@@ -31,7 +31,12 @@ engine_kwargs = {
 }
 
 if settings.DATABASE_URL.startswith("sqlite"):
+    from sqlalchemy.pool import NullPool
     connect_args["check_same_thread"] = False
+    engine_kwargs["poolclass"] = NullPool
+    engine_kwargs.pop("pool_size", None)
+    engine_kwargs.pop("max_overflow", None)
+    engine_kwargs.pop("pool_timeout", None)
 else:
     # Sized for concurrent multi-user load against Supabase transaction pooler (port 6543)
     engine_kwargs["pool_recycle"] = 1800

@@ -10,6 +10,7 @@ import {
   Download,
   AlertOctagon,
   ArrowRight,
+  X,
 } from 'lucide-react';
 import { NotificationItem } from '../../api/notificationApi';
 import {
@@ -22,12 +23,14 @@ interface NotificationItemViewProps {
   notification: NotificationItem;
   onNavigate?: (url: string) => void;
   onMarkRead?: (id: string) => void;
+  onClear?: (id: string) => void;
 }
 
 export const NotificationItemView: React.FC<NotificationItemViewProps> = ({
   notification,
   onNavigate,
   onMarkRead,
+  onClear,
 }) => {
   const styles = getSeverityStyles(notification.severity);
   const navUrl = getEntityNavigationUrl(notification.entity_type, notification.entity_id);
@@ -72,6 +75,13 @@ export const NotificationItemView: React.FC<NotificationItemViewProps> = ({
     }
   };
 
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onClear) {
+      onClear(notification.id);
+    }
+  };
+
   return (
     <div
       onClick={handleClick}
@@ -101,9 +111,23 @@ export const NotificationItemView: React.FC<NotificationItemViewProps> = ({
           >
             {notification.title}
           </span>
-          <span className="text-[11px] font-medium text-slate-400 shrink-0">
-            {formatRelativeTime(notification.created_at)}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[11px] font-medium text-slate-400">
+              {formatRelativeTime(notification.created_at)}
+            </span>
+            {onClear && (
+              <button
+                type="button"
+                onClick={handleClear}
+                data-testid={`clear-notification-${notification.id}`}
+                aria-label="Clear notification"
+                title="Clear notification"
+                className="opacity-70 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">

@@ -8,10 +8,15 @@ export function useNotifications(params?: NotificationFilterParams) {
   const queryClient = useQueryClient();
   const { company } = useAuth();
 
+  const hasAuth = Boolean(
+    company?.id || (typeof window !== 'undefined' && localStorage.getItem('quotation_ai_auth_token'))
+  );
+
   const notificationsQuery = useQuery({
     queryKey: ['notifications', params],
     queryFn: () => notificationApi.getNotifications(params),
     staleTime: 10000,
+    enabled: hasAuth,
   });
 
   const unreadCountQuery = useQuery({
@@ -20,6 +25,7 @@ export function useNotifications(params?: NotificationFilterParams) {
     staleTime: 10000,
     refetchInterval: 30000, // Poll every 30 seconds
     refetchOnWindowFocus: true,
+    enabled: hasAuth,
   });
 
   // Real-time Supabase subscription if enabled
@@ -65,6 +71,49 @@ export function useNotifications(params?: NotificationFilterParams) {
     },
   });
 
+  const clearNotificationMutation = useMutation({
+    mutationFn: (notificationId: string) => notificationApi.clearNotification(notificationId),
+    onSuccess: (_, notificationId) => {
+      queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
+        if (!old) return old;
+        if (typeof old.unread_count === 'number' && old.items === undefined) {
+          return { unread_count: Math.max(0, old.unread_count - 1) };
+        }
+        if (!old.items) return old;
+        const target = old.items.find((it: any) => it.id === notificationId);
+        const wasUnread = target && !target.is_read;
+        return {
+          ...old,
+          items: old.items.filter((it: any) => it.id !== notificationId),
+          total: Math.max(0, (old.total ?? 1) - 1),
+          unread_count: wasUnread
+            ? Math.max(0, (old.unread_count ?? 1) - 1)
+            : (old.unread_count ?? 0),
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+
+  const clearAllNotificationsMutation = useMutation({
+    mutationFn: () => notificationApi.clearAllNotifications(),
+    onSuccess: () => {
+      queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
+        if (!old) return old;
+        if (typeof old.unread_count === 'number' && old.items === undefined) {
+          return { unread_count: 0 };
+        }
+        return {
+          ...old,
+          items: [],
+          total: 0,
+          unread_count: 0,
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+
   return {
     notifications: notificationsQuery.data?.items ?? [],
     total: notificationsQuery.data?.total ?? 0,
@@ -84,6 +133,12 @@ export function useNotifications(params?: NotificationFilterParams) {
     markAllAsRead: markAllAsReadMutation.mutate,
     markAllAsReadAsync: markAllAsReadMutation.mutateAsync,
     isMarkingAllRead: markAllAsReadMutation.isPending,
+    clearNotification: clearNotificationMutation.mutate,
+    clearNotificationAsync: clearNotificationMutation.mutateAsync,
+    isClearing: clearNotificationMutation.isPending,
+    clearAllNotifications: clearAllNotificationsMutation.mutate,
+    clearAllNotificationsAsync: clearAllNotificationsMutation.mutateAsync,
+    isClearingAll: clearAllNotificationsMutation.isPending,
   };
 }
 

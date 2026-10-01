@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { AlertTriangle, Clock, ArrowRight, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Clock, ArrowRight, RotateCcw, RefreshCw, ServerOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
@@ -14,19 +14,83 @@ export const resetOAuthCallbackState = () => {
   exchangedCodes.clear();
 };
 
+export type CallbackState =
+  | 'exchanging'
+  | 'connecting_backend'
+  | 'backend_unavailable'
+  | 'oauth_cancelled'
+  | 'session_expired'
+  | 'auth_error';
+
 export const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshSession, loginWithGoogle } = useAuth();
 
-  const [statusState, setStatusState] = useState<'loading' | 'error' | 'expired'>('loading');
+  const [statusState, setStatusState] = useState<CallbackState>('exchanging');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [isRetrying, setIsRetrying] = useState<boolean>(false);
   const isExecutingRef = useRef(false);
 
   const refreshSessionRef = useRef(refreshSession);
   refreshSessionRef.current = refreshSession;
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
+
+  // Perform backend verification
+  const verifyBackendWithRetry = useCallback(async (token: string): Promise<void> => {
+    localStorage.setItem('quotation_ai_auth_token', token);
+    console.debug('[Auth] /auth/me started');
+
+    let syncResult: any = null;
+    try {
+      syncResult = await refreshSessionRef.current();
+      console.debug('[Auth] /auth/me result:', syncResult?.success ? 'success' : 'failed');
+    } catch (err) {
+      console.debug('[Auth] /auth/me exception:', err);
+    }
+
+    // Determine final action from syncResult
+    if (syncResult?.success && !syncResult?.needsOnboarding) {
+      console.debug('[Auth] Redirect decision: /dashboard');
+      navigateRef.current('/dashboard', { replace: true });
+    } else if (syncResult?.success && syncResult?.needsOnboarding) {
+      console.debug('[Auth] Redirect decision: /onboarding/company');
+      navigateRef.current('/onboarding/company', { replace: true });
+    } else if (syncResult?.errorStatus === 0 || (syncResult?.errorStatus && syncResult.errorStatus >= 500)) {
+      console.warn('[Auth] Backend service unreachable');
+      setStatusState('backend_unavailable');
+      setErrorMessage('Quotation AI services are temporarily unavailable.');
+    } else if (syncResult?.errorStatus === 401) {
+      console.debug('[Auth] Redirect decision: /login (401 Unauthorized)');
+      navigateRef.current('/login', { replace: true });
+    } else {
+      console.warn('[Auth] Session was rejected by Quotation AI tenant security service');
+      setStatusState('auth_error');
+      setErrorMessage(syncResult?.errorDetail || 'Google sign-in could not be completed. Please try again.');
+    }
+  }, []);
+
+  const handleManualRetry = async () => {
+    setIsRetrying(true);
+    setStatusState('connecting_backend');
+    try {
+      const activeToken = localStorage.getItem('quotation_ai_auth_token');
+      if (activeToken) {
+        await verifyBackendWithRetry(activeToken);
+      } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          await verifyBackendWithRetry(session.access_token);
+        } else {
+          setStatusState('session_expired');
+          setErrorMessage('Session expired. Please sign in again.');
+        }
+      }
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   useEffect(() => {
     // Only run if on the /auth/callback path
@@ -39,11 +103,11 @@ export const AuthCallbackPage: React.FC = () => {
     isExecutingRef.current = true;
     let isCancelled = false;
 
-    // 10-second hard timeout so auth can never hang indefinitely
+    // Safety timeout: only applies if OAuth code exchange or session fetch hangs completely
     const timeoutTimer = setTimeout(() => {
       if (!isCancelled) {
         console.warn('[Auth] Callback hard timeout of 10 seconds exceeded');
-        setStatusState('expired');
+        setStatusState('session_expired');
         setErrorMessage("We couldn't complete Google sign-in. Try again.");
       }
     }, 10000);
@@ -62,17 +126,19 @@ export const AuthCallbackPage: React.FC = () => {
         if (error) {
           if (isCancelled) return;
           console.warn('[Auth] OAuth callback error detected:', error, errorDescription);
-          setStatusState('error');
           if (error === 'access_denied') {
+            setStatusState('oauth_cancelled');
             setErrorMessage('Google Sign In was cancelled. You may try again or sign in with your corporate work email.');
           } else if (
             error === 'redirect_uri_mismatch' ||
             errorDescription?.toLowerCase().includes('redirect_uri_mismatch')
           ) {
+            setStatusState('auth_error');
             setErrorMessage(
               'Redirect URI Mismatch (Error 400): In Google Cloud Console, ensure Authorized Redirect URIs contains your Supabase Auth callback URL, and in Supabase Dashboard ensure Redirect URLs contains your application callback URL.'
             );
           } else {
+            setStatusState('auth_error');
             setErrorMessage(errorDescription || 'Google sign-in could not be completed. Please try again.');
           }
           return;
@@ -97,7 +163,7 @@ export const AuthCallbackPage: React.FC = () => {
           return;
         }
 
-        // 3. Handle real Supabase OAuth PKCE code exchange
+        // 3. Handle real Supabase OAuth PKCE code exchange (STAGE 1)
         let tokenToVerify: string | null = null;
         let authenticatedUserEmail: string | undefined = undefined;
 
@@ -142,6 +208,11 @@ export const AuthCallbackPage: React.FC = () => {
               exchangeResult = await exchangePromise;
             }
 
+            // Immediately strip the consumed callback URL state so refreshing /auth/callback does not re-exchange
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
             if (exchangeResult.error) {
               // If "invalid flow state" or code expired/consumed, attempt to recover existing session
               const errMsg = (exchangeResult.error.message || '').toLowerCase();
@@ -157,7 +228,7 @@ export const AuthCallbackPage: React.FC = () => {
               if (!tokenToVerify) {
                 console.warn('[Auth] Code exchange failed and session unrecoverable:', exchangeResult.error.message);
                 if (!isCancelled) {
-                  setStatusState('expired');
+                  setStatusState('auth_error');
                   setErrorMessage(exchangeResult.error.message || 'Google sign-in could not be completed. Please try again.');
                 }
                 return;
@@ -166,11 +237,6 @@ export const AuthCallbackPage: React.FC = () => {
               tokenToVerify = exchangeResult.session.access_token;
               authenticatedUserEmail = exchangeResult.session.user?.email;
               console.debug(`[Auth] Session detected: user ${authenticatedUserEmail || 'authenticated'}`);
-            }
-
-            // Immediately strip the consumed callback URL state so refreshing /auth/callback does not re-exchange
-            if (window.history && window.history.replaceState) {
-              window.history.replaceState({}, document.title, window.location.pathname);
             }
           }
 
@@ -198,7 +264,7 @@ export const AuthCallbackPage: React.FC = () => {
             }
           }
 
-          // Fallback: check if active session already exists in client (e.g. refreshed after URL stripped)
+          // Fallback: check if active session already exists in client
           if (!tokenToVerify) {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.access_token) {
@@ -209,47 +275,25 @@ export const AuthCallbackPage: React.FC = () => {
           }
         }
 
-        // If no token exists, fail safely and prompt login
+        // If no token exists at all, fail safely and prompt login
         if (!tokenToVerify) {
           console.warn('[Auth] Missing authorization code or active session');
           if (!isCancelled) {
-            setStatusState('expired');
+            setStatusState('session_expired');
             setErrorMessage('No active authentication token or authorization code was detected. Your sign-in session may have timed out.');
           }
           return;
         }
 
-        // 4. Synchronize authentic token with backend /api/v1/auth/me
-        localStorage.setItem('quotation_ai_auth_token', tokenToVerify);
-        console.debug('[Auth] /auth/me started');
-        const syncResult = await refreshSessionRef.current();
-        console.debug('[Auth] /auth/me result:', syncResult.success ? 'success' : 'failed');
-
-        if (isCancelled) return;
-
-        // 5. Route based on backend response and company association
-        if (syncResult.success && !syncResult.needsOnboarding) {
-          console.debug('[Auth] Redirect decision: /dashboard');
-          navigateRef.current('/dashboard', { replace: true });
-        } else if (syncResult.success && syncResult.needsOnboarding) {
-          console.debug('[Auth] Redirect decision: /onboarding/company');
-          navigateRef.current('/onboarding/company', { replace: true });
-        } else if (syncResult.errorStatus === 0) {
-          console.warn('[Auth] Backend service unreachable');
-          setStatusState('error');
-          setErrorMessage('Quotation AI services are temporarily unavailable.');
-        } else if (syncResult.errorStatus === 401) {
-          console.debug('[Auth] Redirect decision: /login (401 Unauthorized)');
-          navigateRef.current('/login', { replace: true });
-        } else {
-          console.warn('[Auth] Session was rejected by Quotation AI tenant security service');
-          setStatusState('error');
-          setErrorMessage(syncResult.errorDetail || 'Google sign-in could not be completed. Please try again.');
+        // 4. Supabase session is established! (STAGE 2: Backend Workspace Verification)
+        if (!isCancelled) {
+          setStatusState('connecting_backend');
+          await verifyBackendWithRetry(tokenToVerify);
         }
       } catch (err: any) {
         if (isCancelled) return;
         console.error('[Auth] Unexpected error during OAuth callback handling:', err);
-        setStatusState('error');
+        setStatusState('auth_error');
         setErrorMessage('Google sign-in could not be completed. Please try again.');
       } finally {
         clearTimeout(timeoutTimer);
@@ -263,10 +307,10 @@ export const AuthCallbackPage: React.FC = () => {
       clearTimeout(timeoutTimer);
       isExecutingRef.current = false;
     };
-  }, [location.pathname, location.search, location.hash]);
+  }, [location.pathname, location.search, location.hash, verifyBackendWithRetry]);
 
-  // Loading State - Clean, modern spinner
-  if (statusState === 'loading') {
+  // Loading States - Clean, modern spinner with friendly messages
+  if (statusState === 'exchanging' || statusState === 'connecting_backend') {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 antialiased font-sans">
         <div className="max-w-sm w-full bg-white rounded-2xl shadow-xl border border-slate-200/80 p-8 text-center space-y-4">
@@ -278,7 +322,9 @@ export const AuthCallbackPage: React.FC = () => {
               Signing you in…
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Establishing authenticated session...
+              {statusState === 'connecting_backend'
+                ? 'Connecting to your Quotation AI workspace…'
+                : 'Establishing authenticated session...'}
             </p>
           </div>
         </div>
@@ -286,8 +332,49 @@ export const AuthCallbackPage: React.FC = () => {
     );
   }
 
+  // Backend Unavailable State (PHASE 4 & 5: Supabase session is KEPT, user given Retry)
+  if (statusState === 'backend_unavailable') {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 antialiased font-sans">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-amber-200 p-8 text-center space-y-5">
+          <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 mx-auto flex items-center justify-center">
+            <ServerOff className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-amber-800 font-semibold block">
+              Service Notice
+            </span>
+            <h2 className="text-xl font-bold text-slate-900 mt-1">
+              We couldn't connect to Quotation AI right now.
+            </h2>
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              Your Google account is signed in, but Quotation AI services are temporarily unavailable.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+            <button
+              onClick={handleManualRetry}
+              disabled={isRetrying}
+              className="flex-1 h-11 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRetrying ? 'animate-spin' : ''}`} />
+              <span>{isRetrying ? 'Connecting...' : 'Retry Connection'}</span>
+            </button>
+            <button
+              onClick={() => navigate('/login')}
+              className="flex-1 h-11 bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Return to Sign In</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Session Expired / Timeout State
-  if (statusState === 'expired') {
+  if (statusState === 'session_expired') {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 antialiased font-sans">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-amber-200 p-8 text-center space-y-5">
@@ -302,7 +389,7 @@ export const AuthCallbackPage: React.FC = () => {
               Authentication Window Timed Out
             </h2>
             <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-              {errorMessage || 'Google sign-in could not be completed. Please try again.'}
+              {errorMessage || "We couldn't complete Google sign-in. Try again."}
             </p>
           </div>
           <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
@@ -318,7 +405,7 @@ export const AuthCallbackPage: React.FC = () => {
               aria-label="Return to Sign In / Back to Login"
               className="flex-1 h-11 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Return to Sign In</span>
+              <span>Back to Login</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -327,7 +414,7 @@ export const AuthCallbackPage: React.FC = () => {
     );
   }
 
-  // OAuth Failure or Network Error State
+  // OAuth Cancellation or Failure State
   return (
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 antialiased font-sans">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-[#ba1a1a]/30 p-8 text-center space-y-5">

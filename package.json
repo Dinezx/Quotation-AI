@@ -1,0 +1,17 @@
+{
+  "name": "quotation-ai-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Quotation AI — Enterprise B2B SaaS Platform Root Workspace",
+  "scripts": {
+    "dev": "npx -y concurrently -k -n \"BACKEND,FRONTEND\" -c \"magenta,cyan\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --app-dir backend --reload",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "python -m pytest backend/tests",
+    "test:frontend": "npm run test --prefix frontend",
+    "test:unit": "npm run test:unit --prefix frontend",
+    "test:e2e": "npm run test:e2e --prefix frontend",
+    "build": "npm run build --prefix frontend"
+  }
+}

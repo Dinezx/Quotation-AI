@@ -7,6 +7,7 @@ import {
   X,
   ExternalLink,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { groupNotifications } from './notificationUtils';
@@ -28,6 +29,9 @@ export const NotificationDropdown: React.FC = () => {
     markAsRead,
     markAllAsRead,
     isMarkingAllRead,
+    clearNotification,
+    clearAllNotifications,
+    isClearingAll,
   } = useNotifications({ page: 1, page_size: 15 });
 
   // Close dropdown on outside click
@@ -124,6 +128,23 @@ export const NotificationDropdown: React.FC = () => {
                 </button>
               )}
 
+              {hasNotifications && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearAllNotifications();
+                  }}
+                  disabled={isClearingAll}
+                  data-testid="clear-all-notifications-button"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50/80 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                  title="Clear all notifications"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {isClearingAll ? 'Clearing…' : 'Clear all'}
+                </button>
+              )}
+
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition-colors"
@@ -180,6 +201,7 @@ export const NotificationDropdown: React.FC = () => {
                         notification={notif}
                         onNavigate={handleNavigate}
                         onMarkRead={(id) => markAsRead(id)}
+                        onClear={(id) => clearNotification(id)}
                       />
                     ))}
                   </div>
@@ -197,6 +219,7 @@ export const NotificationDropdown: React.FC = () => {
                         notification={notif}
                         onNavigate={handleNavigate}
                         onMarkRead={(id) => markAsRead(id)}
+                        onClear={(id) => clearNotification(id)}
                       />
                     ))}
                   </div>
@@ -214,6 +237,7 @@ export const NotificationDropdown: React.FC = () => {
                         notification={notif}
                         onNavigate={handleNavigate}
                         onMarkRead={(id) => markAsRead(id)}
+                        onClear={(id) => clearNotification(id)}
                       />
                     ))}
                   </div>

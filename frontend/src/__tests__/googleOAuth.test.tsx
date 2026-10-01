@@ -469,4 +469,157 @@ describe('Google OAuth & AuthCallbackPage Definitive Scenarios', () => {
 
     expect(localStorage.getItem('quotation_ai_auth_token')).toBe('pwd-token-789');
   });
+
+  // Case 34: Backend 500 error shows unavailable state, and Retry Connection recovers when backend is back
+  it('Case 34: Backend 500 -> Shows unavailable, Retry Connection succeeds after service recovers', async () => {
+    window.history.pushState({}, '', '/auth/callback?code=retry-recovery-code');
+
+    vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'recovered-google-jwt',
+          user: { email: 'plant.admin@mfg.in', id: 'usr-admin-1' },
+        },
+      } as any,
+      error: null,
+    });
+
+    // First call to /auth/me returns 500 Internal Server Error
+    vi.mocked(apiClient.get).mockRejectedValueOnce({
+      response: {
+        status: 500,
+        data: { detail: 'Internal Database Connection Error' },
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/auth/callback?code=retry-recovery-code']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    // Should display unavailable message without clearing token
+    await waitFor(() => {
+      expect(screen.getByText(/We couldn't connect to Quotation AI right now./i)).toBeInTheDocument();
+      expect(screen.getByText(/Quotation AI services are temporarily unavailable./i)).toBeInTheDocument();
+    });
+
+    // Token must STILL be in storage (Phase 4 requirement: Supabase session NOT destroyed)
+    expect(localStorage.getItem('quotation_ai_auth_token')).toBe('recovered-google-jwt');
+
+    // Backend recovers: subsequent call to /auth/me returns 200
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      data: {
+        user: { id: 'usr-admin-1', email: 'plant.admin@mfg.in', role: 'ADMIN', company_id: 'comp-admin' },
+        company: { id: 'comp-admin', name: 'Precision Plant 1' },
+      },
+    });
+
+    // User clicks "Retry Connection"
+    const retryBtn = screen.getByRole('button', { name: /Retry Connection/i });
+    fireEvent.click(retryBtn);
+
+    // Successfully navigates to dashboard
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
+    });
+  });
+
+  // Case 35: Backend 401 Unauthorized -> Clears invalid session and redirects to /login
+  it('Case 35: Backend 401 Unauthorized -> Redirects to /login and clears session', async () => {
+    window.history.pushState({}, '', '/auth/callback?code=unauthorized-code');
+
+    vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'revoked-token',
+          user: { email: 'revoked@shop.in', id: 'usr-revoked' },
+        },
+      } as any,
+      error: null,
+    });
+
+    vi.mocked(apiClient.get).mockRejectedValueOnce({
+      response: {
+        status: 401,
+        data: { detail: 'Token has been revoked or expired' },
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/auth/callback?code=unauthorized-code']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/login" element={<div data-testid="login-page">Login Page</div>} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('login-page')).toBeInTheDocument();
+    });
+
+    expect(localStorage.getItem('quotation_ai_auth_token')).toBeNull();
+  });
+
+  // Case 36: Duplicate callback execution / React StrictMode rerender -> Only exchanges code once
+  it('Case 36: Duplicate callback execution only exchanges code once', async () => {
+    window.history.pushState({}, '', '/auth/callback?code=strict-mode-code');
+
+    const exchangeMock = vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'strict-mode-jwt',
+          user: { email: 'lead@shop.in', id: 'usr-sm' },
+        },
+      } as any,
+      error: null,
+    });
+
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        user: { id: 'usr-sm', email: 'lead@shop.in', role: 'ADMIN', company_id: 'comp-sm' },
+        company: { id: 'comp-sm', name: 'Strict Mode Mfg' },
+      },
+    });
+
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/auth/callback?code=strict-mode-code']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
+    });
+
+    // Unmount and remount (simulating StrictMode or rapid navigation)
+    unmount();
+
+    render(
+      <MemoryRouter initialEntries={['/auth/callback?code=strict-mode-code']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    // exchangeCodeForSession should only be called ONCE for the same code
+    expect(exchangeMock).toHaveBeenCalledTimes(1);
+  });
 });

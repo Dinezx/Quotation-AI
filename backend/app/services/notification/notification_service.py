@@ -171,3 +171,45 @@ class NotificationService:
         )
         db.commit()
         return marked_count
+
+    @staticmethod
+    def delete_notification(
+        db: Session,
+        company_id: str,
+        notification_id: str,
+    ) -> bool:
+        """
+        Deletes a single notification for the specified company tenant.
+        Enforces strict company isolation (returns False if not found or belongs to another company).
+        """
+        notification = (
+            db.query(Notification)
+            .filter(
+                Notification.id == notification_id,
+                Notification.company_id == company_id,
+            )
+            .first()
+        )
+        if not notification:
+            return False
+
+        db.delete(notification)
+        db.commit()
+        return True
+
+    @staticmethod
+    def clear_all_notifications(
+        db: Session,
+        company_id: str,
+    ) -> int:
+        """
+        Deletes all notifications for the specified company tenant.
+        Returns the number of cleared notifications.
+        """
+        deleted_count = (
+            db.query(Notification)
+            .filter(Notification.company_id == company_id)
+            .delete(synchronize_session="fetch")
+        )
+        db.commit()
+        return deleted_count

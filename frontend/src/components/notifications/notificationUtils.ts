@@ -1,8 +1,18 @@
 import { NotificationItem, NotificationSeverity } from '../../api/notificationApi';
 
+export function parseUtcDate(dateString: string): Date {
+  if (!dateString) return new Date();
+  // If ISO string without timezone indicator or space-separated, normalize to UTC ISO
+  if (!dateString.endsWith('Z') && !dateString.includes('+')) {
+    const formatted = dateString.includes('T') ? dateString : dateString.replace(' ', 'T');
+    return new Date(`${formatted}Z`);
+  }
+  return new Date(dateString);
+}
+
 export function formatRelativeTime(dateString: string): string {
   try {
-    const date = new Date(dateString);
+    const date = parseUtcDate(dateString);
     const now = new Date();
     const diffInSeconds = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 1000));
 
@@ -36,7 +46,8 @@ export function groupNotifications(items: NotificationItem[]): GroupedNotificati
   const yesterdayMidnight = todayMidnight - 24 * 60 * 60 * 1000;
 
   for (const item of items) {
-    const itemTime = new Date(item.created_at).getTime();
+    const itemDate = parseUtcDate(item.created_at);
+    const itemTime = itemDate.getTime();
     if (itemTime >= todayMidnight) {
       today.push(item);
     } else if (itemTime >= yesterdayMidnight) {
