@@ -10,6 +10,7 @@ import {
   ChevronDown 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { NotificationDropdown } from '../notifications/NotificationDropdown';
 
 interface TopNavBarProps {
   onOpenMobileMenu?: () => void;
@@ -94,14 +95,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({ onOpenMobileMenu }) => {
 
       {/* Right Controls: Notifications, Authenticated Company Badge, User Avatar */}
       <div className="flex items-center gap-3 shrink-0">
-        {/* Notifications with red indicator dot */}
-        <button 
-          title="Notifications"
-          className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="w-2 h-2 bg-red-500 rounded-full absolute top-1.5 right-1.5 ring-2 ring-white" />
-        </button>
+        {/* Real Workflow Notifications with Live Badge & Popover */}
+        <NotificationDropdown />
 
         {/* Authenticated Company Selector / Badge */}
         <div 

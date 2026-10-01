@@ -8,6 +8,7 @@ from app.models.purchase_order import PurchaseOrder
 from app.models.purchase_order_item import PurchaseOrderItem
 from app.models.quotation import Quotation
 from app.models.quotation_item import QuotationItem
+from app.models.notification import Notification
 
 __all__ = [
     "Base",
@@ -20,4 +21,5 @@ __all__ = [
     "PurchaseOrderItem",
     "Quotation",
     "QuotationItem",
+    "Notification",
 ]

@@ -22,6 +22,8 @@ from app.schemas.pricing import POCalculateRequest, POCalculateResponse
 from app.services.storage.storage_service import StorageService
 from app.services.ai.extractor import po_extraction_service, convert_extraction_to_po_create
 from app.services.pricing.pricing_service import PricingService
+from app.services.notification.notification_service import NotificationService
+from app.schemas.notification import NotificationType
 
 router = APIRouter(prefix="/purchase-orders", tags=["Purchase Orders"])
 
@@ -207,6 +209,40 @@ async def upload_po_document(
 
     db.commit()
     db.refresh(po)
+
+    has_flags = any(it.review_flags for it in po.items) or po.status == "NEEDS_REVIEW"
+    NotificationService.create_notification(
+        db=db,
+        company_id=company_id,
+        type=NotificationType.PO_UPLOADED.value,
+        title="Purchase Order Uploaded",
+        message=f"Purchase order {po.po_number or file.filename} was uploaded successfully.",
+        entity_type="PURCHASE_ORDER",
+        entity_id=po.id,
+        severity="INFO",
+    )
+    if has_flags:
+        NotificationService.create_notification(
+            db=db,
+            company_id=company_id,
+            type=NotificationType.PO_NEEDS_REVIEW.value,
+            title="PO Requires Review",
+            message=f"PO {po.po_number or file.filename} requires human review before approval.",
+            entity_type="PURCHASE_ORDER",
+            entity_id=po.id,
+            severity="WARNING",
+        )
+    else:
+        NotificationService.create_notification(
+            db=db,
+            company_id=company_id,
+            type=NotificationType.PO_EXTRACTION_COMPLETED.value,
+            title="PO Ready for Review",
+            message=f"PO {po.po_number or file.filename} extracted with high confidence.",
+            entity_type="PURCHASE_ORDER",
+            entity_id=po.id,
+            severity="SUCCESS",
+        )
 
     return {
         "source_file_url": url,
@@ -437,6 +473,19 @@ def approve_purchase_order(
 
         db.commit()
         db.refresh(po)
+
+        NotificationService.create_notification(
+            db=db,
+            company_id=current_user.company_id,
+            user_id=current_user.id,
+            type=NotificationType.PO_APPROVED.value,
+            title="PO Approved",
+            message=f"Purchase order {po.po_number} was approved.",
+            entity_type="PURCHASE_ORDER",
+            entity_id=po.id,
+            severity="SUCCESS",
+        )
+
         return po
 
     except HTTPException:
@@ -477,6 +526,19 @@ def reject_purchase_order(
 
         db.commit()
         db.refresh(po)
+
+        NotificationService.create_notification(
+            db=db,
+            company_id=current_user.company_id,
+            user_id=current_user.id,
+            type=NotificationType.PO_REJECTED.value,
+            title="PO Rejected",
+            message=f"Purchase order {po.po_number} was rejected: {reject_req.reason}",
+            entity_type="PURCHASE_ORDER",
+            entity_id=po.id,
+            severity="ERROR",
+        )
+
         return po
 
     except HTTPException:
@@ -515,9 +577,25 @@ def calculate_purchase_order(
         raise HTTPException(status_code=404, detail="Purchase order not found")
 
     params = calc_req or POCalculateRequest()
-    return PricingService.calculate_purchase_order(
+    calc_result = PricingService.calculate_purchase_order(
         po=po,
         db=db,
         company_id=current_user.company_id,
         calc_params=params,
     )
+
+    if getattr(calc_result, "status", None) == "BLOCKED" or (getattr(calc_result, "issues", None) and len(calc_result.issues) > 0):
+        issue_str = calc_result.issues[0] if getattr(calc_result, "issues", None) else "Missing master pricing rates."
+        NotificationService.create_notification(
+            db=db,
+            company_id=current_user.company_id,
+            user_id=current_user.id,
+            type=NotificationType.CALCULATION_BLOCKED.value,
+            title="Calculation Blocked — Rate Required",
+            message=f"Calculation blocked for PO {po.po_number}: {issue_str}",
+            entity_type="RATE",
+            entity_id=po.id,
+            severity="WARNING",
+        )
+
+    return calc_result

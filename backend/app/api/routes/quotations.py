@@ -23,6 +23,8 @@ from app.services.calculation.calculation_service import CalculationService
 from app.services.quotation.quotation_service import QuotationService
 from app.services.pdf.quotation_pdf_service import QuotationPDFService
 from app.services.storage.storage_service import get_storage_service
+from app.services.notification.notification_service import NotificationService
+from app.schemas.notification import NotificationType
 
 router = APIRouter(prefix="/quotations", tags=["Quotations"])
 
@@ -180,6 +182,18 @@ def create_quotation(
 
     db.commit()
     db.refresh(quotation)
+
+    NotificationService.create_notification(
+        db=db,
+        company_id=company_id,
+        type=NotificationType.QUOTATION_DRAFT_CREATED.value,
+        title="Quotation Draft Created",
+        message=f"Draft quotation {quotation.quotation_number} was created.",
+        entity_type="QUOTATION",
+        entity_id=quotation.id,
+        severity="INFO",
+    )
+
     return quotation
 
 @router.get("/{quotation_id}", response_model=QuotationResponse)
@@ -342,6 +356,30 @@ def finalize_quotation(
         quotation=quotation,
         authorized_by=current_user.email,
     )
+
+    NotificationService.create_notification(
+        db=db,
+        company_id=current_user.company_id,
+        user_id=current_user.id,
+        type=NotificationType.QUOTATION_FINALIZED.value,
+        title="Quotation Finalized",
+        message=f"Quotation {updated.quotation_number} was finalized successfully.",
+        entity_type="QUOTATION",
+        entity_id=updated.id,
+        severity="SUCCESS",
+    )
+    NotificationService.create_notification(
+        db=db,
+        company_id=current_user.company_id,
+        user_id=current_user.id,
+        type=NotificationType.QUOTATION_PDF_GENERATED.value,
+        title="Quotation PDF Generated",
+        message=f"Official PDF generated for {updated.quotation_number}.",
+        entity_type="QUOTATION",
+        entity_id=updated.id,
+        severity="INFO",
+    )
+
     return updated
 
 
@@ -509,19 +547,43 @@ def send_quotation_email(
             detail="Quotation belongs to another company",
         )
 
-    updated_quote = QuotationService.send_quotation_email(
-        db=db,
-        quotation=quotation,
-        sender_user_id=current_user.id,
-        sender_email=current_user.email,
-    )
-
-    from datetime import datetime
-    return {
-        "quotation_id": updated_quote.id,
-        "quotation_number": updated_quote.quotation_number,
-        "email_status": updated_quote.email_status,
-        "recipient": updated_quote.email_recipient or "",
-        "sent_at": updated_quote.email_sent_at or datetime.utcnow(),
-        "message": "Quotation sent successfully.",
-    }
+    try:
+        updated_quote = QuotationService.send_quotation_email(
+            db=db,
+            quotation=quotation,
+            sender_user_id=current_user.id,
+            sender_email=current_user.email,
+        )
+        NotificationService.create_notification(
+            db=db,
+            company_id=current_user.company_id,
+            user_id=current_user.id,
+            type=NotificationType.QUOTATION_EMAIL_SENT.value,
+            title="Quotation Sent Successfully",
+            message=f"Quotation {updated_quote.quotation_number} was emailed to {updated_quote.email_recipient}.",
+            entity_type="QUOTATION",
+            entity_id=updated_quote.id,
+            severity="SUCCESS",
+        )
+        from datetime import datetime
+        return {
+            "quotation_id": updated_quote.id,
+            "quotation_number": updated_quote.quotation_number,
+            "email_status": updated_quote.email_status,
+            "recipient": updated_quote.email_recipient or "",
+            "sent_at": updated_quote.email_sent_at or datetime.utcnow(),
+            "message": "Quotation sent successfully.",
+        }
+    except Exception as exc:
+        NotificationService.create_notification(
+            db=db,
+            company_id=current_user.company_id,
+            user_id=current_user.id,
+            type=NotificationType.QUOTATION_EMAIL_FAILED.value,
+            title="Quotation Email Failed",
+            message=f"Quotation {quotation.quotation_number} email delivery failed: {getattr(exc, 'detail', str(exc))}",
+            entity_type="QUOTATION",
+            entity_id=quotation.id,
+            severity="ERROR",
+        )
+        raise

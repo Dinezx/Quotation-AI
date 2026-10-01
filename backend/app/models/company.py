@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.process import Process
     from app.models.purchase_order import PurchaseOrder
     from app.models.quotation import Quotation
+    from app.models.notification import Notification
 
 class Company(Base, TimestampMixin):
     __tablename__ = "companies"
@@ -31,6 +32,7 @@ class Company(Base, TimestampMixin):
     processes: Mapped[List["Process"]] = relationship("Process", back_populates="company", cascade="all, delete-orphan")
     purchase_orders: Mapped[List["PurchaseOrder"]] = relationship("PurchaseOrder", back_populates="company", cascade="all, delete-orphan")
     quotations: Mapped[List["Quotation"]] = relationship("Quotation", back_populates="company", cascade="all, delete-orphan")
+    notifications: Mapped[List["Notification"]] = relationship("Notification", back_populates="company", cascade="all, delete-orphan")
 
     def get_profile_data(self) -> dict:
         profile = (self.settings or {}).get("profile", {}) if isinstance(self.settings, dict) else {}
