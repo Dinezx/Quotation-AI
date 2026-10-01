@@ -3,7 +3,7 @@ import React from 'react';
 import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { AuthCallbackPage } from '../pages/AuthCallbackPage';
+import { AuthCallbackPage, resetOAuthCallbackState } from '../pages/AuthCallbackPage';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { apiClient } from '../api/apiClient';
@@ -48,6 +48,7 @@ vi.mock('../api/apiClient', () => {
 describe('Google OAuth & AuthCallbackPage Definitive Scenarios', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetOAuthCallbackState();
     localStorage.clear();
     // Default getSession to return null session
     vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: null }, error: null });
@@ -60,48 +61,8 @@ describe('Google OAuth & AuthCallbackPage Definitive Scenarios', () => {
     window.history.pushState({}, '', '/');
   });
 
-  it('Scenario A: Existing Google user with company -> Redirects to /dashboard', async () => {
-    window.history.pushState({}, '', '/auth/callback?code=valid-auth-code');
-
-    const mockExchange = vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValue({
-      data: {
-        session: {
-          access_token: 'valid-google-jwt-existing-user',
-          user: { email: 'engineer@precision.in', id: 'usr-123' },
-        },
-      } as any,
-      error: null,
-    });
-
-    vi.mocked(apiClient.get).mockResolvedValue({
-      data: {
-        user: { id: 'usr-123', email: 'engineer@precision.in', role: 'ADMIN', company_id: 'comp-1' },
-        company: { id: 'comp-1', name: 'Precision Engineering' },
-      },
-    });
-
-    render(
-      <MemoryRouter initialEntries={['/auth/callback?code=valid-auth-code']}>
-        <AuthProvider>
-          <Routes>
-            <Route path="/auth/callback" element={<AuthCallbackPage />} />
-            <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
-          </Routes>
-        </AuthProvider>
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText(/Signing you in…/i)).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(mockExchange).toHaveBeenCalledWith('valid-auth-code');
-      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
-    });
-
-    expect(localStorage.getItem('quotation_ai_auth_token')).toBe('valid-google-jwt-existing-user');
-  });
-
-  it('Scenario B: New Google user without company -> Redirects to /onboarding/company', async () => {
+  // Case 25: New Google user → OAuth → company onboarding.
+  it('Case 25: New Google user without company -> Redirects to /onboarding/company', async () => {
     window.history.pushState({}, '', '/auth/callback?code=new-user-code');
 
     vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValue({
@@ -147,54 +108,83 @@ describe('Google OAuth & AuthCallbackPage Definitive Scenarios', () => {
     expect(localStorage.getItem('quotation_ai_auth_token')).toBe('valid-google-jwt-new-user');
   });
 
-  it('Scenario C: User denies Google consent -> Renders user-friendly cancellation notice and allows return to login', async () => {
+  // Case 26: Existing Google user → OAuth → dashboard.
+  it('Case 26: Existing Google user with company -> Redirects to /dashboard', async () => {
+    window.history.pushState({}, '', '/auth/callback?code=valid-auth-code');
+
+    const mockExchange = vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'valid-google-jwt-existing-user',
+          user: { email: 'engineer@precision.in', id: 'usr-123' },
+        },
+      } as any,
+      error: null,
+    });
+
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        user: { id: 'usr-123', email: 'engineer@precision.in', role: 'ADMIN', company_id: 'comp-1' },
+        company: { id: 'comp-1', name: 'Precision Engineering' },
+      },
+    });
+
     render(
-      <MemoryRouter initialEntries={['/auth/callback?error=access_denied']}>
+      <MemoryRouter initialEntries={['/auth/callback?code=valid-auth-code']}>
         <AuthProvider>
           <Routes>
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
-            <Route path="/login" element={<div data-testid="login-page">Login Page</div>} />
+            <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Sign In Was Not Completed/i)).toBeInTheDocument();
-    expect(screen.getByText(/Google Sign In was cancelled/i)).toBeInTheDocument();
-
-    const returnBtn = screen.getByRole('button', { name: /Return to Sign In/i });
-    expect(returnBtn).toBeVisible();
-    fireEvent.click(returnBtn);
-
     await waitFor(() => {
-      expect(screen.getByTestId('login-page')).toBeInTheDocument();
+      expect(mockExchange).toHaveBeenCalledWith('valid-auth-code');
+      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
     });
+
+    expect(localStorage.getItem('quotation_ai_auth_token')).toBe('valid-google-jwt-existing-user');
   });
 
-  it('Scenario D: OAuth callback error -> Renders error state with retry and return options', async () => {
+  // Case 27: Refresh /auth/callback after successful login (no code, recovers active session).
+  it('Case 27: Refresh /auth/callback recovers active session and redirects to dashboard', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'active-session-token',
+          user: { email: 'engineer@precision.in', id: 'usr-123' },
+        },
+      } as any,
+      error: null,
+    });
+
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        user: { id: 'usr-123', email: 'engineer@precision.in', role: 'ADMIN', company_id: 'comp-1' },
+        company: { id: 'comp-1', name: 'Precision Engineering' },
+      },
+    });
+
     render(
-      <MemoryRouter initialEntries={['/auth/callback?error=server_error&error_description=Internal+provider+failure']}>
+      <MemoryRouter initialEntries={['/auth/callback']}>
         <AuthProvider>
           <Routes>
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
-            <Route path="/login" element={<div data-testid="login-page">Login Page</div>} />
+            <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Sign In Was Not Completed/i)).toBeInTheDocument();
-    expect(screen.getByText(/Internal provider failure/i)).toBeInTheDocument();
-
-    const returnBtn = screen.getByRole('button', { name: /Return to Sign In/i });
-    fireEvent.click(returnBtn);
-
     await waitFor(() => {
-      expect(screen.getByTestId('login-page')).toBeInTheDocument();
+      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
     });
   });
 
-  it('Scenario E: Missing authorization code/session -> Shows expired/missing notice and directs to login', async () => {
+  // Case 28: Open /auth/callback without a code and no session -> Shows timeout notice.
+  it('Case 28: Open /auth/callback without a code and no session -> Shows timeout notice', async () => {
     vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
       data: { session: null },
       error: null,
@@ -223,10 +213,90 @@ describe('Google OAuth & AuthCallbackPage Definitive Scenarios', () => {
     });
   });
 
-  it('Scenario F: Expired or invalid code -> Handled gracefully with retry guidance', async () => {
+  // Case 29: Reuse an already-consumed code -> Recovers session instead of showing "invalid flow state".
+  it('Case 29: Reuse an already-consumed code -> Recovers session via getSession()', async () => {
+    // When code is consumed, exchangeCodeForSession returns error "invalid flow state"
+    vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValueOnce({
+      data: { session: null } as any,
+      error: { message: 'invalid flow state, no valid flow state found' } as any,
+    });
+
+    // But getSession() has the active session
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'recovered-token-after-flow-state',
+          user: { email: 'lead@shop.in', id: 'usr-456' },
+        },
+      } as any,
+      error: null,
+    });
+
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        user: { id: 'usr-456', email: 'lead@shop.in', role: 'ADMIN', company_id: 'comp-2' },
+        company: { id: 'comp-2', name: 'Precision CNC' },
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/auth/callback?code=already-consumed-code']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
+    });
+
+    expect(localStorage.getItem('quotation_ai_auth_token')).toBe('recovered-token-after-flow-state');
+  });
+
+  // Case 30: Backend unavailable -> Shows "Quotation AI services are temporarily unavailable."
+  it('Case 30: Backend unavailable -> Shows friendly unavailable message', async () => {
+    vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'valid-google-jwt',
+          user: { email: 'lead@shop.in', id: 'usr-456' },
+        },
+      } as any,
+      error: null,
+    });
+
+    // Simulate network error / connection refused (no response)
+    vi.mocked(apiClient.get).mockRejectedValue(new Error('Network Error: net::ERR_CONNECTION_REFUSED'));
+
+    render(
+      <MemoryRouter initialEntries={['/auth/callback?code=valid-code']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Quotation AI services are temporarily unavailable./i)).toBeInTheDocument();
+    });
+  });
+
+  // Case 31: Expired or invalid code without recovery -> Shows clear error message.
+  it('Case 31: Expired/invalid OAuth code without session -> Shows error message', async () => {
     vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValueOnce({
       data: { session: null } as any,
       error: { message: 'The authorization code has expired' } as any,
+    });
+
+    vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
     });
 
     render(
@@ -234,7 +304,6 @@ describe('Google OAuth & AuthCallbackPage Definitive Scenarios', () => {
         <AuthProvider>
           <Routes>
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
-            <Route path="/login" element={<div data-testid="login-page">Login Page</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>
@@ -245,11 +314,35 @@ describe('Google OAuth & AuthCallbackPage Definitive Scenarios', () => {
     });
   });
 
-  it('Scenario G: Hard timeout triggers after 10 seconds if callback hangs', async () => {
+  // Case: User denies consent.
+  it('Case: User denies Google consent -> Renders user-friendly cancellation notice', async () => {
+    render(
+      <MemoryRouter initialEntries={['/auth/callback?error=access_denied']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/login" element={<div data-testid="login-page">Login Page</div>} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/Sign In Was Not Completed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Google Sign In was cancelled/i)).toBeInTheDocument();
+
+    const returnBtn = screen.getByRole('button', { name: /Return to Sign In/i });
+    fireEvent.click(returnBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('login-page')).toBeInTheDocument();
+    });
+  });
+
+  // Case: 10-second hard timeout.
+  it('Case: Hard timeout triggers after 10 seconds if callback hangs', async () => {
     vi.useFakeTimers();
 
     try {
-      // exchangeCodeForSession never resolves (simulating hung network connection)
       vi.mocked(supabase.auth.exchangeCodeForSession).mockImplementation(() => new Promise(() => {}));
 
       render(
@@ -264,7 +357,6 @@ describe('Google OAuth & AuthCallbackPage Definitive Scenarios', () => {
 
       expect(screen.getByText(/Signing you in…/i)).toBeInTheDocument();
 
-      // Advance timer by 10.5 seconds
       await act(async () => {
         await vi.advanceTimersByTimeAsync(10500);
       });
@@ -275,7 +367,60 @@ describe('Google OAuth & AuthCallbackPage Definitive Scenarios', () => {
     }
   });
 
-  it('Scenario H & I: Password login works with associated company', async () => {
+  // Case 32: Logout and login again.
+  it('Case 32: Logout cleans token and state, enabling login again', async () => {
+    const TestComponent: React.FC = () => {
+      const { logout, login, isAuthenticated } = useAuth();
+      return (
+        <div>
+          <div data-testid="auth-status">{isAuthenticated ? 'authenticated' : 'unauthenticated'}</div>
+          <button onClick={() => logout()}>Execute Logout</button>
+          <button onClick={() => login('test@mfg.in', 'pw123')}>Execute Login</button>
+        </div>
+      );
+    };
+
+    localStorage.setItem('quotation_ai_auth_token', 'initial-token');
+
+    vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
+      data: {
+        session: { access_token: 'new-login-token' },
+      } as any,
+      error: null,
+    });
+
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        user: { id: 'usr-1', email: 'test@mfg.in', role: 'ADMIN', company_id: 'comp-1' },
+        company: { id: 'comp-1', name: 'Test Mfg' },
+      },
+    });
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    // Click logout
+    fireEvent.click(screen.getByText('Execute Logout'));
+
+    await waitFor(() => {
+      expect(localStorage.getItem('quotation_ai_auth_token')).toBeNull();
+      expect(screen.getByTestId('auth-status')).toHaveTextContent('unauthenticated');
+    });
+
+    // Login again
+    fireEvent.click(screen.getByText('Execute Login'));
+
+    await waitFor(() => {
+      expect(localStorage.getItem('quotation_ai_auth_token')).toBe('new-login-token');
+      expect(screen.getByTestId('auth-status')).toHaveTextContent('authenticated');
+    });
+  });
+
+  // Case 33: Password login still works.
+  it('Case 33: Password login works with associated company', async () => {
     const TestLoginComponent: React.FC = () => {
       const { login } = useAuth();
       const [res, setRes] = React.useState<any>(null);

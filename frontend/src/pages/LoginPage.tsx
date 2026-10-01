@@ -244,6 +244,7 @@ export const LoginPage: React.FC = () => {
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={isSubmitting || isGoogleLoading}
+                  aria-label="Continue with Google / Sign In with Google"
                   className="w-full h-11 bg-white hover:bg-[#fbf9f4] border border-[#d5d2ca] hover:border-[#172033] text-[#172033] text-xs font-semibold rounded-lg shadow-2xs flex items-center justify-center gap-3 transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#172033] disabled:opacity-60"
                 >
                   {isGoogleLoading ? (

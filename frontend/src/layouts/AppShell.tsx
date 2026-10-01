@@ -12,7 +12,7 @@ export const AppShell: React.FC = () => {
 
   return (
     <DensityProvider>
-      <div className="flex h-screen w-screen overflow-hidden bg-[#fbf9f4]">
+      <div className="flex h-screen w-screen overflow-hidden bg-[#f8fafc]">
         {/* Desktop Persistent Left Nav with Collapse support */}
         <div className="hidden md:flex h-full shrink-0">
           <SideNavBar 
@@ -30,14 +30,14 @@ export const AppShell: React.FC = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setMobileNavOpen(false)}
-                className="fixed inset-0 bg-[#172033]/60 backdrop-blur-xs"
+                className="fixed inset-0 bg-[#0b1328]/60 backdrop-blur-xs"
               />
               <motion.div
                 initial={{ x: '-100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="relative w-60 max-w-[85vw] h-full z-10"
+                className="relative w-64 max-w-[85vw] h-full z-10"
               >
                 <SideNavBar onCloseMobile={() => setMobileNavOpen(false)} />
               </motion.div>
@@ -50,7 +50,7 @@ export const AppShell: React.FC = () => {
           <TopNavBar onOpenMobileMenu={() => setMobileNavOpen(true)} />
 
           {/* Content Area with Fluid Page Transition */}
-          <main className="flex-1 overflow-y-auto relative bg-[#fbf9f4]">
+          <main className="flex-1 overflow-y-auto relative bg-[#f8fafc]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

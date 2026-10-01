@@ -95,6 +95,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
 
+      // If user logged out while request was in-flight, discard response
+      if (localStorage.getItem('quotation_ai_auth_token') !== authToken) {
+        return { success: false, needsOnboarding: false };
+      }
+
       if (res.data?.user && res.data?.company) {
         setUser({
           id: res.data.user.id,
@@ -151,7 +156,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      console.warn('[Auth] Backend token verification failed:', err.response?.data?.detail || err.message);
+      // Detect network / connection failures (e.g. backend server is down or ERR_CONNECTION_REFUSED)
+      const isNetworkError =
+        !err.response ||
+        err.code === 'ERR_NETWORK' ||
+        err.code === 'ECONNREFUSED' ||
+        (typeof err.message === 'string' && (
+          err.message.includes('Network Error') ||
+          err.message.includes('ERR_CONNECTION_REFUSED') ||
+          err.message.includes('Failed to fetch')
+        ));
+
+      const friendlyError = isNetworkError
+        ? 'Quotation AI services are temporarily unavailable.'
+        : (err.response?.data?.detail || err.message || 'Authentication verification failed.');
+
+      console.warn('[Auth] Backend token verification failed:', friendlyError);
       localStorage.removeItem('quotation_ai_auth_token');
       setToken(null);
       setUser(null);
@@ -160,8 +180,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { 
         success: false, 
         needsOnboarding: false, 
-        errorStatus: errStatus, 
-        errorDetail: err.response?.data?.detail || err.message 
+        errorStatus: isNetworkError ? 0 : errStatus, 
+        errorDetail: friendlyError
       };
     } finally {
       setIsLoading(false);
@@ -197,7 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // 2. Check local storage token
+      // 2. Check local storage token (strictly verified with backend /api/v1/auth/me)
       const savedToken = localStorage.getItem('quotation_ai_auth_token');
       if (savedToken && isMounted) {
         await verifyAndSyncBackend(savedToken);
@@ -429,7 +449,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = useCallback(async () => {
     setIsLoading(true);
     try {
       if (!isSupabaseConfigured) {
@@ -455,9 +475,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
       throw err;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setIsLoading(true);
     try {
       if (isSupabaseConfigured) {
@@ -473,12 +493,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setNeedsOnboarding(false);
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const refreshSession = async (): Promise<SyncResult> => {
+  const refreshSession = useCallback(async (): Promise<SyncResult> => {
     const currentToken = localStorage.getItem('quotation_ai_auth_token');
     return await verifyAndSyncBackend(currentToken);
-  };
+  }, [verifyAndSyncBackend]);
 
   return (
     <AuthContext.Provider

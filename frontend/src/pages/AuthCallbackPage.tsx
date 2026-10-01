@@ -4,6 +4,16 @@ import { AlertTriangle, Clock, ArrowRight, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
+// Module-level deduplication to guarantee exchangeCodeForSession is called ONCE per authorization code,
+// surviving React StrictMode unmount/remount cycles, re-renders, and component instantiations.
+const inFlightExchanges = new Map<string, Promise<{ session: any; error: any }>>();
+const exchangedCodes = new Set<string>();
+
+export const resetOAuthCallbackState = () => {
+  inFlightExchanges.clear();
+  exchangedCodes.clear();
+};
+
 export const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -11,20 +21,25 @@ export const AuthCallbackPage: React.FC = () => {
 
   const [statusState, setStatusState] = useState<'loading' | 'error' | 'expired'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const isProcessingRef = useRef(false);
+  const isExecutingRef = useRef(false);
+
+  const refreshSessionRef = useRef(refreshSession);
+  refreshSessionRef.current = refreshSession;
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
 
   useEffect(() => {
     // Only run if on the /auth/callback path
     if (location.pathname !== '/auth/callback') {
       return;
     }
-    if (isProcessingRef.current) {
+    if (isExecutingRef.current) {
       return;
     }
-    isProcessingRef.current = true;
+    isExecutingRef.current = true;
     let isCancelled = false;
 
-    // 10-second hard timeout
+    // 10-second hard timeout so auth can never hang indefinitely
     const timeoutTimer = setTimeout(() => {
       if (!isCancelled) {
         console.warn('[Auth] Callback hard timeout of 10 seconds exceeded');
@@ -55,10 +70,10 @@ export const AuthCallbackPage: React.FC = () => {
             errorDescription?.toLowerCase().includes('redirect_uri_mismatch')
           ) {
             setErrorMessage(
-              'Redirect URI Mismatch (Error 400): In Google Cloud Console, ensure Authorized Redirect URIs contains your Supabase Auth callback URL (https://<project-ref>.supabase.co/auth/v1/callback), and in Supabase Dashboard ensure Redirect URLs contains your application callback URL.'
+              'Redirect URI Mismatch (Error 400): In Google Cloud Console, ensure Authorized Redirect URIs contains your Supabase Auth callback URL, and in Supabase Dashboard ensure Redirect URLs contains your application callback URL.'
             );
           } else {
-            setErrorMessage(errorDescription || `Google OAuth failed (${error}). Please check provider configuration or retry.`);
+            setErrorMessage(errorDescription || 'Google sign-in could not be completed. Please try again.');
           }
           return;
         }
@@ -69,14 +84,14 @@ export const AuthCallbackPage: React.FC = () => {
           console.debug('[Auth] Mock OAuth callback detected:', mockOAuth);
           const mockToken = queryParams.get('token') || `mock-google-${mockOAuth}-token`;
           localStorage.setItem('quotation_ai_auth_token', mockToken);
-          const res = await refreshSession();
+          const res = await refreshSessionRef.current();
           if (!isCancelled) {
             if (res.needsOnboarding) {
-              console.debug('[Auth] Redirect decision: /onboarding');
-              navigate('/onboarding', { replace: true });
+              console.debug('[Auth] Redirect decision: /onboarding/company');
+              navigateRef.current('/onboarding/company', { replace: true });
             } else {
               console.debug('[Auth] Redirect decision: /dashboard');
-              navigate('/dashboard', { replace: true });
+              navigateRef.current('/dashboard', { replace: true });
             }
           }
           return;
@@ -84,33 +99,78 @@ export const AuthCallbackPage: React.FC = () => {
 
         // 3. Handle real Supabase OAuth PKCE code exchange
         let tokenToVerify: string | null = null;
+        let authenticatedUserEmail: string | undefined = undefined;
 
         if (isSupabaseConfigured) {
           const code = queryParams.get('code');
           if (code) {
             console.debug('[Auth] OAuth callback detected: authorization code present');
-            try {
-              const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-              if (exchangeError) {
-                console.warn('[Auth] exchangeCodeForSession failed:', exchangeError.message);
+
+            let exchangeResult: { session: any; error: any } = { session: null, error: null };
+
+            if (exchangedCodes.has(code)) {
+              // Code was already exchanged by this browser session; fetch active session directly
+              console.debug('[Auth] Code was already consumed in this session; recovering session');
+              const { data: { session } } = await supabase.auth.getSession();
+              exchangeResult = { session, error: null };
+            } else if (inFlightExchanges.has(code)) {
+              // Code exchange is currently in-flight; await the active promise
+              console.debug('[Auth] Awaiting in-flight code exchange');
+              exchangeResult = await inFlightExchanges.get(code)!;
+            } else {
+              // Initiate single, exclusive code exchange
+              const exchangePromise = (async () => {
+                try {
+                  console.debug('[Auth] Code exchange started');
+                  const result = await supabase.auth.exchangeCodeForSession(code);
+                  if (!result.error) {
+                    exchangedCodes.add(code);
+                    console.debug('[Auth] Code exchange succeeded');
+                  } else {
+                    console.debug('[Auth] Code exchange failed:', result.error.message);
+                  }
+                  return { session: result.data?.session || null, error: result.error };
+                } catch (err: any) {
+                  console.debug('[Auth] Code exchange failed:', err?.message || err);
+                  return { session: null, error: err };
+                } finally {
+                  inFlightExchanges.delete(code);
+                }
+              })();
+
+              inFlightExchanges.set(code, exchangePromise);
+              exchangeResult = await exchangePromise;
+            }
+
+            if (exchangeResult.error) {
+              // If "invalid flow state" or code expired/consumed, attempt to recover existing session
+              const errMsg = (exchangeResult.error.message || '').toLowerCase();
+              if (errMsg.includes('invalid flow state') || errMsg.includes('flow state') || errMsg.includes('already been used')) {
+                const { data: { session: recoveredSession } } = await supabase.auth.getSession();
+                if (recoveredSession?.access_token) {
+                  tokenToVerify = recoveredSession.access_token;
+                  authenticatedUserEmail = recoveredSession.user?.email;
+                  console.debug(`[Auth] Session detected: user ${authenticatedUserEmail || 'authenticated'}`);
+                }
+              }
+
+              if (!tokenToVerify) {
+                console.warn('[Auth] Code exchange failed and session unrecoverable:', exchangeResult.error.message);
                 if (!isCancelled) {
                   setStatusState('expired');
-                  setErrorMessage(exchangeError.message || 'The authorization code has expired. Please initiate sign in again.');
+                  setErrorMessage(exchangeResult.error.message || 'Google sign-in could not be completed. Please try again.');
                 }
                 return;
               }
-              if (exchangeData?.session?.access_token) {
-                tokenToVerify = exchangeData.session.access_token;
-                console.debug(`[Auth] Session detected: user ${exchangeData.session.user?.email || 'authenticated'}`);
-                console.debug('[Auth] Access token available: true');
-              }
-            } catch (exchangeErr: any) {
-              console.warn('[Auth] exchangeCodeForSession error:', exchangeErr);
-              if (!isCancelled) {
-                setStatusState('expired');
-                setErrorMessage('Failed to exchange authorization code for session.');
-              }
-              return;
+            } else if (exchangeResult.session?.access_token) {
+              tokenToVerify = exchangeResult.session.access_token;
+              authenticatedUserEmail = exchangeResult.session.user?.email;
+              console.debug(`[Auth] Session detected: user ${authenticatedUserEmail || 'authenticated'}`);
+            }
+
+            // Immediately strip the consumed callback URL state so refreshing /auth/callback does not re-exchange
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState({}, document.title, window.location.pathname);
             }
           }
 
@@ -126,25 +186,30 @@ export const AuthCallbackPage: React.FC = () => {
               });
               if (!sessionErr && sessionData.session?.access_token) {
                 tokenToVerify = sessionData.session.access_token;
-                console.debug(`[Auth] Session detected: user ${sessionData.session.user?.email || 'authenticated'}`);
-                console.debug('[Auth] Access token available: true');
+                authenticatedUserEmail = sessionData.session.user?.email;
+                console.debug(`[Auth] Session detected: user ${authenticatedUserEmail || 'authenticated'}`);
               }
             } catch (hashErr) {
               console.warn('[Auth] setSession from hash error:', hashErr);
             }
+
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
           }
 
-          // Fallback: check if active session already exists in client
+          // Fallback: check if active session already exists in client (e.g. refreshed after URL stripped)
           if (!tokenToVerify) {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.access_token) {
               tokenToVerify = session.access_token;
-              console.debug(`[Auth] Session detected: user ${session.user?.email || 'authenticated'}`);
-              console.debug('[Auth] Access token available: true');
+              authenticatedUserEmail = session.user?.email;
+              console.debug(`[Auth] Session detected: user ${authenticatedUserEmail || 'authenticated'}`);
             }
           }
         }
 
+        // If no token exists, fail safely and prompt login
         if (!tokenToVerify) {
           console.warn('[Auth] Missing authorization code or active session');
           if (!isCancelled) {
@@ -154,34 +219,38 @@ export const AuthCallbackPage: React.FC = () => {
           return;
         }
 
-        // 4. Save authentic token to localStorage and synchronize with backend /api/v1/auth/me
+        // 4. Synchronize authentic token with backend /api/v1/auth/me
         localStorage.setItem('quotation_ai_auth_token', tokenToVerify);
         console.debug('[Auth] /auth/me started');
-        const syncResult = await refreshSession();
-        console.debug('[Auth] /auth/me result:', { success: syncResult.success, needsOnboarding: syncResult.needsOnboarding });
+        const syncResult = await refreshSessionRef.current();
+        console.debug('[Auth] /auth/me result:', syncResult.success ? 'success' : 'failed');
 
         if (isCancelled) return;
 
-        // 5. Route based on tenant company association and status
+        // 5. Route based on backend response and company association
         if (syncResult.success && !syncResult.needsOnboarding) {
           console.debug('[Auth] Redirect decision: /dashboard');
-          navigate('/dashboard', { replace: true });
+          navigateRef.current('/dashboard', { replace: true });
         } else if (syncResult.success && syncResult.needsOnboarding) {
           console.debug('[Auth] Redirect decision: /onboarding/company');
-          navigate('/onboarding/company', { replace: true });
+          navigateRef.current('/onboarding/company', { replace: true });
+        } else if (syncResult.errorStatus === 0) {
+          console.warn('[Auth] Backend service unreachable');
+          setStatusState('error');
+          setErrorMessage('Quotation AI services are temporarily unavailable.');
         } else if (syncResult.errorStatus === 401) {
           console.debug('[Auth] Redirect decision: /login (401 Unauthorized)');
-          navigate('/login', { replace: true });
+          navigateRef.current('/login', { replace: true });
         } else {
           console.warn('[Auth] Session was rejected by Quotation AI tenant security service');
           setStatusState('error');
-          setErrorMessage(syncResult.errorDetail || 'Session was rejected by Quotation AI tenant security service.');
+          setErrorMessage(syncResult.errorDetail || 'Google sign-in could not be completed. Please try again.');
         }
       } catch (err: any) {
         if (isCancelled) return;
         console.error('[Auth] Unexpected error during OAuth callback handling:', err);
         setStatusState('error');
-        setErrorMessage(err.message || 'An unexpected error occurred while completing authentication.');
+        setErrorMessage('Google sign-in could not be completed. Please try again.');
       } finally {
         clearTimeout(timeoutTimer);
       }
@@ -192,11 +261,11 @@ export const AuthCallbackPage: React.FC = () => {
     return () => {
       isCancelled = true;
       clearTimeout(timeoutTimer);
-      isProcessingRef.current = false;
+      isExecutingRef.current = false;
     };
-  }, [location, navigate, refreshSession]);
+  }, [location.pathname, location.search, location.hash]);
 
-  // Loading State - Simple, clean, no cosmetic delay
+  // Loading State - Clean, modern spinner
   if (statusState === 'loading') {
     return (
       <div className="min-h-screen bg-[#fbf9f4] flex items-center justify-center p-4 antialiased font-sans">
@@ -227,21 +296,29 @@ export const AuthCallbackPage: React.FC = () => {
           </div>
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-amber-800 font-semibold block">
-              Session Expired
+              Session Notice
             </span>
             <h2 className="text-xl font-bold text-[#172033] mt-1">
               Authentication Window Timed Out
             </h2>
             <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
-              {errorMessage || "We couldn't complete Google sign-in. Try again."}
+              {errorMessage || 'Google sign-in could not be completed. Please try again.'}
             </p>
           </div>
-          <div className="pt-2 flex flex-col gap-2.5">
+          <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+            <button
+              onClick={() => loginWithGoogle()}
+              className="flex-1 h-11 bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Try Google Again</span>
+            </button>
             <button
               onClick={() => navigate('/login')}
-              className="w-full h-11 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              aria-label="Return to Sign In / Back to Login"
+              className="flex-1 h-11 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Back to Login</span>
+              <span>Return to Sign In</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -250,7 +327,7 @@ export const AuthCallbackPage: React.FC = () => {
     );
   }
 
-  // OAuth Failure or Cancellation State
+  // OAuth Failure or Network Error State
   return (
     <div className="min-h-screen bg-[#fbf9f4] flex items-center justify-center p-4 antialiased font-sans">
       <div className="max-w-md w-full bg-white rounded-xl shadow-xl border border-[#ba1a1a]/30 p-8 text-center space-y-5">
@@ -259,7 +336,7 @@ export const AuthCallbackPage: React.FC = () => {
         </div>
         <div>
           <span className="text-[11px] font-mono uppercase tracking-wider text-red-700 font-semibold block">
-            OAuth Authorization Notice
+            Authentication Notice
           </span>
           <h2 className="text-xl font-bold text-[#172033] mt-1">
             Sign In Was Not Completed
