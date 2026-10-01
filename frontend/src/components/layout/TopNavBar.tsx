@@ -4,11 +4,8 @@ import {
   Search, 
   Bell, 
   Menu, 
-  LayoutGrid,
-  ListFilter,
   Plus
 } from 'lucide-react';
-import { useDensity } from '../../context/DensityContext';
 import { useAuth } from '../../context/AuthContext';
 
 interface TopNavBarProps {
@@ -18,7 +15,6 @@ interface TopNavBarProps {
 export const TopNavBar: React.FC<TopNavBarProps> = ({ onOpenMobileMenu }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { density, setDensity } = useDensity();
   const { user, company } = useAuth();
 
   const getPageTitle = () => {
@@ -77,35 +73,6 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({ onOpenMobileMenu }) => {
 
       {/* Right Controls */}
       <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-
-        {/* Density Mode Switcher (Comfortable vs Compact) */}
-        <div className="hidden sm:flex items-center bg-[#f5f3ee] p-0.5 rounded-lg border border-[#E5E1D8] text-xs">
-          <button
-            onClick={() => setDensity('comfortable')}
-            title="Comfortable view"
-            className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] transition-all cursor-pointer ${
-              density === 'comfortable'
-                ? 'bg-white text-[#1b1c19] shadow-2xs font-semibold'
-                : 'text-[#45474c] hover:text-[#1b1c19]'
-            }`}
-          >
-            <LayoutGrid className="w-3 h-3" />
-            <span className="hidden xl:inline">Comfortable</span>
-          </button>
-          <button
-            onClick={() => setDensity('compact')}
-            title="Compact high-density view"
-            className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] transition-all cursor-pointer ${
-              density === 'compact'
-                ? 'bg-white text-[#1b1c19] shadow-2xs font-semibold'
-                : 'text-[#45474c] hover:text-[#1b1c19]'
-            }`}
-          >
-            <ListFilter className="w-3 h-3" />
-            <span className="hidden xl:inline">Compact</span>
-          </button>
-        </div>
-
         {/* Create PO / Quote CTA */}
         <button
           onClick={() => navigate('/upload')}
