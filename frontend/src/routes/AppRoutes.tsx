@@ -44,6 +44,7 @@ export const AppRoutes: React.FC = () => {
         {/* OAuth Callback & First-Time Onboarding */}
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/onboarding" element={<CompanyOnboardingPage />} />
+        <Route path="/onboarding/company" element={<CompanyOnboardingPage />} />
 
         {/* Authenticated Manufacturing Console */}
         <Route

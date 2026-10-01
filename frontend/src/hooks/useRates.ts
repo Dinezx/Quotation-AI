@@ -10,6 +10,7 @@ export function dtoToMaterialRate(dto: MaterialDTO): MaterialRate {
     grade: dto.grade,
     gradeAndSpec: dto.grade,
     subSpec: dto.name && dto.name !== dto.grade ? dto.name : undefined,
+    unit: dto.unit || 'kg',
     category: dto.name.toLowerCase().includes('alu') ? 'Non-Ferrous' : 'Ferrous',
     baseRatePerKg: Number(dto.base_rate),
     scrapCreditPerKg: Number(dto.scrap_credit_rate),
@@ -38,19 +39,16 @@ export function dtoToProcessRate(dto: ProcessDTO): ProcessRate {
         year: 'numeric',
       })
     : '-';
+  const rateVal = dto.rate !== undefined && dto.rate !== null ? Number(dto.rate) : Number(dto.hourly_rate);
   return {
     id: dto.id,
     workstationName: dto.name,
-    code: `MC-${dto.id.slice(0, 4).toUpperCase()}`,
-    category: dto.name.toLowerCase().includes('mill')
-      ? 'Milling'
-      : dto.name.toLowerCase().includes('laser')
-      ? 'Laser & Fabrication'
-      : dto.name.toLowerCase().includes('turn')
-      ? 'Turning'
-      : 'CNC',
-    hourlyRate: Number(dto.hourly_rate),
-    setupCost: Number(dto.setup_cost),
+    code: `CC-${dto.id.slice(0, 4).toUpperCase()}`,
+    category: dto.name,
+    rate_basis: dto.rate_basis || 'Per Hour',
+    rate: rateVal,
+    hourlyRate: rateVal,
+    setupCost: Number(dto.setup_cost || 0),
     unit: dto.unit || 'hour',
     is_active: dto.is_active,
     lastCalibrated: formattedDate,
@@ -172,10 +170,12 @@ export function useRates(includeInactive: boolean = true) {
     materials: materialsQuery.data || [],
     processes: processesQuery.data || [],
     pricingRules: pricingRulesQuery.data || {
-      overhead_percentage: 10.0,
-      profit_percentage: 15.0,
-      gst_type: 'CGST_SGST',
-      default_gst_rate: 18.0,
+      is_configured: false,
+      overhead_percentage: null,
+      profit_percentage: null,
+      gst_type: null,
+      default_gst_rate: null,
+      rounding_method: null,
     },
     isLoading: materialsQuery.isLoading || processesQuery.isLoading || pricingRulesQuery.isLoading,
     isError: materialsQuery.isError || processesQuery.isError,

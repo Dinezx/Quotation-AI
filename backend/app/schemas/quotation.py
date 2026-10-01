@@ -153,14 +153,17 @@ class CalculateItemInput(BaseModel):
     unit: str = "PCS"
     
     # Material inputs
+    material_unit: Optional[str] = "kg"
     gross_weight_kg: Decimal = Decimal("0.000")
     scrap_weight_kg: Decimal = Decimal("0.000")
-    material_base_rate: Decimal = Decimal("0.00") # INR per kg
-    scrap_credit_rate: Decimal = Decimal("0.00")  # INR per kg
+    material_base_rate: Decimal = Decimal("0.00") # INR per unit
+    scrap_credit_rate: Decimal = Decimal("0.00")  # INR per unit
     
-    # Process inputs
+    # Process / Cost Component inputs
+    process_rate_basis: Optional[str] = "Per Hour"
     machining_hours: Decimal = Decimal("0.00")
-    machine_hourly_rate: Decimal = Decimal("0.00") # INR per hr
+    machine_hourly_rate: Decimal = Decimal("0.00") # INR per rate unit
+    process_rate: Optional[Decimal] = None          # INR per rate basis
     setup_cost: Decimal = Decimal("0.00")          # INR fixed setup
 
 class CalculateQuotationRequest(BaseModel):
@@ -168,3 +171,5 @@ class CalculateQuotationRequest(BaseModel):
     overhead_percentage: Decimal = Decimal("10.00")
     profit_percentage: Decimal = Decimal("15.00")
     gst_type: str = "CGST_SGST" # CGST_SGST, IGST, EXEMPT
+    gst_rate: Optional[Decimal] = Decimal("18.00")
+    rounding_method: Optional[str] = "ROUND_HALF_UP"

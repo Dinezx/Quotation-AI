@@ -64,7 +64,17 @@ export function useCompanySettings() {
 
   const uploadLogoMutation = useMutation({
     mutationFn: (file: File) => companyApi.uploadLogo(file),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(COMPANY_SETTINGS_QUERY_KEY, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          profile: {
+            ...old.profile,
+            logo_url: data.logo_url,
+          },
+        };
+      });
       queryClient.invalidateQueries({ queryKey: COMPANY_SETTINGS_QUERY_KEY });
     },
   });
@@ -72,6 +82,16 @@ export function useCompanySettings() {
   const deleteLogoMutation = useMutation({
     mutationFn: () => companyApi.deleteLogo(),
     onSuccess: () => {
+      queryClient.setQueryData(COMPANY_SETTINGS_QUERY_KEY, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          profile: {
+            ...old.profile,
+            logo_url: null,
+          },
+        };
+      });
       queryClient.invalidateQueries({ queryKey: COMPANY_SETTINGS_QUERY_KEY });
     },
   });

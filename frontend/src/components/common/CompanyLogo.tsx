@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2, ImageOff, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { useCompanyLogo } from '../../hooks/useCompanyLogo';
+import { companyApi } from '../../api/companyApi';
 import { Button } from '../ui/Button';
 
 export interface CompanyLogoProps {
@@ -32,16 +33,59 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
 }) => {
   const { logoUrl: fetchedLogoUrl, hasLogo: hookHasLogo, isLoading } = useCompanyLogo();
 
-  // Support explicit override if passed (e.g. from parent props), otherwise use single source of truth
-  const activeLogoUrl = overrideLogoUrl !== undefined ? overrideLogoUrl : fetchedLogoUrl;
-  const hasLogo = Boolean(activeLogoUrl);
+  // Resolve active logo URL:
+  // 1. If overrideLogoUrl is explicitly null -> no logo
+  // 2. If overrideLogoUrl is a valid web/blob/data URL -> use it
+  // 3. If overrideLogoUrl is a relative storage path (e.g. "companies/...") -> resolve to fetchedLogoUrl || direct API URL
+  // 4. Otherwise use fetchedLogoUrl || direct API URL
+  let resolvedUrl: string | null = null;
+  if (overrideLogoUrl === null) {
+    resolvedUrl = null;
+  } else if (typeof overrideLogoUrl === 'string' && overrideLogoUrl.trim() !== '') {
+    const trimmed = overrideLogoUrl.trim();
+    if (
+      trimmed.startsWith('blob:') ||
+      trimmed.startsWith('data:') ||
+      trimmed.startsWith('http://') ||
+      trimmed.startsWith('https://')
+    ) {
+      resolvedUrl = trimmed;
+    } else {
+      // Storage key like "companies/..."
+      resolvedUrl = fetchedLogoUrl || (hookHasLogo ? companyApi.getLogoUrl() : null);
+    }
+  } else {
+    resolvedUrl = fetchedLogoUrl || (hookHasLogo ? companyApi.getLogoUrl() : null);
+  }
+
+  const [activeUrl, setActiveUrl] = useState<string | null>(resolvedUrl);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setActiveUrl(resolvedUrl);
+    setHasError(false);
+  }, [resolvedUrl]);
+
+  const handleImageError = () => {
+    // If the active URL was a blob URL that failed, fallback to direct authenticated API URL
+    if (activeUrl && activeUrl.startsWith('blob:')) {
+      const directUrl = companyApi.getLogoUrl();
+      if (directUrl && directUrl !== activeUrl) {
+        setActiveUrl(directUrl);
+        return;
+      }
+    }
+    setHasError(true);
+  };
+
+  const hasLogo = Boolean(activeUrl) && !hasError;
 
   const alignClass =
     position === 'center'
       ? 'justify-center text-center mx-auto'
       : position === 'right'
-      ? 'justify-end text-right ml-auto'
-      : 'justify-start text-left mr-auto';
+        ? 'justify-end text-right ml-auto'
+        : 'justify-start text-left mr-auto';
 
   // --- 1. MY PROFILE VARIANT ---
   if (variant === 'profile') {
@@ -73,12 +117,13 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
           )}
         </div>
 
-        {hasLogo && activeLogoUrl ? (
+        {hasLogo && activeUrl ? (
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 pt-1">
             <div className="w-44 h-24 bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
               <img
-                src={activeLogoUrl}
+                src={activeUrl}
                 alt={alt}
+                onError={handleImageError}
                 className="max-h-full max-w-full object-contain"
                 style={{
                   maxHeight: maxHeight || '84px',
@@ -133,10 +178,11 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
   if (variant === 'settings') {
     return (
       <div className="w-36 h-20 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center p-2 overflow-hidden shrink-0">
-        {hasLogo && activeLogoUrl ? (
+        {hasLogo && activeUrl ? (
           <img
-            src={activeLogoUrl}
+            src={activeUrl}
             alt={alt}
+            onError={handleImageError}
             className="max-h-full max-w-full object-contain"
             style={{
               maxHeight: maxHeight || '72px',
@@ -155,7 +201,7 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
 
   // --- 3. THUMBNAIL MINI VARIANT ---
   if (variant === 'thumbnail') {
-    if (!hasLogo) {
+    if (!hasLogo || !activeUrl) {
       if (!showPlaceholderIfEmpty) return null;
       return (
         <div className={`flex items-center ${alignClass}`}>
@@ -169,8 +215,9 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
     return (
       <div className={`flex items-center ${alignClass} ${className}`}>
         <img
-          src={activeLogoUrl!}
+          src={activeUrl}
           alt={alt}
+          onError={handleImageError}
           className="object-contain"
           style={{
             maxHeight: maxHeight || '16px',
@@ -182,7 +229,7 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
   }
 
   // --- 4. PREVIEW / HEADER VARIANT (Live Template Preview & Quotation Preview) ---
-  if (!hasLogo) {
+  if (!hasLogo || !activeUrl) {
     if (!showPlaceholderIfEmpty) {
       return null;
     }
@@ -199,8 +246,9 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
   return (
     <div className={`flex items-center ${alignClass} ${className}`}>
       <img
-        src={activeLogoUrl!}
+        src={activeUrl}
         alt={alt}
+        onError={handleImageError}
         className="object-contain block"
         style={{
           maxHeight: maxHeight || '48px',

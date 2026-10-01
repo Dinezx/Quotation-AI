@@ -59,7 +59,7 @@ export function useCompanyLogo() {
   const directLogoUrl = hasLogo ? companyApi.getLogoUrl() : null;
 
   return {
-    hasLogo: hasLogo && !loadError,
+    hasLogo: hasLogo,
     logoUrl: logoBlobUrl || directLogoUrl,
     isLoading: isSettingsLoading || isLoadingLogo,
     loadError,

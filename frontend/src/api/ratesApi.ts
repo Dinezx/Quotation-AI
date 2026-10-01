@@ -29,6 +29,8 @@ export interface ProcessDTO {
   company_id: string;
   name: string;
   unit: string;
+  rate_basis?: string;
+  rate?: number;
   hourly_rate: number;
   setup_cost: number;
   is_active: boolean;
@@ -39,7 +41,9 @@ export interface ProcessDTO {
 export interface ProcessCreateDTO {
   name: string;
   unit?: string;
-  hourly_rate: number;
+  rate_basis?: string;
+  rate?: number;
+  hourly_rate?: number;
   setup_cost?: number;
   is_active?: boolean;
 }
@@ -50,6 +54,7 @@ export interface PricingRulesDTO {
   profit_percentage: number | null;
   gst_type: string | null; // 'CGST_SGST' | 'IGST' | 'EXEMPT'
   default_gst_rate: number | null;
+  rounding_method?: string | null;
 }
 
 export const ratesApi = {

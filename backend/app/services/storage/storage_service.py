@@ -21,7 +21,7 @@ class LocalStorageService(BaseStorageService):
         os.makedirs(self.base_dir, exist_ok=True)
 
     def _get_target_path(self, bucket: str, path: str) -> str:
-        clean_path = path.strip("/\\")
+        clean_path = path.replace("\\", "/").strip("/")
         return os.path.join(self.base_dir, bucket, *clean_path.split("/"))
 
     def upload(self, bucket: str, path: str, data: bytes, content_type: str = "application/pdf") -> str:

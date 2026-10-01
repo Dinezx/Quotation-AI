@@ -73,20 +73,50 @@ class CalculationService:
     @staticmethod
     def calculate_line_item(item: CalculateItemInput) -> Dict[str, Any]:
         """
-        Calculates deterministic line item costing.
-        Net Material = (gross_weight * base_rate * qty) - (scrap_weight * scrap_credit * qty)
-        Process Cost = (machining_hours * hourly_rate * qty) + setup_cost
+        Calculates deterministic line item costing supporting all manufacturing cost components.
+        Pure Python Decimal arithmetic. Zero AI intervention.
         """
         qty = Decimal(str(item.quantity)) if item.quantity > Decimal("0") else Decimal("1")
         
-        gross_mat = Decimal(str(item.gross_weight_kg)) * Decimal(str(item.material_base_rate)) * qty
-        scrap_cred = Decimal(str(item.scrap_weight_kg)) * Decimal(str(item.scrap_credit_rate)) * qty
+        # 1. Deterministic Material Calculation
+        mat_unit = (getattr(item, "material_unit", None) or "kg").lower()
+        base_rate = Decimal(str(item.material_base_rate))
+        scrap_rate = Decimal(str(item.scrap_credit_rate))
+        gross_wt = Decimal(str(item.gross_weight_kg))
+        scrap_wt = Decimal(str(item.scrap_weight_kg))
+
+        if gross_wt > Decimal("0.000"):
+            gross_mat = gross_wt * base_rate * qty
+            scrap_cred = scrap_wt * scrap_rate * qty if scrap_wt > Decimal("0.000") else Decimal("0.00")
+        else:
+            gross_mat = qty * base_rate
+            scrap_cred = Decimal("0.00")
+
         net_mat = max(Decimal("0.00"), gross_mat - scrap_cred)
 
-        machining = Decimal(str(item.machining_hours)) * Decimal(str(item.machine_hourly_rate)) * qty
+        # 2. Deterministic Cost Component / Process Calculation
+        proc_basis = (getattr(item, "process_rate_basis", None) or "Per Hour").strip().lower()
+        proc_rate = Decimal(str(getattr(item, "process_rate", None) or item.machine_hourly_rate))
         setup = Decimal(str(item.setup_cost))
-        process = machining + setup
+        hours = Decimal(str(item.machining_hours))
 
+        if proc_basis in {"per piece", "per unit", "per operation"}:
+            op_cost = qty * proc_rate
+        elif proc_basis in {"fixed", "per batch"}:
+            op_cost = proc_rate
+        elif proc_basis == "per kg":
+            op_cost = (gross_wt if gross_wt > Decimal("0.000") else Decimal("1")) * proc_rate * qty
+        elif proc_basis in {"per meter", "per litre"}:
+            op_cost = qty * proc_rate
+        elif proc_basis == "per minute":
+            mins = hours * Decimal("60") if hours > Decimal("0.00") else Decimal("1")
+            op_cost = mins * proc_rate * qty
+        elif proc_basis == "percentage":
+            op_cost = (proc_rate / Decimal("100.00")) * net_mat
+        else: # "per hour" or default
+            op_cost = hours * proc_rate * qty
+
+        process = op_cost + setup
         subtotal = net_mat + process
         unit_cost = subtotal / qty
 
@@ -104,7 +134,7 @@ class CalculationService:
             "gross_material_cost": quantize_currency(gross_mat),
             "scrap_credit": quantize_currency(scrap_cred),
             "net_material_cost": quantize_currency(net_mat),
-            "machining_cost": quantize_currency(machining),
+            "machining_cost": quantize_currency(op_cost),
             "setup_cost": quantize_currency(setup),
             "process_cost": quantize_currency(process),
             "subtotal": quantize_currency(subtotal),
@@ -151,21 +181,28 @@ class CalculationService:
 
         overhead_pct = Decimal(str(request.overhead_percentage))
         profit_pct = Decimal(str(request.profit_percentage))
+        to_rupee = (getattr(request, "rounding_method", None) or "ROUND_HALF_UP") == "ROUND_HALF_UP"
 
-        overhead_amount = quantize_currency(base_subtotal * (overhead_pct / Decimal("100.00")), to_rupee=True)
+        overhead_amount = quantize_currency(base_subtotal * (overhead_pct / Decimal("100.00")), to_rupee=to_rupee)
         assessable_base = base_subtotal + overhead_amount
-        profit_amount = quantize_currency(assessable_base * (profit_pct / Decimal("100.00")), to_rupee=True)
+        profit_amount = quantize_currency(assessable_base * (profit_pct / Decimal("100.00")), to_rupee=to_rupee)
         taxable_amount = assessable_base + profit_amount
 
         # GST calculation
+        total_gst_rate = getattr(request, "gst_rate", None)
+        if total_gst_rate is None:
+            total_gst_rate = Decimal("18.00")
+        else:
+            total_gst_rate = Decimal(str(total_gst_rate))
+
         gst_type = request.gst_type.upper()
         if gst_type == "IGST":
             cgst_rate = Decimal("0.00")
             cgst_amount = Decimal("0.00")
             sgst_rate = Decimal("0.00")
             sgst_amount = Decimal("0.00")
-            igst_rate = Decimal("18.00")
-            igst_amount = quantize_currency(taxable_amount * Decimal("0.18"), to_rupee=True)
+            igst_rate = total_gst_rate
+            igst_amount = quantize_currency(taxable_amount * (igst_rate / Decimal("100.00")), to_rupee=to_rupee)
             gst_amount = igst_amount
         elif gst_type == "EXEMPT":
             cgst_rate = Decimal("0.00")
@@ -176,15 +213,16 @@ class CalculationService:
             igst_amount = Decimal("0.00")
             gst_amount = Decimal("0.00")
         else: # CGST_SGST intrastate
-            cgst_rate = Decimal("9.00")
-            cgst_amount = quantize_currency(taxable_amount * Decimal("0.09"), to_rupee=True)
-            sgst_rate = Decimal("9.00")
-            sgst_amount = quantize_currency(taxable_amount * Decimal("0.09"), to_rupee=True)
+            half_rate = total_gst_rate / Decimal("2.00")
+            cgst_rate = half_rate
+            cgst_amount = quantize_currency(taxable_amount * (half_rate / Decimal("100.00")), to_rupee=to_rupee)
+            sgst_rate = half_rate
+            sgst_amount = quantize_currency(taxable_amount * (half_rate / Decimal("100.00")), to_rupee=to_rupee)
             igst_rate = Decimal("0.00")
             igst_amount = Decimal("0.00")
             gst_amount = cgst_amount + sgst_amount
 
-        final_total = taxable_amount + gst_amount
+        final_total = quantize_currency(taxable_amount + gst_amount, to_rupee=to_rupee)
         final_in_words = number_to_indian_words(int(final_total))
 
         return {

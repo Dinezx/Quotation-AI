@@ -205,7 +205,8 @@ def create_process(
         company_id=company_id,
         name=clean_name,
         unit=process_in.unit.strip() if process_in.unit else "hour",
-        hourly_rate=process_in.hourly_rate,
+        hourly_rate=process_in.hourly_rate or process_in.rate,
+        rate_basis=process_in.rate_basis or "Per Hour",
         setup_cost=process_in.setup_cost,
         is_active=process_in.is_active,
     )
@@ -261,13 +262,16 @@ def update_process(
             )
 
     update_data = process_in.model_dump(exclude_unset=True)
+    if "rate" in update_data and "hourly_rate" not in update_data:
+        update_data["hourly_rate"] = update_data["rate"]
     if "name" in update_data and update_data["name"]:
         update_data["name"] = update_data["name"].strip()
     if "unit" in update_data and update_data["unit"]:
         update_data["unit"] = update_data["unit"].strip()
 
     for field, value in update_data.items():
-        setattr(process, field, value)
+        if hasattr(process, field):
+            setattr(process, field, value)
 
     db.commit()
     db.refresh(process)
@@ -320,7 +324,7 @@ def get_pricing_rules(
     company_id: str = Depends(get_current_company_id),
     db: Session = Depends(get_db)
 ):
-    """Retrieve tenant commercial pricing rules (Overhead %, Profit %, GST config)."""
+    """Retrieve tenant commercial pricing rules (Overhead %, Profit %, GST config, Rounding)."""
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
@@ -334,6 +338,7 @@ def get_pricing_rules(
             profit_percentage=None,
             gst_type=None,
             default_gst_rate=None,
+            rounding_method=None,
         )
 
     return PricingRulesResponse(
@@ -342,6 +347,7 @@ def get_pricing_rules(
         profit_percentage=Decimal(str(settings["profit_percentage"])) if "profit_percentage" in settings else None,
         gst_type=str(settings.get("gst_type", "CGST_SGST")),
         default_gst_rate=Decimal(str(settings["default_gst_rate"])) if "default_gst_rate" in settings else None,
+        rounding_method=str(settings.get("rounding_method", "ROUND_HALF_UP")),
     )
 
 
@@ -351,7 +357,7 @@ def update_pricing_rules(
     company_id: str = Depends(get_current_company_id),
     db: Session = Depends(get_db)
 ):
-    """Update tenant commercial pricing rules (Overhead %, Profit %, GST config)."""
+    """Update tenant commercial pricing rules (Overhead %, Profit %, GST config, Rounding)."""
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
@@ -361,6 +367,8 @@ def update_pricing_rules(
     settings["profit_percentage"] = str(rules_in.profit_percentage)
     settings["gst_type"] = rules_in.gst_type
     settings["default_gst_rate"] = str(rules_in.default_gst_rate)
+    if rules_in.rounding_method:
+        settings["rounding_method"] = rules_in.rounding_method
 
     company.settings = settings
     db.commit()
@@ -372,4 +380,5 @@ def update_pricing_rules(
         profit_percentage=rules_in.profit_percentage,
         gst_type=rules_in.gst_type,
         default_gst_rate=rules_in.default_gst_rate,
+        rounding_method=rules_in.rounding_method or "ROUND_HALF_UP",
     )

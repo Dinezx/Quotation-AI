@@ -24,6 +24,8 @@ export interface AuthCompany {
 export interface SyncResult {
   success: boolean;
   needsOnboarding: boolean;
+  errorStatus?: number;
+  errorDetail?: string;
 }
 
 interface AuthContextType {
@@ -86,6 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      console.debug('[Auth] /auth/me started');
       const res = await apiClient.get('/auth/me', {
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -112,13 +115,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           settings: res.data.company.settings || {},
         });
         setNeedsOnboarding(false);
+        console.debug('[Auth] /auth/me result: User associated with company', res.data.company.name);
         return { success: true, needsOnboarding: false };
       }
       throw new Error('Invalid authentication response structure');
     } catch (err: any) {
+      const errStatus = err.response?.status;
+      const detail = (err.response?.data?.detail || '').toLowerCase();
+      console.debug('[Auth] /auth/me result: error', { status: errStatus, detail });
+
       // If 403 (User has no associated tenant company) -> user needs first-time onboarding
-      if (err.response?.status === 403) {
-        const detail = (err.response?.data?.detail || '').toLowerCase();
+      if (errStatus === 403) {
         if (detail.includes('no associated tenant company') || detail.includes('no valid company association')) {
           let sbUser: any = null;
           if (isSupabaseConfigured) {
@@ -126,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const { data } = await supabase.auth.getUser(authToken);
               sbUser = data.user;
             } catch (uErr) {
-              console.debug('[AuthContext] getUser error:', uErr);
+              console.debug('[Auth] getUser error:', uErr);
             }
           }
           const email = sbUser?.email || '';
@@ -144,13 +151,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      console.warn('[AuthContext] Backend token verification failed:', err.response?.data?.detail || err.message);
+      console.warn('[Auth] Backend token verification failed:', err.response?.data?.detail || err.message);
       localStorage.removeItem('quotation_ai_auth_token');
       setToken(null);
       setUser(null);
       setCompany(null);
       setNeedsOnboarding(false);
-      return { success: false, needsOnboarding: false };
+      return { 
+        success: false, 
+        needsOnboarding: false, 
+        errorStatus: errStatus, 
+        errorDetail: err.response?.data?.detail || err.message 
+      };
     } finally {
       setIsLoading(false);
     }
@@ -160,12 +172,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let isMounted = true;
 
+    // When on /auth/callback, DO NOT run background initSession or compete with AuthCallbackPage!
+    if (window.location.pathname.startsWith('/auth/callback')) {
+      setIsLoading(false);
+      return;
+    }
+
     async function initSession() {
       // 1. If Supabase configured, check active Supabase session
       if (isSupabaseConfigured) {
         try {
-          const { data: { session }, error } = await supabase.auth.getSession();
-          if (!error && session?.access_token) {
+          const res = await supabase.auth.getSession();
+          const session = res?.data?.session;
+          if (session?.access_token) {
             if (isMounted) {
               localStorage.setItem('quotation_ai_auth_token', session.access_token);
               setToken(session.access_token);
@@ -174,14 +193,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
         } catch (supabaseErr) {
-          console.debug('[AuthContext] Supabase session retrieval error:', supabaseErr);
+          console.debug('[Auth] Supabase session retrieval error:', supabaseErr);
         }
       }
 
       // 2. Check local storage token
       const savedToken = localStorage.getItem('quotation_ai_auth_token');
-      if (isMounted) {
+      if (savedToken && isMounted) {
         await verifyAndSyncBackend(savedToken);
+      } else if (isMounted) {
+        setIsLoading(false);
       }
     }
 
@@ -191,6 +212,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let authSubscription: { unsubscribe: () => void } | null = null;
     if (isSupabaseConfigured) {
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        // Skip background sync on /auth/callback because AuthCallbackPage drives it explicitly
+        if (window.location.pathname.startsWith('/auth/callback')) {
+          return;
+        }
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.access_token) {
             localStorage.setItem('quotation_ai_auth_token', session.access_token);

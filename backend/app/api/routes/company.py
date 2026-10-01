@@ -322,10 +322,11 @@ def get_company_logo(
     except Exception:
         # Check local storage filesystem fallback
         from app.services.storage.storage_service import UPLOAD_DIR
+        clean_logo = company.logo_url.replace("\\", "/").strip("/")
         possible_paths = [
             company.logo_url,
-            os.path.join(UPLOAD_DIR, "storage", bucket, company.logo_url.lstrip("/")),
-            os.path.join(UPLOAD_DIR, company.logo_url.lstrip("/")),
+            os.path.join(UPLOAD_DIR, "storage", bucket, *clean_logo.split("/")),
+            os.path.join(UPLOAD_DIR, *clean_logo.split("/")),
         ]
         for p in possible_paths:
             if os.path.isfile(p):

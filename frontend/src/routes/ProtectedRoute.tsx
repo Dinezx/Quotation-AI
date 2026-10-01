@@ -20,7 +20,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   }
 
   if (needsOnboarding) {
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/onboarding/company" replace />;
   }
 
   if (!isAuthenticated) {

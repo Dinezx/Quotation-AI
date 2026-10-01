@@ -230,10 +230,49 @@ class PricingService:
             )
 
         # Step 4: Run deterministic calculation
+        # Resolve commercial pricing rules from company profile if not explicitly overridden
+        company = db.query(Company).filter(Company.id == company_id).first()
+        company_settings = (company.settings or {}) if company else {}
+
+        has_ovh = (calc_params and calc_params.overhead_percentage is not None) or ("overhead_percentage" in company_settings)
+        has_prof = (calc_params and calc_params.profit_percentage is not None) or ("profit_percentage" in company_settings)
+
+        if not has_ovh or not has_prof:
+            # Rule 20: Ensure a new company cannot calculate a quotation until its required rates & rules are configured
+            rule_issue = CalculationIssue(
+                code="PRICING_RULES_MISSING",
+                message="Commercial pricing rules (Factory Overhead % and Profit Margin %) are not configured for this company. Please configure Pricing Rules in Rates & Pricing Master.",
+            )
+            return POCalculateResponse(
+                status="BLOCKED",
+                purchase_order_id=po.id,
+                po_number=po.po_number,
+                customer_name=po.customer_name,
+                currency="INR",
+                issues=[rule_issue],
+                items=matched_items,
+            )
+
         poi_map = {poi.id: poi for poi in po.items}
+        tenant_processes = db.query(Process).filter(Process.company_id == company_id, Process.is_active == True).all()
+        tenant_materials = db.query(Material).filter(Material.company_id == company_id, Material.is_active == True).all()
+
         calc_inputs: List[CalculateItemInput] = []
         for it in matched_items:
             orig_poi = poi_map.get(it.item_id) if it.item_id else None
+            # Lookup matched process for rate_basis
+            proc_basis = "Per Hour"
+            if it.process:
+                matched_proc_obj = next((p for p in tenant_processes if p.name.lower() == it.process.lower()), None)
+                if matched_proc_obj and matched_proc_obj.rate_basis:
+                    proc_basis = matched_proc_obj.rate_basis
+
+            mat_unit = "kg"
+            if it.material:
+                matched_mat_obj = next((m for m in tenant_materials if m.grade.lower() == it.material.lower() or m.name.lower() == it.material.lower()), None)
+                if matched_mat_obj and matched_mat_obj.unit:
+                    mat_unit = matched_mat_obj.unit
+
             calc_inputs.append(
                 CalculateItemInput(
                     purchase_order_item_id=it.item_id,
@@ -242,7 +281,9 @@ class PricingService:
                     specification=orig_poi.specification if orig_poi else None,
                     drawing_number=orig_poi.drawing_number if orig_poi else None,
                     material=it.material,
+                    material_unit=mat_unit,
                     process=it.process,
+                    process_rate_basis=proc_basis,
                     quantity=it.quantity,
                     unit=it.unit,
                     gross_weight_kg=it.gross_weight_kg,
@@ -251,35 +292,40 @@ class PricingService:
                     scrap_credit_rate=it.scrap_credit_rate or Decimal("0.00"),
                     machining_hours=it.machining_hours,
                     machine_hourly_rate=it.process_rate or Decimal("0.00"),
+                    process_rate=it.process_rate or Decimal("0.00"),
                     setup_cost=it.setup_cost or Decimal("0.00"),
                 )
             )
 
-        # Resolve commercial pricing rules from company profile if not explicitly overridden
-        company = db.query(Company).filter(Company.id == company_id).first()
-        company_settings = (company.settings or {}) if company else {}
-
         overhead_pct = (
             calc_params.overhead_percentage
             if (calc_params and calc_params.overhead_percentage is not None)
-            else Decimal(str(company_settings.get("overhead_percentage", "10.00")))
+            else Decimal(str(company_settings.get("overhead_percentage", "0.00")))
         )
         profit_pct = (
             calc_params.profit_percentage
             if (calc_params and calc_params.profit_percentage is not None)
-            else Decimal(str(company_settings.get("profit_percentage", "15.00")))
+            else Decimal(str(company_settings.get("profit_percentage", "0.00")))
         )
         gst_mode = (
             calc_params.gst_type
             if (calc_params and calc_params.gst_type is not None)
             else str(company_settings.get("gst_type", "CGST_SGST"))
         )
+        gst_rate = (
+            Decimal(str(company_settings.get("default_gst_rate", "18.00")))
+            if "default_gst_rate" in company_settings
+            else Decimal("18.00")
+        )
+        rounding_method = str(company_settings.get("rounding_method", "ROUND_HALF_UP"))
 
         engine_request = CalculateQuotationRequest(
             items=calc_inputs,
             overhead_percentage=overhead_pct,
             profit_percentage=profit_pct,
             gst_type=gst_mode,
+            gst_rate=gst_rate,
+            rounding_method=rounding_method,
         )
 
         calc_result = CalculationService.calculate_quotation(engine_request)

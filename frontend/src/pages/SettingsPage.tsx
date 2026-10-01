@@ -241,6 +241,7 @@ export const SettingsPage: React.FC = () => {
 
     try {
       const res = await uploadLogo(file);
+      setProfileForm((prev) => ({ ...prev, logo_url: res.logo_url }));
       showToast(res.message || 'Company logo uploaded successfully.');
     } catch (err: any) {
       showToast(err.response?.data?.detail || 'Failed to upload company logo.');
@@ -250,6 +251,7 @@ export const SettingsPage: React.FC = () => {
   const handleDeleteLogo = async () => {
     try {
       await deleteLogo();
+      setProfileForm((prev) => ({ ...prev, logo_url: null }));
       showToast('Company logo removed.');
     } catch (err: any) {
       showToast(err.response?.data?.detail || 'Failed to remove company logo.');
@@ -406,7 +408,6 @@ export const SettingsPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center gap-6">
               <CompanyLogo
                 variant="settings"
-                overrideLogoUrl={profileForm.logo_url}
                 alt="Company Logo"
               />
 
@@ -1030,7 +1031,6 @@ export const SettingsPage: React.FC = () => {
           {/* Authoritative Company Logo View Section */}
           <CompanyLogo
             variant="profile"
-            overrideLogoUrl={settings?.profile?.logo_url ?? undefined}
             companyName={company?.name || settings?.profile?.name}
             onManageInSettings={() => {
               setActiveTab('profile');

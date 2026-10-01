@@ -90,6 +90,7 @@ class PricingRulesResponse(BaseModel):
     profit_percentage: Optional[Decimal] = None
     gst_type: Optional[str] = None
     default_gst_rate: Optional[Decimal] = None
+    rounding_method: Optional[str] = "ROUND_HALF_UP"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -99,6 +100,7 @@ class PricingRulesUpdate(BaseModel):
     profit_percentage: Decimal = Field(..., ge=Decimal("0.00"), le=Decimal("100.00"), description="Commercial profit margin percentage (0-100%)")
     gst_type: str = Field(default="CGST_SGST", description="Default statutory GST classification: CGST_SGST, IGST, or EXEMPT")
     default_gst_rate: Decimal = Field(default=Decimal("18.00"), ge=Decimal("0.00"), le=Decimal("100.00"), description="Default total GST rate percentage")
+    rounding_method: Optional[str] = Field(default="ROUND_HALF_UP", description="Rounding settings: ROUND_HALF_UP (nearest rupee) or EXACT_TWO_DECIMALS")
 
     @field_validator("gst_type")
     @classmethod

@@ -14,7 +14,8 @@ import {
   Trash2,
   TrendingUp,
   Percent,
-  Check
+  Check,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/Button';
@@ -24,6 +25,63 @@ import { Modal } from '../components/ui/Modal';
 import { useRates } from '../hooks/useRates';
 import { MaterialRate, ProcessRate } from '../types/rates';
 import { MaterialCreateDTO, ProcessCreateDTO, PricingRulesDTO } from '../api/ratesApi';
+
+const RATE_BASIS_OPTIONS = [
+  'Per Hour',
+  'Per Minute',
+  'Per Piece',
+  'Per KG',
+  'Per Meter',
+  'Per Litre',
+  'Per Batch',
+  'Per Operation',
+  'Fixed',
+  'Percentage',
+] as const;
+
+const COMMON_COST_COMPONENTS = [
+  { name: 'Machining', defaultBasis: 'Per Hour', defaultUnit: 'hour' },
+  { name: 'Labour', defaultBasis: 'Per Hour', defaultUnit: 'hour' },
+  { name: 'Assembly', defaultBasis: 'Per Piece', defaultUnit: 'piece' },
+  { name: 'Cutting', defaultBasis: 'Per Meter', defaultUnit: 'meter' },
+  { name: 'Welding', defaultBasis: 'Per Hour', defaultUnit: 'hour' },
+  { name: 'Stitching', defaultBasis: 'Per Piece', defaultUnit: 'piece' },
+  { name: 'Finishing', defaultBasis: 'Per Piece', defaultUnit: 'piece' },
+  { name: 'Packaging', defaultBasis: 'Per Piece', defaultUnit: 'piece' },
+  { name: 'Inspection', defaultBasis: 'Per Piece', defaultUnit: 'piece' },
+  { name: 'Testing', defaultBasis: 'Per Batch', defaultUnit: 'batch' },
+  { name: 'Tooling', defaultBasis: 'Fixed', defaultUnit: 'lot' },
+  { name: 'Utilities', defaultBasis: 'Per Hour', defaultUnit: 'hour' },
+  { name: 'Transport', defaultBasis: 'Fixed', defaultUnit: 'trip' },
+  { name: 'Other', defaultBasis: 'Per Piece', defaultUnit: 'unit' },
+] as const;
+
+const getSuggestedUnitForBasis = (basis: string): string => {
+  switch (basis.toLowerCase()) {
+    case 'per hour':
+      return 'hour';
+    case 'per minute':
+      return 'minute';
+    case 'per piece':
+      return 'piece';
+    case 'per kg':
+      return 'kg';
+    case 'per meter':
+      return 'meter';
+    case 'per litre':
+      return 'litre';
+    case 'per batch':
+      return 'batch';
+    case 'per operation':
+      return 'op';
+    case 'percentage':
+      return '%';
+    case 'fixed':
+      return 'job';
+    default:
+      return 'unit';
+  }
+};
 
 export const RateManagementPage: React.FC = () => {
   const {
@@ -44,7 +102,7 @@ export const RateManagementPage: React.FC = () => {
   } = useRates(true);
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'materials' | 'processes' | 'pricing-rules'>('materials');
+  const [activeTab, setActiveTab] = useState<'materials' | 'cost-components' | 'pricing-rules'>('materials');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
@@ -75,37 +133,46 @@ export const RateManagementPage: React.FC = () => {
   const [matUnit, setMatUnit] = useState('kg');
   const [isSubmittingMat, setIsSubmittingMat] = useState(false);
 
-  // Process Form State
+  // Cost Component Form State
   const [procName, setProcName] = useState('');
+  const [procRateBasis, setProcRateBasis] = useState<string>('Per Hour');
   const [procUnit, setProcUnit] = useState('hour');
-  const [procHourlyRate, setProcHourlyRate] = useState('');
+  const [procRate, setProcRate] = useState('');
   const [procSetupCost, setProcSetupCost] = useState('0.00');
   const [isSubmittingProc, setIsSubmittingProc] = useState(false);
 
   // Pricing Rules Form State
-  const [overheadPct, setOverheadPct] = useState<number>(10.0);
-  const [profitPct, setProfitPct] = useState<number>(15.0);
+  const isRulesConfigured = Boolean(
+    pricingRules?.is_configured &&
+    pricingRules.overhead_percentage !== null &&
+    pricingRules.profit_percentage !== null
+  );
+
+  const [overheadPct, setOverheadPct] = useState<string>('');
+  const [profitPct, setProfitPct] = useState<string>('');
   const [gstType, setGstType] = useState<string>('CGST_SGST');
-  const [defaultGstRate, setDefaultGstRate] = useState<number>(18.0);
+  const [defaultGstRate, setDefaultGstRate] = useState<string>('18.0');
+  const [roundingMethod, setRoundingMethod] = useState<string>('ROUND_HALF_UP');
   const [isSavingRules, setIsSavingRules] = useState(false);
   const [isEditingRules, setIsEditingRules] = useState(false);
-
-  const isRulesConfigured = Boolean(pricingRules?.is_configured);
 
   // Sync pricing rules when loaded from authoritative company settings
   useEffect(() => {
     if (pricingRules && pricingRules.is_configured) {
-      if (pricingRules.overhead_percentage !== null) {
-        setOverheadPct(Number(pricingRules.overhead_percentage));
+      if (pricingRules.overhead_percentage !== null && pricingRules.overhead_percentage !== undefined) {
+        setOverheadPct(String(pricingRules.overhead_percentage));
       }
-      if (pricingRules.profit_percentage !== null) {
-        setProfitPct(Number(pricingRules.profit_percentage));
+      if (pricingRules.profit_percentage !== null && pricingRules.profit_percentage !== undefined) {
+        setProfitPct(String(pricingRules.profit_percentage));
       }
       if (pricingRules.gst_type) {
         setGstType(pricingRules.gst_type);
       }
-      if (pricingRules.default_gst_rate !== null) {
-        setDefaultGstRate(Number(pricingRules.default_gst_rate));
+      if (pricingRules.default_gst_rate !== null && pricingRules.default_gst_rate !== undefined) {
+        setDefaultGstRate(String(pricingRules.default_gst_rate));
+      }
+      if (pricingRules.rounding_method) {
+        setRoundingMethod(pricingRules.rounding_method);
       }
     }
   }, [pricingRules]);
@@ -136,7 +203,6 @@ export const RateManagementPage: React.FC = () => {
       return;
     }
 
-    // Check duplicate grade against existing tenant catalog
     const gradeExists = materials.some(
       (m) => (m.grade || m.gradeAndSpec || '').trim().toLowerCase() === cleanGrade.toLowerCase()
     );
@@ -170,7 +236,7 @@ export const RateManagementPage: React.FC = () => {
         base_rate: baseRateNum,
         scrap_credit_rate: scrapCreditNum,
         density: densityNum,
-        unit: matUnit || 'kg',
+        unit: matUnit.trim() || 'kg',
         is_active: true,
       };
       await createMaterial(payload);
@@ -197,7 +263,7 @@ export const RateManagementPage: React.FC = () => {
         showToast(`Deactivated material '${deactivateTarget.name}'.`);
       } else {
         await deleteProcess(deactivateTarget.id);
-        showToast(`Deactivated process '${deactivateTarget.name}'.`);
+        showToast(`Deactivated cost component '${deactivateTarget.name}'.`);
       }
       setDeactivateTarget(null);
       if (editMaterialModal && editMaterialModal.id === deactivateTarget.id) {
@@ -224,7 +290,6 @@ export const RateManagementPage: React.FC = () => {
       return;
     }
 
-    // Check duplicate grade across other materials
     const gradeCollision = materials.some(
       (m) => m.id !== editMaterialModal.id && (m.grade || m.gradeAndSpec || '').trim().toLowerCase() === gradeClean.toLowerCase()
     );
@@ -260,6 +325,7 @@ export const RateManagementPage: React.FC = () => {
           base_rate: baseRateNum,
           scrap_credit_rate: scrapCreditNum,
           density: densityNum,
+          unit: editMaterialModal.unit || 'kg',
           is_active: editMaterialModal.is_active,
         },
       });
@@ -287,37 +353,48 @@ export const RateManagementPage: React.FC = () => {
     }
   };
 
-  // ---------------- Handlers: Process ----------------
+  // ---------------- Handlers: Cost Component ----------------
   const handleOpenAddProcess = () => {
     setProcName('');
+    setProcRateBasis('Per Hour');
     setProcUnit('hour');
-    setProcHourlyRate('');
+    setProcRate('');
     setProcSetupCost('0.00');
     setAddProcessOpen(true);
+  };
+
+  const handleSelectSuggestedComponent = (c: typeof COMMON_COST_COMPONENTS[number]) => {
+    setProcName(c.name);
+    setProcRateBasis(c.defaultBasis);
+    setProcUnit(c.defaultUnit);
+  };
+
+  const handleRateBasisChange = (newBasis: string) => {
+    setProcRateBasis(newBasis);
+    setProcUnit(getSuggestedUnitForBasis(newBasis));
   };
 
   const handleCreateProcess = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanProcName = procName.trim();
-    if (!cleanProcName || !procHourlyRate) {
-      showToast('Please enter Process Name and Hourly Rate.', 'error');
+    if (!cleanProcName || !procRate) {
+      showToast('Please enter Component Name and Rate.', 'error');
       return;
     }
 
-    // Check duplicate process name against existing catalog
     const procExists = processes.some(
       (p) => p.workstationName.trim().toLowerCase() === cleanProcName.toLowerCase()
     );
     if (procExists) {
-      showToast(`Process '${cleanProcName}' already exists in your master.`, 'error');
+      showToast(`Cost component '${cleanProcName}' already exists in your master.`, 'error');
       return;
     }
 
-    const hourlyNum = parseFloat(procHourlyRate);
+    const rateNum = parseFloat(procRate);
     const setupNum = parseFloat(procSetupCost || '0');
 
-    if (isNaN(hourlyNum) || hourlyNum < 0) {
-      showToast('Hourly Rate cannot be negative and must be a valid number.', 'error');
+    if (isNaN(rateNum) || rateNum < 0) {
+      showToast('Rate cannot be negative and must be a valid number.', 'error');
       return;
     }
     if (isNaN(setupNum) || setupNum < 0) {
@@ -329,16 +406,18 @@ export const RateManagementPage: React.FC = () => {
     try {
       const payload: ProcessCreateDTO = {
         name: cleanProcName,
-        unit: procUnit || 'hour',
-        hourly_rate: hourlyNum,
+        rate_basis: procRateBasis,
+        rate: rateNum,
+        hourly_rate: rateNum,
+        unit: procUnit.trim() || getSuggestedUnitForBasis(procRateBasis),
         setup_cost: setupNum,
         is_active: true,
       };
       await createProcess(payload);
       setAddProcessOpen(false);
-      showToast(`Process '${cleanProcName}' added to master.`);
+      showToast(`Cost component '${cleanProcName}' added to master.`);
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Failed to add process';
+      const msg = err.response?.data?.detail || err.message || 'Failed to add cost component';
       showToast(msg, 'error');
     } finally {
       setIsSubmittingProc(false);
@@ -350,24 +429,23 @@ export const RateManagementPage: React.FC = () => {
     if (!editProcessModal) return;
     const nameClean = (editProcessModal.workstationName || '').trim();
     if (!nameClean) {
-      showToast('Process Name cannot be empty.', 'error');
+      showToast('Component Name cannot be empty.', 'error');
       return;
     }
 
-    // Check duplicate process name across other processes
     const nameCollision = processes.some(
       (p) => p.id !== editProcessModal.id && p.workstationName.trim().toLowerCase() === nameClean.toLowerCase()
     );
     if (nameCollision) {
-      showToast(`Another process with name '${nameClean}' already exists.`, 'error');
+      showToast(`Another component with name '${nameClean}' already exists.`, 'error');
       return;
     }
 
-    const hourlyNum = Number(editProcessModal.hourlyRate);
-    const setupNum = Number(editProcessModal.setupCost);
+    const rateNum = Number(editProcessModal.rate ?? editProcessModal.hourlyRate);
+    const setupNum = Number(editProcessModal.setupCost || 0);
 
-    if (isNaN(hourlyNum) || hourlyNum < 0) {
-      showToast('Hourly Rate cannot be negative and must be a valid number.', 'error');
+    if (isNaN(rateNum) || rateNum < 0) {
+      showToast('Rate cannot be negative and must be a valid number.', 'error');
       return;
     }
     if (isNaN(setupNum) || setupNum < 0) {
@@ -381,15 +459,18 @@ export const RateManagementPage: React.FC = () => {
         id: editProcessModal.id,
         data: {
           name: nameClean,
-          hourly_rate: hourlyNum,
+          rate_basis: editProcessModal.rate_basis || 'Per Hour',
+          rate: rateNum,
+          hourly_rate: rateNum,
+          unit: editProcessModal.unit || getSuggestedUnitForBasis(editProcessModal.rate_basis || 'Per Hour'),
           setup_cost: setupNum,
           is_active: editProcessModal.is_active,
         },
       });
       setEditProcessModal(null);
-      showToast(`Updated process '${nameClean}'.`);
+      showToast(`Updated cost component '${nameClean}'.`);
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Failed to update process';
+      const msg = err.response?.data?.detail || err.message || 'Failed to update cost component';
       showToast(msg, 'error');
     } finally {
       setIsSubmittingProc(false);
@@ -402,7 +483,7 @@ export const RateManagementPage: React.FC = () => {
     } else {
       try {
         await reactivateProcess(p.id);
-        showToast(`Reactivated process '${p.workstationName}'.`);
+        showToast(`Reactivated cost component '${p.workstationName}'.`);
       } catch (err: any) {
         const msg = err.response?.data?.detail || err.message || 'Action failed';
         showToast(msg, 'error');
@@ -413,15 +494,19 @@ export const RateManagementPage: React.FC = () => {
   // ---------------- Handlers: Pricing Rules ----------------
   const handleSavePricingRules = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (overheadPct < 0 || overheadPct > 100) {
+    const ovNum = parseFloat(overheadPct);
+    const prNum = parseFloat(profitPct);
+    const gstNum = parseFloat(defaultGstRate);
+
+    if (isNaN(ovNum) || ovNum < 0 || ovNum > 100) {
       showToast('Overhead percentage must be between 0% and 100%.', 'error');
       return;
     }
-    if (profitPct < 0 || profitPct > 100) {
+    if (isNaN(prNum) || prNum < 0 || prNum > 100) {
       showToast('Profit percentage must be between 0% and 100%.', 'error');
       return;
     }
-    if (defaultGstRate < 0 || defaultGstRate > 100) {
+    if (isNaN(gstNum) || gstNum < 0 || gstNum > 100) {
       showToast('GST rate must be between 0% and 100%.', 'error');
       return;
     }
@@ -429,15 +514,17 @@ export const RateManagementPage: React.FC = () => {
     setIsSavingRules(true);
     try {
       const payload: PricingRulesDTO = {
-        overhead_percentage: overheadPct,
-        profit_percentage: profitPct,
+        overhead_percentage: ovNum,
+        profit_percentage: prNum,
         gst_type: gstType,
-        default_gst_rate: defaultGstRate,
+        default_gst_rate: gstNum,
+        rounding_method: roundingMethod,
       };
       await updatePricingRules(payload);
-      showToast('Company pricing rules updated successfully!');
+      setIsEditingRules(false);
+      showToast('Company pricing rules configured successfully!');
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Failed to update pricing rules';
+      const msg = err.response?.data?.detail || err.message || 'Failed to save pricing rules';
       showToast(msg, 'error');
     } finally {
       setIsSavingRules(false);
@@ -458,7 +545,9 @@ export const RateManagementPage: React.FC = () => {
   });
 
   const filteredProcesses = processes.filter(p => {
-    const matchesSearch = (p.workstationName || '').toLowerCase().includes(processSearch.toLowerCase());
+    const matchesSearch = 
+      (p.workstationName || '').toLowerCase().includes(processSearch.toLowerCase()) ||
+      (p.rate_basis || '').toLowerCase().includes(processSearch.toLowerCase());
     if (!matchesSearch) return false;
     if (processStatusFilter === 'ACTIVE') return p.is_active === true;
     if (processStatusFilter === 'INACTIVE') return p.is_active === false;
@@ -466,14 +555,18 @@ export const RateManagementPage: React.FC = () => {
   });
 
   // Simulator Calculation (Cascading commercial math)
+  const currentOvPct = parseFloat(overheadPct) || 0;
+  const currentPrPct = parseFloat(profitPct) || 0;
+  const currentGstPct = gstType === 'EXEMPT' ? 0 : (parseFloat(defaultGstRate) || 0);
+
   const simSubtotal = 100000;
-  const simOverhead = simSubtotal * (overheadPct / 100);
+  const simOverhead = simSubtotal * (currentOvPct / 100);
   const simAssessable = simSubtotal + simOverhead;
-  const simProfit = simAssessable * (profitPct / 100);
+  const simProfit = simAssessable * (currentPrPct / 100);
   const simTaxable = simAssessable + simProfit;
-  const simGstRate = gstType === 'EXEMPT' ? 0 : defaultGstRate;
-  const simGst = simTaxable * (simGstRate / 100);
-  const simGrandTotal = simTaxable + simGst;
+  const simGst = simTaxable * (currentGstPct / 100);
+  const simRawTotal = simTaxable + simGst;
+  const simGrandTotal = roundingMethod === 'ROUND_HALF_UP' ? Math.round(simRawTotal) : simRawTotal;
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -516,7 +609,7 @@ export const RateManagementPage: React.FC = () => {
             </div>
           </div>
           <p className="text-xs text-slate-500">
-            Maintain raw material base rates, scrap credits, machine hourly cost centers, factory overheads, and statutory tax parameters.
+            Define raw materials, cost components, overheads, and statutory tax parameters for deterministic quotation calculations.
           </p>
         </div>
 
@@ -539,39 +632,39 @@ export const RateManagementPage: React.FC = () => {
       {/* Metric Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Raw Materials Master"
-          value={`${materials.filter(m => m.is_active).length} Active`}
-          subtitle={`${materials.length} Total Registered Grades`}
-          badge={<Badge variant="success" size="sm">Catalog Bound</Badge>}
+          title="Materials Master"
+          value={materials.length > 0 ? `${materials.filter(m => m.is_active).length} Active` : '0 Active'}
+          subtitle={materials.length > 0 ? `${materials.length} Total Materials` : 'No materials configured'}
+          badge={materials.length > 0 ? <Badge variant="success" size="sm">Catalog Bound</Badge> : undefined}
           icon={<Layers className="w-4 h-4 text-emerald-600" />}
           footer={<span className="text-[11px] text-slate-500">Base & Scrap Rates</span>}
         />
 
         <MetricCard
-          title="Machine & Process Centers"
-          value={`${processes.filter(p => p.is_active).length} Active`}
-          subtitle={`${processes.length} Total Cost Centers`}
+          title="Cost Components"
+          value={processes.length > 0 ? `${processes.filter(p => p.is_active).length} Active` : '0 Active'}
+          subtitle={processes.length > 0 ? `${processes.length} Total Components` : 'No components configured'}
           icon={<Cpu className="w-4 h-4 text-blue-600" />}
-          footer={<span className="text-[11px] text-slate-500">Hourly Rate & Setup Cost</span>}
+          footer={<span className="text-[11px] text-slate-500">Multi-basis Cost Centers</span>}
         />
 
         <MetricCard
-          title="Factory Overhead Rule"
-          value={isRulesConfigured ? `${overheadPct.toFixed(2)}%` : 'Unconfigured'}
-          subtitle={isRulesConfigured ? 'Applied on manufacturing subtotal' : 'Not set for company'}
-          badge={!isRulesConfigured ? <Badge variant="warning" size="sm">Action Required</Badge> : undefined}
+          title="Overhead & Pricing Rules"
+          value={isRulesConfigured ? `${parseFloat(overheadPct).toFixed(1)}% Overhead` : 'Unconfigured'}
+          subtitle={isRulesConfigured ? `${parseFloat(profitPct).toFixed(1)}% Profit Margin` : 'Not set for company'}
+          badge={!isRulesConfigured ? <Badge variant="warning" size="sm">Action Required</Badge> : <Badge variant="success" size="sm">Configured</Badge>}
           icon={<Sliders className="w-4 h-4 text-amber-600" />}
           footer={
             <span className={`text-[11px] ${isRulesConfigured ? 'text-slate-500' : 'text-amber-600 font-medium'}`}>
-              {isRulesConfigured ? 'Electricity, Tooling, Indirect' : 'Configure in Pricing Rules'}
+              {isRulesConfigured ? 'Applied onto subtotal' : 'Configure in Pricing Rules'}
             </span>
           }
         />
 
         <MetricCard
-          title="Profit Margin & GST"
-          value={isRulesConfigured ? `${profitPct.toFixed(2)}% Margin` : 'Unconfigured'}
-          subtitle={isRulesConfigured ? `Default GST: ${defaultGstRate}% (${gstType})` : 'Statutory tax not configured'}
+          title="GST & Rounding"
+          value={isRulesConfigured ? `${parseFloat(defaultGstRate).toFixed(1)}% (${gstType})` : 'Unconfigured'}
+          subtitle={isRulesConfigured ? (roundingMethod === 'ROUND_HALF_UP' ? 'Round to Nearest ₹' : 'Exact 2 Decimals') : 'Statutory tax not configured'}
           badge={isRulesConfigured ? <Badge variant="info" size="sm">Statutory</Badge> : <Badge variant="warning" size="sm">Action Required</Badge>}
           icon={<Percent className="w-4 h-4 text-purple-600" />}
           footer={
@@ -605,17 +698,17 @@ export const RateManagementPage: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('processes')}
+              onClick={() => setActiveTab('cost-components')}
               className={`py-3.5 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'processes'
+                activeTab === 'cost-components'
                   ? 'border-blue-600 text-blue-700 bg-white shadow-2xs'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
               <Cpu className="w-3.5 h-3.5" />
-              <span>Processes</span>
+              <span>Cost Components</span>
               <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                activeTab === 'processes' ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-600'
+                activeTab === 'cost-components' ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-600'
               }`}>
                 {processes.length}
               </span>
@@ -630,7 +723,7 @@ export const RateManagementPage: React.FC = () => {
               }`}
             >
               <Sliders className="w-3.5 h-3.5" />
-              <span>Pricing Rules</span>
+              <span>Overhead & Pricing Rules</span>
               <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                 isRulesConfigured
                   ? 'bg-emerald-100 text-emerald-800'
@@ -649,17 +742,17 @@ export const RateManagementPage: React.FC = () => {
                 icon={<Plus className="w-3.5 h-3.5" />}
                 onClick={handleOpenAddMaterial}
               >
-                Add Material
+                + Add Material
               </Button>
             )}
-            {activeTab === 'processes' && (
+            {activeTab === 'cost-components' && (
               <Button
                 variant="primary"
                 size="sm"
                 icon={<Plus className="w-3.5 h-3.5" />}
                 onClick={handleOpenAddProcess}
               >
-                Add Process
+                + Add Cost Component
               </Button>
             )}
           </div>
@@ -673,9 +766,9 @@ export const RateManagementPage: React.FC = () => {
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
                   <Layers className="w-6 h-6" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-900 mb-1">No material rates added yet.</h3>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">No material rates added yet</h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto mb-5">
-                  Add raw material grades and purchasing rates to enable deterministic quote calculations.
+                  Add raw materials and base rates to enable deterministic quotation calculations for your company.
                 </p>
                 <Button
                   variant="primary"
@@ -683,7 +776,7 @@ export const RateManagementPage: React.FC = () => {
                   icon={<Plus className="w-3.5 h-3.5" />}
                   onClick={handleOpenAddMaterial}
                 >
-                  Add Material
+                  + Add Material
                 </Button>
               </div>
             ) : (
@@ -694,7 +787,7 @@ export const RateManagementPage: React.FC = () => {
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      placeholder="Search materials by grade or name..."
+                      placeholder="Search materials by name or grade..."
                       value={materialSearch}
                       onChange={(e) => setMaterialSearch(e.target.value)}
                       className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-blue-500 bg-slate-50"
@@ -724,9 +817,10 @@ export const RateManagementPage: React.FC = () => {
                       <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px] tracking-wider">
                         <th className="py-2.5 px-4">Material Name</th>
                         <th className="py-2.5 px-4">Grade</th>
-                        <th className="py-2.5 px-4">Base Rate / kg</th>
-                        <th className="py-2.5 px-4">Scrap Credit / kg</th>
-                        <th className="py-2.5 px-4">Net Material Rate / kg</th>
+                        <th className="py-2.5 px-4">Unit</th>
+                        <th className="py-2.5 px-4">Base Rate</th>
+                        <th className="py-2.5 px-4">Scrap Credit</th>
+                        <th className="py-2.5 px-4">Net Material Rate</th>
                         <th className="py-2.5 px-4">Density</th>
                         <th className="py-2.5 px-4">Status</th>
                         <th className="py-2.5 px-4">Last Updated</th>
@@ -736,13 +830,14 @@ export const RateManagementPage: React.FC = () => {
                     <tbody className="divide-y divide-slate-200">
                       {filteredMaterials.length === 0 ? (
                         <tr>
-                          <td colSpan={9} className="py-8 text-center text-slate-400">
+                          <td colSpan={10} className="py-8 text-center text-slate-400">
                             No materials found matching search criteria.
                           </td>
                         </tr>
                       ) : (
                         filteredMaterials.map((m) => {
                           const netCost = m.baseRatePerKg - m.scrapCreditPerKg;
+                          const unitLabel = m.unit || 'kg';
                           return (
                             <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
                               <td className="py-3 px-4">
@@ -756,16 +851,19 @@ export const RateManagementPage: React.FC = () => {
                                   {m.grade || m.gradeAndSpec}
                                 </span>
                               </td>
+                              <td className="py-3 px-4 font-mono font-medium text-slate-700">
+                                {unitLabel}
+                              </td>
                               <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                                ₹{m.baseRatePerKg.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">/kg</span>
+                                ₹{m.baseRatePerKg.toFixed(2)}/{unitLabel}
                               </td>
                               <td className="py-3 px-4 font-mono font-medium">
                                 <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block font-semibold">
-                                  ₹{m.scrapCreditPerKg.toFixed(2)} credit
+                                  ₹{m.scrapCreditPerKg.toFixed(2)}/{unitLabel}
                                 </span>
                               </td>
                               <td className="py-3 px-4 font-mono font-bold text-blue-700">
-                                ₹{Math.max(0, netCost).toFixed(2)}/kg
+                                ₹{Math.max(0, netCost).toFixed(2)}/{unitLabel}
                               </td>
                               <td className="py-3 px-4 font-mono text-slate-600">
                                 {m.densityGPerCm3 ? `${m.densityGPerCm3.toFixed(2)} g/cm³` : '-'}
@@ -783,7 +881,7 @@ export const RateManagementPage: React.FC = () => {
                                   <button
                                     onClick={() => setEditMaterialModal({ ...m })}
                                     className="p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                                    title="Edit Rates"
+                                    title="Edit Material"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
@@ -815,7 +913,7 @@ export const RateManagementPage: React.FC = () => {
                 {/* Materials Table Footer with Prominent Add Button */}
                 <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between">
                   <span className="text-xs text-slate-500 font-medium">
-                    Showing {filteredMaterials.length} of {materials.length} registered material grades
+                    Showing {filteredMaterials.length} of {materials.length} registered materials
                   </span>
                   <Button
                     variant="primary"
@@ -823,7 +921,7 @@ export const RateManagementPage: React.FC = () => {
                     icon={<Plus className="w-3.5 h-3.5" />}
                     onClick={handleOpenAddMaterial}
                   >
-                    Add Material
+                    + Add Material
                   </Button>
                 </div>
               </>
@@ -831,17 +929,17 @@ export const RateManagementPage: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 2: PROCESSES */}
-        {activeTab === 'processes' && (
+        {/* TAB 2: COST COMPONENTS */}
+        {activeTab === 'cost-components' && (
           <div>
             {processes.length === 0 ? (
               <div className="text-center py-16 px-4">
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
                   <Cpu className="w-6 h-6" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-900 mb-1">No process rates added yet.</h3>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">No process rates added yet</h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto mb-5">
-                  Add manufacturing process centers, hourly rates, and setup costs to power machining estimates.
+                  Configure operations, labor, machining, packaging or custom cost components with flexible rate bases.
                 </p>
                 <Button
                   variant="primary"
@@ -849,7 +947,7 @@ export const RateManagementPage: React.FC = () => {
                   icon={<Plus className="w-3.5 h-3.5" />}
                   onClick={handleOpenAddProcess}
                 >
-                  Add Process
+                  + Add Cost Component
                 </Button>
               </div>
             ) : (
@@ -860,7 +958,7 @@ export const RateManagementPage: React.FC = () => {
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      placeholder="Search processes..."
+                      placeholder="Search cost components..."
                       value={processSearch}
                       onChange={(e) => setProcessSearch(e.target.value)}
                       className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-blue-500 bg-slate-50"
@@ -875,7 +973,7 @@ export const RateManagementPage: React.FC = () => {
                         onChange={(e) => setProcessStatusFilter(e.target.value as any)}
                         className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-slate-800 font-medium focus:outline-none"
                       >
-                        <option value="ALL">All Processes ({processes.length})</option>
+                        <option value="ALL">All Components ({processes.length})</option>
                         <option value="ACTIVE">Active Only ({processes.filter(p => p.is_active).length})</option>
                         <option value="INACTIVE">Inactive Only ({processes.filter(p => !p.is_active).length})</option>
                       </select>
@@ -888,8 +986,9 @@ export const RateManagementPage: React.FC = () => {
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px] tracking-wider">
-                        <th className="py-2.5 px-4">Process Name</th>
-                        <th className="py-2.5 px-4">Hourly Rate</th>
+                        <th className="py-2.5 px-4">Component Name</th>
+                        <th className="py-2.5 px-4">Rate Basis</th>
+                        <th className="py-2.5 px-4">Rate</th>
                         <th className="py-2.5 px-4">Setup Cost</th>
                         <th className="py-2.5 px-4">Unit</th>
                         <th className="py-2.5 px-4">Status</th>
@@ -900,62 +999,71 @@ export const RateManagementPage: React.FC = () => {
                     <tbody className="divide-y divide-slate-200">
                       {filteredProcesses.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="py-8 text-center text-slate-400">
-                            No manufacturing processes found matching search criteria.
+                          <td colSpan={8} className="py-8 text-center text-slate-400">
+                            No cost components found matching search criteria.
                           </td>
                         </tr>
                       ) : (
-                        filteredProcesses.map((p) => (
-                          <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="py-3 px-4">
-                              <div className="font-bold text-slate-900">{p.workstationName}</div>
-                              <div className="text-[10px] font-mono text-slate-400">{p.code}</div>
-                            </td>
-                            <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                              ₹{p.hourlyRate.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">/hr</span>
-                            </td>
-                            <td className="py-3 px-4 font-mono text-slate-700">
-                              ₹{p.setupCost.toFixed(2)}
-                            </td>
-                            <td className="py-3 px-4 font-mono text-slate-600">
-                              {p.unit || 'hour'}
-                            </td>
-                            <td className="py-3 px-4">
-                              <Badge variant={p.is_active ? 'success' : 'slate'} size="sm" dot>
-                                {p.is_active ? 'Active' : 'Inactive'}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-4 text-slate-500 text-[11px] font-mono whitespace-nowrap">
-                              {p.lastUpdated || '-'}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  onClick={() => setEditProcessModal({ ...p })}
-                                  className="p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                                  title="Edit Process"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleToggleProcessStatus(p)}
-                                  className={`p-1 rounded transition-colors cursor-pointer ${
-                                    p.is_active
-                                      ? 'hover:bg-rose-100 text-slate-400 hover:text-rose-600'
-                                      : 'hover:bg-emerald-100 text-slate-400 hover:text-emerald-600'
-                                  }`}
-                                  title={p.is_active ? 'Deactivate Process' : 'Reactivate Process'}
-                                >
-                                  {p.is_active ? (
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  ) : (
-                                    <RotateCcw className="w-3.5 h-3.5" />
-                                  )}
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
+                        filteredProcesses.map((p) => {
+                          const displayRate = p.rate !== undefined && p.rate !== null ? p.rate : p.hourlyRate;
+                          const basisLabel = p.rate_basis || 'Per Hour';
+                          return (
+                            <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="font-bold text-slate-900">{p.workstationName}</div>
+                                <div className="text-[10px] font-mono text-slate-400">{p.code}</div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="font-medium text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 inline-block">
+                                  {basisLabel}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                                ₹{displayRate.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">/{p.unit || 'unit'}</span>
+                              </td>
+                              <td className="py-3 px-4 font-mono text-slate-700">
+                                {p.setupCost > 0 ? `₹${p.setupCost.toFixed(2)}` : '-'}
+                              </td>
+                              <td className="py-3 px-4 font-mono text-slate-600">
+                                {p.unit || 'unit'}
+                              </td>
+                              <td className="py-3 px-4">
+                                <Badge variant={p.is_active ? 'success' : 'slate'} size="sm" dot>
+                                  {p.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4 text-slate-500 text-[11px] font-mono whitespace-nowrap">
+                                {p.lastUpdated || '-'}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => setEditProcessModal({ ...p })}
+                                    className="p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                                    title="Edit Cost Component"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleToggleProcessStatus(p)}
+                                    className={`p-1 rounded transition-colors cursor-pointer ${
+                                      p.is_active
+                                        ? 'hover:bg-rose-100 text-slate-400 hover:text-rose-600'
+                                        : 'hover:bg-emerald-100 text-slate-400 hover:text-emerald-600'
+                                    }`}
+                                    title={p.is_active ? 'Deactivate Cost Component' : 'Reactivate Cost Component'}
+                                  >
+                                    {p.is_active ? (
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <RotateCcw className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
@@ -964,7 +1072,7 @@ export const RateManagementPage: React.FC = () => {
                 {/* Processes Table Footer with Prominent Add Button */}
                 <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between">
                   <span className="text-xs text-slate-500 font-medium">
-                    Showing {filteredProcesses.length} of {processes.length} manufacturing process centers
+                    Showing {filteredProcesses.length} of {processes.length} cost components
                   </span>
                   <Button
                     variant="primary"
@@ -972,13 +1080,14 @@ export const RateManagementPage: React.FC = () => {
                     icon={<Plus className="w-3.5 h-3.5" />}
                     onClick={handleOpenAddProcess}
                   >
-                    Add Process
+                    + Add Cost Component
                   </Button>
                 </div>
               </>
             )}
           </div>
         )}
+
         {/* TAB 3: PRICING RULES */}
         {activeTab === 'pricing-rules' && (
           <div className="p-6">
@@ -987,21 +1096,15 @@ export const RateManagementPage: React.FC = () => {
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
                   <Sliders className="w-6 h-6" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-900 mb-1">No pricing rules configured yet.</h3>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">No pricing rules configured yet</h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto mb-5">
-                  Configure your company's standard factory overhead %, commercial profit margin %, and statutory GST rules. Quotation calculations require these rules to determine final pricing.
+                  Configure your company's overhead %, profit margin %, statutory GST classification, and rounding settings to enable quote calculation.
                 </p>
                 <Button
                   variant="primary"
                   size="sm"
                   icon={<Sliders className="w-3.5 h-3.5" />}
-                  onClick={() => {
-                    setOverheadPct(10);
-                    setProfitPct(15);
-                    setDefaultGstRate(18);
-                    setGstType('CGST_SGST');
-                    setIsEditingRules(true);
-                  }}
+                  onClick={() => setIsEditingRules(true)}
                 >
                   Configure Pricing Rules
                 </Button>
@@ -1012,21 +1115,21 @@ export const RateManagementPage: React.FC = () => {
                   {/* Form Controls (Left / 7 cols) */}
                   <form onSubmit={handleSavePricingRules} className="lg:col-span-7 space-y-5">
                     <div>
-                      <h3 className="text-base font-bold text-slate-900">Commercial Pricing Rules</h3>
+                      <h3 className="text-base font-bold text-slate-900">Overhead & Pricing Rules</h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Configure standard factory overhead, commercial profit margin, and statutory tax classification applied to calculated quotations.
+                        Configure overhead %, profit %, GST rules, and rounding logic. These rules deterministically determine quote prices.
                       </p>
                     </div>
 
                     <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-slate-800">
-                          Standard Factory Overhead (%)
+                          Factory Overhead (%) <span className="text-rose-500">*</span>
                         </label>
                         <span className="text-[11px] font-mono text-slate-400">0% – 100%</span>
                       </div>
                       <p className="text-[11px] text-slate-500">
-                        Applied onto manufacturing subtotal (material net + process cost) to account for electricity, machine maintenance, coolant, and indirect labor.
+                        Applied onto manufacturing subtotal (materials + cost components) to cover factory utilities, maintenance, and indirect expenses.
                       </p>
                       <div className="flex items-center gap-2">
                         <input
@@ -1034,8 +1137,10 @@ export const RateManagementPage: React.FC = () => {
                           step="0.01"
                           min="0"
                           max="100"
+                          placeholder="e.g. 10.0"
                           value={overheadPct}
-                          onChange={(e) => setOverheadPct(parseFloat(e.target.value) || 0)}
+                          onChange={(e) => setOverheadPct(e.target.value)}
+                          required
                           className="w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-900 bg-white focus:outline-blue-500"
                         />
                         <span className="text-xs font-mono font-semibold text-slate-500">%</span>
@@ -1045,12 +1150,12 @@ export const RateManagementPage: React.FC = () => {
                     <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-slate-800">
-                          Commercial Profit Margin (%)
+                          Commercial Profit Margin (%) <span className="text-rose-500">*</span>
                         </label>
                         <span className="text-[11px] font-mono text-slate-400">0% – 100%</span>
                       </div>
                       <p className="text-[11px] text-slate-500">
-                        Target commercial net margin calculated on total assessable cost (subtotal + overhead) before tax.
+                        Commercial markup calculated on assessable cost (subtotal + overhead) before taxes.
                       </p>
                       <div className="flex items-center gap-2">
                         <input
@@ -1058,8 +1163,10 @@ export const RateManagementPage: React.FC = () => {
                           step="0.01"
                           min="0"
                           max="100"
+                          placeholder="e.g. 15.0"
                           value={profitPct}
-                          onChange={(e) => setProfitPct(parseFloat(e.target.value) || 0)}
+                          onChange={(e) => setProfitPct(e.target.value)}
+                          required
                           className="w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-900 bg-white focus:outline-blue-500"
                         />
                         <span className="text-xs font-mono font-semibold text-slate-500">%</span>
@@ -1068,7 +1175,7 @@ export const RateManagementPage: React.FC = () => {
 
                     <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-3">
                       <label className="text-xs font-bold text-slate-800 block">
-                        Statutory GST Configuration
+                        Statutory GST Configuration <span className="text-rose-500">*</span>
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                         <button
@@ -1081,7 +1188,7 @@ export const RateManagementPage: React.FC = () => {
                           }`}
                         >
                           <div className="text-[11px] uppercase tracking-wider font-semibold">Intrastate</div>
-                          <div className="text-xs mt-1">CGST (9%) + SGST (9%)</div>
+                          <div className="text-xs mt-1">CGST + SGST (e.g. 9% + 9%)</div>
                         </button>
 
                         <button
@@ -1094,7 +1201,7 @@ export const RateManagementPage: React.FC = () => {
                           }`}
                         >
                           <div className="text-[11px] uppercase tracking-wider font-semibold">Interstate</div>
-                          <div className="text-xs mt-1">IGST (18%)</div>
+                          <div className="text-xs mt-1">IGST (e.g. 18%)</div>
                         </button>
 
                         <button
@@ -1120,10 +1227,43 @@ export const RateManagementPage: React.FC = () => {
                           max="100"
                           value={defaultGstRate}
                           disabled={gstType === 'EXEMPT'}
-                          onChange={(e) => setDefaultGstRate(parseFloat(e.target.value) || 0)}
+                          onChange={(e) => setDefaultGstRate(e.target.value)}
                           className="w-24 px-2.5 py-1.5 border border-slate-300 rounded font-mono font-bold text-slate-900 bg-white focus:outline-blue-500 disabled:opacity-50"
                         />
                         <span className="text-slate-500 font-mono">%</span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-3">
+                      <label className="text-xs font-bold text-slate-800 block">
+                        Final Total Rounding Method
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setRoundingMethod('ROUND_HALF_UP')}
+                          className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
+                            roundingMethod === 'ROUND_HALF_UP'
+                              ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="font-semibold text-slate-900">Round to Nearest Rupee</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">₹1,245.60 → ₹1,246.00 (ROUND_HALF_UP)</div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setRoundingMethod('EXACT_2_DECIMALS')}
+                          className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
+                            roundingMethod === 'EXACT_2_DECIMALS'
+                              ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="font-semibold text-slate-900">Exact 2 Decimal Places</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">Exact paise precision (e.g. ₹1,245.60)</div>
+                        </button>
                       </div>
                     </div>
 
@@ -1156,7 +1296,7 @@ export const RateManagementPage: React.FC = () => {
                       </div>
 
                       <p className="text-[11px] text-slate-400">
-                        Based on an illustrative ₹100,000 baseline manufacturing cost, your pricing rules cascade through:
+                        Based on an illustrative ₹100,000 baseline manufacturing subtotal, your pricing rules cascade through:
                       </p>
 
                       <div className="space-y-2.5 text-xs font-mono">
@@ -1166,7 +1306,7 @@ export const RateManagementPage: React.FC = () => {
                         </div>
 
                         <div className="flex justify-between text-amber-400">
-                          <span>2. Overhead ({overheadPct.toFixed(1)}%):</span>
+                          <span>2. Overhead ({currentOvPct.toFixed(1)}%):</span>
                           <span>+₹{simOverhead.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         </div>
 
@@ -1176,7 +1316,7 @@ export const RateManagementPage: React.FC = () => {
                         </div>
 
                         <div className="flex justify-between text-purple-400">
-                          <span>3. Profit Margin ({profitPct.toFixed(1)}%):</span>
+                          <span>3. Profit Margin ({currentPrPct.toFixed(1)}%):</span>
                           <span>+₹{simProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         </div>
 
@@ -1186,12 +1326,12 @@ export const RateManagementPage: React.FC = () => {
                         </div>
 
                         <div className="flex justify-between text-blue-400">
-                          <span>4. GST ({simGstRate.toFixed(1)}% - {gstType}):</span>
+                          <span>4. GST ({currentGstPct.toFixed(1)}% - {gstType}):</span>
                           <span>+₹{simGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         </div>
 
                         <div className="flex justify-between font-bold text-emerald-400 text-sm pt-2 border-t-2 border-slate-700">
-                          <span>Grand Total:</span>
+                          <span>Grand Total ({roundingMethod === 'ROUND_HALF_UP' ? 'Rounded' : 'Exact'}):</span>
                           <span>₹{simGrandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         </div>
                       </div>
@@ -1214,31 +1354,17 @@ export const RateManagementPage: React.FC = () => {
         isOpen={addMaterialOpen}
         onClose={() => setAddMaterialOpen(false)}
         title="Add Material to Price Master"
-        description="Add a new raw material grade and assign tenant purchasing and scrap recovery rates."
+        description="Add a raw material and assign base and scrap recovery rates."
         maxWidth="md"
       >
         <form onSubmit={handleCreateMaterial} className="space-y-4 text-xs">
           <div>
             <label className="block font-bold text-slate-700 mb-1">
-              Material Grade <span className="text-rose-500">*</span>
+              Material Name <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
-              placeholder="e.g. EN8, SS304, AL6061"
-              value={matGrade}
-              onChange={(e) => setMatGrade(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold uppercase focus:outline-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">
-              Material Description / Name <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Medium Carbon Alloy Steel EN8"
+              placeholder="e.g. Mild Steel Round Bar, Cotton Fabric 180 GSM, Cast Iron Casing"
               value={matName}
               onChange={(e) => setMatName(e.target.value)}
               required
@@ -1249,13 +1375,43 @@ export const RateManagementPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Base Rate (₹/kg) <span className="text-rose-500">*</span>
+                Material Grade <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. EN8, SS304, Grade-A"
+                value={matGrade}
+                onChange={(e) => setMatGrade(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold uppercase focus:outline-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Unit of Measurement <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. kg, meter, piece, litre"
+                value={matUnit}
+                onChange={(e) => setMatUnit(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Base Rate (₹/{matUnit || 'unit'}) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="85.00"
+                placeholder="320.00"
                 value={matBaseRate}
                 onChange={(e) => setMatBaseRate(e.target.value)}
                 required
@@ -1265,61 +1421,58 @@ export const RateManagementPage: React.FC = () => {
 
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Scrap Credit (₹/kg credit)
+                Scrap Credit (₹/{matUnit || 'unit'})
               </label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="20.00"
+                placeholder="110.00"
                 value={matScrapCredit}
                 onChange={(e) => setMatScrapCredit(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold focus:outline-blue-500"
               />
               <span className="text-[10px] text-slate-500 mt-0.5 block">
-                Positive recovery credit deducted from base rate for net cost
+                Positive credit deducted from base rate for net cost
               </span>
             </div>
           </div>
 
-          {/* Live Net Material Calculation Preview */}
-          <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between text-xs">
-            <div>
-              <span className="font-semibold text-blue-900 block">Net Material Rate / kg:</span>
-              <span className="text-[10px] text-blue-700">Base Rate - Scrap Credit</span>
+          {/* Positive Scrap Credit Display */}
+          <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-lg text-xs space-y-1">
+            <div className="flex justify-between font-mono">
+              <span className="text-slate-600">Base Rate:</span>
+              <span className="font-bold text-slate-800">
+                ₹{parseFloat(matBaseRate || '0').toFixed(2)}/{matUnit || 'unit'}
+              </span>
             </div>
-            <span className="font-mono font-bold text-blue-900 text-sm">
-              ₹{Math.max(0, (parseFloat(matBaseRate || '0') - parseFloat(matScrapCredit || '0'))).toFixed(2)}/kg
-            </span>
+            <div className="flex justify-between font-mono">
+              <span className="text-emerald-700">Scrap Credit:</span>
+              <span className="font-semibold text-emerald-700">
+                ₹{parseFloat(matScrapCredit || '0').toFixed(2)}/{matUnit || 'unit'}
+              </span>
+            </div>
+            <div className="flex justify-between font-mono pt-1 border-t border-blue-200">
+              <span className="font-bold text-blue-900">Net Material:</span>
+              <span className="font-bold text-blue-900">
+                ₹{Math.max(0, (parseFloat(matBaseRate || '0') - parseFloat(matScrapCredit || '0'))).toFixed(2)}/{matUnit || 'unit'}
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">
-                Density (g/cm³)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="7.85"
-                value={matDensity}
-                onChange={(e) => setMatDensity(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">
-                Pricing Unit
-              </label>
-              <input
-                type="text"
-                value={matUnit}
-                onChange={(e) => setMatUnit(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono bg-slate-50 focus:outline-blue-500"
-              />
-            </div>
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Density (g/cm³ - optional)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              placeholder="7.85"
+              value={matDensity}
+              onChange={(e) => setMatDensity(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-blue-500"
+            />
           </div>
 
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-200">
@@ -1347,31 +1500,12 @@ export const RateManagementPage: React.FC = () => {
       <Modal
         isOpen={editMaterialModal !== null}
         onClose={() => setEditMaterialModal(null)}
-        title={`Edit Material: ${editMaterialModal?.gradeAndSpec || ''}`}
-        description="Update raw material pricing and scrap rates in the tenant catalog."
+        title={`Edit Material: ${editMaterialModal?.name || editMaterialModal?.gradeAndSpec || ''}`}
+        description="Update raw material pricing and scrap rates in company catalog."
         maxWidth="md"
       >
         {editMaterialModal && (
           <form onSubmit={handleUpdateMaterial} className="space-y-4 text-xs">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">
-                Material Grade <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={editMaterialModal.grade || editMaterialModal.gradeAndSpec}
-                onChange={(e) =>
-                  setEditMaterialModal({
-                    ...editMaterialModal,
-                    grade: e.target.value,
-                    gradeAndSpec: e.target.value,
-                  })
-                }
-                required
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold uppercase focus:outline-blue-500"
-              />
-            </div>
-
             <div>
               <label className="block font-bold text-slate-700 mb-1">
                 Material Name <span className="text-rose-500">*</span>
@@ -1390,7 +1524,46 @@ export const RateManagementPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Base Rate (₹/kg) <span className="text-rose-500">*</span>
+                  Material Grade <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editMaterialModal.grade || editMaterialModal.gradeAndSpec}
+                  onChange={(e) =>
+                    setEditMaterialModal({
+                      ...editMaterialModal,
+                      grade: e.target.value,
+                      gradeAndSpec: e.target.value,
+                    })
+                  }
+                  required
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold uppercase focus:outline-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Unit of Measurement
+                </label>
+                <input
+                  type="text"
+                  value={editMaterialModal.unit || 'kg'}
+                  onChange={(e) =>
+                    setEditMaterialModal({
+                      ...editMaterialModal,
+                      unit: e.target.value,
+                    })
+                  }
+                  required
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Base Rate (₹/{editMaterialModal.unit || 'unit'}) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -1410,7 +1583,7 @@ export const RateManagementPage: React.FC = () => {
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Scrap Credit (₹/kg credit)
+                  Scrap Credit (₹/{editMaterialModal.unit || 'unit'})
                 </label>
                 <input
                   type="number"
@@ -1426,21 +1599,29 @@ export const RateManagementPage: React.FC = () => {
                   required
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold focus:outline-blue-500"
                 />
-                <span className="text-[10px] text-slate-500 mt-0.5 block">
-                  Positive recovery credit deducted from base rate for net cost
-                </span>
               </div>
             </div>
 
-            {/* Live Net Material Calculation Preview */}
-            <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between text-xs">
-              <div>
-                <span className="font-semibold text-blue-900 block">Net Material Rate / kg:</span>
-                <span className="text-[10px] text-blue-700">Base Rate - Scrap Credit</span>
+            {/* Positive Scrap Credit Display */}
+            <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-lg text-xs space-y-1">
+              <div className="flex justify-between font-mono">
+                <span className="text-slate-600">Base Rate:</span>
+                <span className="font-bold text-slate-800">
+                  ₹{Number(editMaterialModal.baseRatePerKg || 0).toFixed(2)}/{editMaterialModal.unit || 'unit'}
+                </span>
               </div>
-              <span className="font-mono font-bold text-blue-900 text-sm">
-                ₹{Math.max(0, ((editMaterialModal.baseRatePerKg || 0) - (editMaterialModal.scrapCreditPerKg || 0))).toFixed(2)}/kg
-              </span>
+              <div className="flex justify-between font-mono">
+                <span className="text-emerald-700">Scrap Credit:</span>
+                <span className="font-semibold text-emerald-700">
+                  ₹{Number(editMaterialModal.scrapCreditPerKg || 0).toFixed(2)}/{editMaterialModal.unit || 'unit'}
+                </span>
+              </div>
+              <div className="flex justify-between font-mono pt-1 border-t border-blue-200">
+                <span className="font-bold text-blue-900">Net Material:</span>
+                <span className="font-bold text-blue-900">
+                  ₹{Math.max(0, ((editMaterialModal.baseRatePerKg || 0) - (editMaterialModal.scrapCreditPerKg || 0))).toFixed(2)}/{editMaterialModal.unit || 'unit'}
+                </span>
+              </div>
             </div>
 
             <div>
@@ -1502,22 +1683,46 @@ export const RateManagementPage: React.FC = () => {
         )}
       </Modal>
 
-      {/* ---------------- MODAL: ADD PROCESS ---------------- */}
+      {/* ---------------- MODAL: ADD COST COMPONENT ---------------- */}
       <Modal
         isOpen={addProcessOpen}
         onClose={() => setAddProcessOpen(false)}
-        title="Add Manufacturing Process"
-        description="Configure a new workstation or machining process hourly cost center."
+        title="Add Cost Component"
+        description="Configure an operation, labor, machine or overhead cost component with a flexible rate basis."
         maxWidth="md"
       >
         <form onSubmit={handleCreateProcess} className="space-y-4 text-xs">
+          {/* Quick Component Suggestions */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <span>Suggested Components (click to select)</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 bg-slate-50 rounded-lg border border-slate-200">
+              {COMMON_COST_COMPONENTS.map((c) => (
+                <button
+                  key={c.name}
+                  type="button"
+                  onClick={() => handleSelectSuggestedComponent(c)}
+                  className={`px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer border ${
+                    procName.toLowerCase() === c.name.toLowerCase()
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="block font-bold text-slate-700 mb-1">
-              Process Name <span className="text-rose-500">*</span>
+              Component Name <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
-              placeholder="e.g. CNC 4-Axis Milling (VMC-850)"
+              placeholder="e.g. CNC Milling, Stitching, Heat Treatment, Final Inspection"
               value={procName}
               onChange={(e) => setProcName(e.target.value)}
               required
@@ -1528,15 +1733,48 @@ export const RateManagementPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Hourly Rate (₹/hr) <span className="text-rose-500">*</span>
+                Rate Basis <span className="text-rose-500">*</span>
+              </label>
+              <select
+                value={procRateBasis}
+                onChange={(e) => handleRateBasisChange(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:outline-blue-500"
+              >
+                {RATE_BASIS_OPTIONS.map((basis) => (
+                  <option key={basis} value={basis}>
+                    {basis}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Rate Unit <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="hour, piece, meter, batch, etc."
+                value={procUnit}
+                onChange={(e) => setProcUnit(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Rate (₹ / {procUnit || 'unit'}) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="1200.00"
-                value={procHourlyRate}
-                onChange={(e) => setProcHourlyRate(e.target.value)}
+                placeholder="120.00"
+                value={procRate}
+                onChange={(e) => setProcRate(e.target.value)}
                 required
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold focus:outline-blue-500"
               />
@@ -1544,7 +1782,7 @@ export const RateManagementPage: React.FC = () => {
 
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Fixed Setup Cost (₹)
+                Setup Cost (₹ - optional)
               </label>
               <input
                 type="number"
@@ -1556,18 +1794,6 @@ export const RateManagementPage: React.FC = () => {
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold focus:outline-blue-500"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">
-              Rate Unit
-            </label>
-            <input
-              type="text"
-              value={procUnit}
-              onChange={(e) => setProcUnit(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono bg-slate-50 focus:outline-blue-500"
-            />
           </div>
 
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-200">
@@ -1585,25 +1811,25 @@ export const RateManagementPage: React.FC = () => {
               size="sm"
               loading={isSubmittingProc}
             >
-              Save Process
+              Save Cost Component
             </Button>
           </div>
         </form>
       </Modal>
 
-      {/* ---------------- MODAL: EDIT PROCESS ---------------- */}
+      {/* ---------------- MODAL: EDIT COST COMPONENT ---------------- */}
       <Modal
         isOpen={editProcessModal !== null}
         onClose={() => setEditProcessModal(null)}
-        title={`Edit Process: ${editProcessModal?.workstationName || ''}`}
-        description="Update hourly machining rates and setup charges."
+        title={`Edit Cost Component: ${editProcessModal?.workstationName || ''}`}
+        description="Update rate basis, pricing and setup charges."
         maxWidth="md"
       >
         {editProcessModal && (
           <form onSubmit={handleUpdateProcess} className="space-y-4 text-xs">
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Process Name
+                Component Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -1622,19 +1848,65 @@ export const RateManagementPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Hourly Rate (₹/hr)
+                  Rate Basis <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={editProcessModal.rate_basis || 'Per Hour'}
+                  onChange={(e) => {
+                    const newBasis = e.target.value;
+                    setEditProcessModal({
+                      ...editProcessModal,
+                      rate_basis: newBasis,
+                      unit: getSuggestedUnitForBasis(newBasis),
+                    });
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:outline-blue-500"
+                >
+                  {RATE_BASIS_OPTIONS.map((basis) => (
+                    <option key={basis} value={basis}>
+                      {basis}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Rate Unit <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editProcessModal.unit || 'unit'}
+                  onChange={(e) =>
+                    setEditProcessModal({
+                      ...editProcessModal,
+                      unit: e.target.value,
+                    })
+                  }
+                  required
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Rate (₹ / {editProcessModal.unit || 'unit'}) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={editProcessModal.hourlyRate}
-                  onChange={(e) =>
+                  value={editProcessModal.rate ?? editProcessModal.hourlyRate}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
                     setEditProcessModal({
                       ...editProcessModal,
-                      hourlyRate: parseFloat(e.target.value) || 0,
-                    })
-                  }
+                      rate: val,
+                      hourlyRate: val,
+                    });
+                  }}
                   required
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold focus:outline-blue-500"
                 />
@@ -1655,7 +1927,6 @@ export const RateManagementPage: React.FC = () => {
                       setupCost: parseFloat(e.target.value) || 0,
                     })
                   }
-                  required
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold focus:outline-blue-500"
                 />
               </div>
@@ -1664,7 +1935,7 @@ export const RateManagementPage: React.FC = () => {
             <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
               <div>
                 <span className="font-bold text-slate-800 block text-xs">Active Status</span>
-                <span className="text-[11px] text-slate-500">Active processes are eligible for rate matching in new quotations.</span>
+                <span className="text-[11px] text-slate-500">Active components are eligible for quotation cost calculation.</span>
               </div>
               <input
                 type="checkbox"
@@ -1694,7 +1965,7 @@ export const RateManagementPage: React.FC = () => {
                 size="sm"
                 loading={isSubmittingProc}
               >
-                Update Process
+                Update Component
               </Button>
             </div>
           </form>
@@ -1706,7 +1977,7 @@ export const RateManagementPage: React.FC = () => {
         isOpen={deactivateTarget !== null}
         onClose={() => !isDeactivating && setDeactivateTarget(null)}
         title="Confirm Rate Deactivation"
-        description={`Deactivating this ${deactivateTarget?.type || 'rate'} will block it from future quotation calculations.`}
+        description={`Deactivating this ${deactivateTarget?.type === 'material' ? 'material' : 'cost component'} will block it from future quotation calculations.`}
         maxWidth="sm"
       >
         <div className="space-y-4 text-xs">
@@ -1735,7 +2006,7 @@ export const RateManagementPage: React.FC = () => {
               loading={isDeactivating}
               onClick={confirmDeactivation}
             >
-              Deactivate Rate
+              Deactivate
             </Button>
           </div>
         </div>

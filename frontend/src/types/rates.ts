@@ -6,6 +6,7 @@ export interface MaterialRate {
   grade?: string;
   gradeAndSpec: string;
   subSpec?: string;
+  unit?: string;
   category: MaterialCategory;
   baseRatePerKg: number;
   scrapCreditPerKg: number;
@@ -22,7 +23,9 @@ export interface ProcessRate {
   id: string;
   workstationName: string;
   code: string;
-  category: 'CNC' | 'Turning' | 'Milling' | 'Grinding' | 'Laser & Fabrication' | 'Inspection';
+  category: string;
+  rate_basis?: string;
+  rate?: number;
   hourlyRate: number;
   setupCost: number;
   unit?: string;
@@ -48,6 +51,7 @@ export interface PricingRulesConfig {
   profit_percentage: number | null;
   gst_type: string | null;
   default_gst_rate: number | null;
+  rounding_method?: string | null;
 }
 
 export interface HsnGstRule {

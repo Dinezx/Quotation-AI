@@ -13,10 +13,26 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+
 // Request interceptor for Supabase / JWT auth token
 apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('quotation_ai_auth_token');
+  async (config) => {
+    let token: string | null = null;
+    if (isSupabaseConfigured) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          token = session.access_token;
+          localStorage.setItem('quotation_ai_auth_token', token);
+        }
+      } catch (err) {
+        // Fall back to localStorage
+      }
+    }
+    if (!token) {
+      token = localStorage.getItem('quotation_ai_auth_token');
+    }
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Numeric, Boolean, ForeignKey, Index
 from app.db.base import Base, TimestampMixin, generate_uuid
@@ -14,9 +15,18 @@ class Process(Base, TimestampMixin):
     company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     unit: Mapped[str] = mapped_column(String(20), default="hour", nullable=False)
-    hourly_rate: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False) # INR / hour
+    hourly_rate: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False) # INR / rate unit
+    rate_basis: Mapped[Optional[str]] = mapped_column(String(50), default="Per Hour", nullable=True) # Per Hour, Per Piece, Per KG, etc.
     setup_cost: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    @property
+    def rate(self) -> Decimal:
+        return self.hourly_rate
+
+    @rate.setter
+    def rate(self, value: Decimal) -> None:
+        self.hourly_rate = value
 
     # Relationships
     company: Mapped["Company"] = relationship("Company", back_populates="processes")

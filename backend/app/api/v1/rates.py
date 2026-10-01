@@ -109,7 +109,8 @@ def create_process(
         company_id=company_id,
         name=process_in.name,
         unit=process_in.unit,
-        hourly_rate=process_in.hourly_rate,
+        hourly_rate=process_in.hourly_rate or process_in.rate,
+        rate_basis=process_in.rate_basis or "Per Hour",
         setup_cost=process_in.setup_cost,
         is_active=process_in.is_active,
     )
