@@ -5,39 +5,39 @@
 @layer base {
   :root {
     --font-mono: 'JetBrains Mono', monospace;
-    --canvas-bg: #fbf9f4;
-    --copper-primary: #2563EB;
-    --copper-hover: #1D4ED8;
-    --navy-primary: #172033;
-    --navy-header: #102134;
-    --border-line: #E5E1D8;
-    --text-primary: #1b1c19;
+    --canvas-bg: #f8fafc;
+    --brand-primary: #2563EB;
+    --brand-hover: #1D4ED8;
+    --navy-sidebar: #0B1328;
+    --navy-header: #0F172A;
+    --border-line: #E2E8F0;
+    --text-primary: #0F172A;
     --text-secondary: #64748B;
   }
 
   body {
-    background-color: #fbf9f4;
-    color: #1b1c19;
+    background-color: #f8fafc;
+    color: #0f172a;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Industrial sleek scrollbar */
+  /* Modern sleek scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #f0eee9;
+    background: #f1f5f9;
   }
   ::-webkit-scrollbar-thumb {
-    background: #dbdad5;
-    border-radius: 3px;
+    background: #cbd5e1;
+    border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #76777d;
+    background: #94a3b8;
   }
 }
 

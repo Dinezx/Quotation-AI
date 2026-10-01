@@ -187,11 +187,11 @@ export const QuotationPreviewPage: React.FC = () => {
   const isFinal = quote?.status === 'FINAL' || quote?.status === 'SENT';
 
   return (
-    <div className="w-full bg-[#fbf9f4] p-6 md:p-8 font-sans antialiased text-[#1b1c19] min-h-screen">
+    <div className="w-full bg-[#f8fafc] p-6 md:p-8 font-sans antialiased text-slate-900 min-h-screen">
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed top-16 right-8 z-50 bg-[#172033] text-white text-xs font-medium py-2.5 px-4 rounded-lg shadow-xl border border-white/20 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-[#3F7D5A]" />
+        <div className="fixed top-16 right-8 z-50 bg-slate-900 text-white text-xs font-medium py-2.5 px-4 rounded-lg shadow-xl border border-white/20 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMsg}</span>
         </div>
       )}
@@ -199,22 +199,22 @@ export const QuotationPreviewPage: React.FC = () => {
       <div className="max-w-[1180px] w-full mx-auto pb-16 flex flex-col gap-6">
 
         {/* MASTER WORKFLOW STEPPER (Step 4 Active) */}
-        <div className="w-full bg-white rounded-xl shadow-xs border border-[#E5E1D8] px-6 py-4">
+        <div className="w-full bg-white rounded-2xl shadow-xs border border-slate-200/90 px-6 py-4">
           <div className="grid grid-cols-5 items-center relative">
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-[#eae8e3] -z-0 mx-10" />
-            <div className="absolute left-10 w-3/4 top-1/2 -translate-y-1/2 h-0.5 bg-[#B87333] -z-0" />
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-100 -z-0 mx-10" />
+            <div className="absolute left-10 w-3/4 top-1/2 -translate-y-1/2 h-0.5 bg-[#2563EB] -z-0" />
 
             {/* Step 1: Upload */}
             <div 
               onClick={() => navigate('/upload')}
               className="relative z-10 flex items-center gap-3 cursor-pointer group"
             >
-              <div className="w-8 h-8 rounded-full bg-[#B87333] text-white flex items-center justify-center font-semibold text-xs shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-semibold text-xs shadow-xs">
                 <Check className="w-4 h-4" />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-semibold">01</span>
-                <span className="text-sm font-semibold text-[#1b1c19] group-hover:text-[#B87333] transition-colors">Upload</span>
+                <span className="text-[11px] uppercase tracking-wider text-[#2563EB] font-semibold">01</span>
+                <span className="text-sm font-semibold text-slate-800 group-hover:text-[#2563EB] transition-colors">Upload</span>
               </div>
             </div>
 
@@ -223,12 +223,12 @@ export const QuotationPreviewPage: React.FC = () => {
               onClick={() => navigate('/review')}
               className="relative z-10 flex items-center gap-3 justify-center cursor-pointer group"
             >
-              <div className="w-8 h-8 rounded-full bg-[#B87333] text-white flex items-center justify-center font-semibold text-xs shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-semibold text-xs shadow-xs">
                 <Check className="w-4 h-4" />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-semibold">02</span>
-                <span className="text-sm font-semibold text-[#1b1c19] group-hover:text-[#B87333] transition-colors">Review</span>
+                <span className="text-[11px] uppercase tracking-wider text-[#2563EB] font-semibold">02</span>
+                <span className="text-sm font-semibold text-slate-800 group-hover:text-[#2563EB] transition-colors">Review</span>
               </div>
             </div>
 
@@ -237,23 +237,23 @@ export const QuotationPreviewPage: React.FC = () => {
               onClick={() => navigate('/calculation')}
               className="relative z-10 flex items-center gap-3 justify-center cursor-pointer group"
             >
-              <div className="w-8 h-8 rounded-full bg-[#B87333] text-white flex items-center justify-center font-semibold text-xs shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-semibold text-xs shadow-xs">
                 <Check className="w-4 h-4" />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-semibold">03</span>
-                <span className="text-sm font-semibold text-[#1b1c19] group-hover:text-[#B87333] transition-colors">Costing</span>
+                <span className="text-[11px] uppercase tracking-wider text-[#2563EB] font-semibold">03</span>
+                <span className="text-sm font-semibold text-slate-800 group-hover:text-[#2563EB] transition-colors">Costing</span>
               </div>
             </div>
 
             {/* Step 4: Preview (Active) */}
             <div className="relative z-10 flex items-center gap-3 justify-center">
-              <div className="w-9 h-9 rounded-full bg-[#B87333] text-white flex items-center justify-center shadow-md ring-4 ring-[#B87333]/20">
+              <div className="w-9 h-9 rounded-full bg-[#2563EB] text-white flex items-center justify-center shadow-xs ring-4 ring-[#2563EB]/20">
                 <FileCheck className="w-4 h-4" />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-bold">04</span>
-                <span className="text-sm font-bold text-[#1b1c19]">Quotation</span>
+                <span className="text-[11px] uppercase tracking-wider text-[#2563EB] font-bold">04</span>
+                <span className="text-sm font-bold text-slate-900">Quotation</span>
               </div>
             </div>
 
@@ -317,18 +317,18 @@ export const QuotationPreviewPage: React.FC = () => {
               {quote.status !== 'FINAL' && (
                 <button
                   onClick={() => setIsEditModalOpen(true)}
-                  className="px-3.5 py-2 bg-white text-[#1b1c19] rounded-lg text-xs font-medium border border-[#E5E1D8] hover:bg-[#f0eee9] transition-colors flex items-center gap-1.5 shadow-xs"
+                  className="px-3.5 py-2 bg-white text-slate-800 rounded-xl text-xs font-medium border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-[#76777d]" />
+                  <Edit3 className="w-3.5 h-3.5 text-slate-500" />
                   <span>Edit Terms</span>
                 </button>
               )}
               <button
                 onClick={handleDownloadPdf}
                 disabled={isDownloadingPdf}
-                className="px-3.5 py-2 bg-white text-[#1b1c19] rounded-lg text-xs font-medium border border-[#E5E1D8] hover:bg-[#f0eee9] transition-colors flex items-center gap-1.5 shadow-xs"
+                className="px-3.5 py-2 bg-white text-slate-800 rounded-xl text-xs font-medium border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5 text-[#76777d]" />
+                <Download className="w-3.5 h-3.5 text-slate-500" />
                 <span>{isDownloadingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
               </button>
             </div>
@@ -337,18 +337,18 @@ export const QuotationPreviewPage: React.FC = () => {
 
         {/* CONTENT AREA: Loading, Empty, or Loaded Quotation */}
         {loading ? (
-          <div className="bg-white rounded-xl p-16 border border-[#E5E1D8] flex flex-col items-center justify-center gap-3 shadow-xs">
-            <RefreshCw className="w-8 h-8 text-[#B87333] animate-spin" />
-            <span className="text-sm font-medium text-[#45474c]">Loading official quotation dossier...</span>
+          <div className="bg-white rounded-2xl p-16 border border-slate-200/90 flex flex-col items-center justify-center gap-3 shadow-xs">
+            <RefreshCw className="w-8 h-8 text-[#2563EB] animate-spin" />
+            <span className="text-sm font-medium text-slate-600">Loading official quotation dossier...</span>
           </div>
         ) : !quote ? (
-          <div className="bg-white rounded-xl p-12 border border-[#E5E1D8] flex flex-col items-center justify-center text-center gap-4 shadow-xs">
-            <div className="w-14 h-14 rounded-full bg-[#B87333]/10 text-[#B87333] flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-12 border border-slate-200/90 flex flex-col items-center justify-center text-center gap-4 shadow-xs">
+            <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center">
               <FileText className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-[#1b1c19]">No Quotation Available</h3>
-              <p className="text-xs text-[#76777d] mt-1 max-w-md">
+              <h3 className="text-lg font-semibold text-slate-900">No Quotation Available</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-md">
                 Select an existing quotation from history, or calculate a quotation from an approved customer Purchase Order.
               </p>
             </div>
@@ -367,10 +367,10 @@ export const QuotationPreviewPage: React.FC = () => {
 
             {/* PRIMARY 8-COL: DIN A4 QUOTATION CANVAS */}
             <div className="lg:col-span-8 flex flex-col gap-5">
-              <div className="bg-white rounded-xl shadow-md border border-[#E5E1D8] p-6 sm:p-8 flex flex-col gap-6">
+              <div className="bg-white rounded-2xl shadow-xs border border-slate-200/90 p-6 sm:p-8 flex flex-col gap-6">
 
                 {/* Corporate Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-[#E5E1D8]">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-slate-200">
                   <div className="flex items-center gap-4">
                     {settings?.template?.show_logo !== false && (
                       <CompanyLogo
@@ -383,21 +383,21 @@ export const QuotationPreviewPage: React.FC = () => {
                     )}
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-serif font-black text-2xl tracking-wider text-[#172033]">
+                        <span className="font-serif font-black text-2xl tracking-wider text-slate-900">
                           {quote.company_name || company?.name || 'Company Name'}
                         </span>
-                        <span className="text-[10px] uppercase font-bold tracking-widest bg-[#172033] text-white px-2 py-0.5 rounded">
+                        <span className="text-[10px] uppercase font-bold tracking-widest bg-slate-900 text-white px-2 py-0.5 rounded">
                           Manufacturing
                         </span>
                       </div>
-                      <span className="text-xs text-[#45474c] font-medium mt-1">
+                      <span className="text-xs text-slate-600 font-medium mt-1">
                         {quote.company_legal_name || quote.company_name || company?.legalName || company?.name || ''}
                       </span>
-                      <span className="text-xs text-[#76777d]">
+                      <span className="text-xs text-slate-500">
                         {quote.company_address || company?.address || ''}
                       </span>
                       {(quote.company_gstin || company?.gstin) && (
-                        <span className="text-[11px] text-[#76777d] mt-1 font-mono">
+                        <span className="text-[11px] text-slate-500 mt-1 font-mono">
                           GSTIN: {quote.company_gstin || company?.gstin}
                         </span>
                       )}
@@ -405,42 +405,42 @@ export const QuotationPreviewPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col sm:items-end text-left sm:text-right">
-                    <span className="text-[10px] uppercase font-bold text-[#76777d] tracking-wider">Commercial Quotation</span>
-                    <span className="text-xl font-bold font-mono text-[#1b1c19]">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Commercial Quotation</span>
+                    <span className="text-xl font-bold font-mono text-slate-900">
                       {quote.quotation_number}
                     </span>
-                    <div className="flex items-center gap-1 text-xs text-[#45474c] mt-0.5">
+                    <div className="flex items-center gap-1 text-xs text-slate-600 mt-0.5">
                       <span>Date: <strong>{new Date(quote.quotation_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></span>
                     </div>
-                    <span className="text-xs text-[#76777d] mt-0.5">
+                    <span className="text-xs text-slate-500 mt-0.5">
                       Validity: {quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '30 Calendar Days'}
                     </span>
                   </div>
                 </div>
 
                 {/* Metadata Ribbon */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-[#f5f3ee] p-3.5 rounded-lg border border-[#E5E1D8]">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
                   <div>
-                    <span className="text-[10px] text-[#76777d] uppercase font-semibold">PO Reference</span>
-                    <div className="text-xs font-semibold text-[#1b1c19] mt-0.5 font-mono">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold">PO Reference</span>
+                    <div className="text-xs font-semibold text-slate-900 mt-0.5 font-mono">
                       {quote.po_number || '—'}
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[#76777d] uppercase font-semibold">Customer</span>
-                    <div className="text-xs font-semibold text-[#1b1c19] mt-0.5 truncate">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold">Customer</span>
+                    <div className="text-xs font-semibold text-slate-900 mt-0.5 truncate">
                       {quote.customer_name || '—'}
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[#76777d] uppercase font-semibold">Delivery Protocol</span>
-                    <div className="text-xs font-semibold text-[#1b1c19] mt-0.5">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold">Delivery Protocol</span>
+                    <div className="text-xs font-semibold text-slate-900 mt-0.5">
                       {quote.delivery_terms || '—'}
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[#76777d] uppercase font-semibold">Payment Terms</span>
-                    <div className="text-xs font-semibold text-[#3F7D5A] mt-0.5">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold">Payment Terms</span>
+                    <div className="text-xs font-semibold text-emerald-700 mt-0.5">
                       {quote.payment_terms || '—'}
                     </div>
                   </div>
@@ -448,43 +448,43 @@ export const QuotationPreviewPage: React.FC = () => {
 
                 {/* Addresses: Billing & Dispatch Hub */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-3.5 rounded-lg bg-[#f5f3ee] flex flex-col gap-1 border border-[#E5E1D8]">
-                    <div className="flex items-center gap-1.5 text-[#76777d] text-[11px] font-semibold uppercase">
-                      <Building2 className="w-3.5 h-3.5 text-[#B87333]" />
+                  <div className="p-4 rounded-xl bg-slate-50 flex flex-col gap-1 border border-slate-200/80">
+                    <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase">
+                      <Building2 className="w-3.5 h-3.5 text-[#2563EB]" />
                       <span>Quotation Addressed To</span>
                     </div>
-                    <span className="font-semibold text-sm text-[#1b1c19]">
+                    <span className="font-semibold text-sm text-slate-900">
                       {quote.customer_name || 'Customer'}
                     </span>
-                    <p className="text-xs text-[#45474c] leading-relaxed">
+                    <p className="text-xs text-slate-600 leading-relaxed">
                       {quote.customer_address || '—'}
                     </p>
-                    <span className="text-[11px] font-mono text-[#76777d] mt-1">
+                    <span className="text-[11px] font-mono text-slate-500 mt-1">
                       {quote.customer_gstin ? `GSTIN: ${quote.customer_gstin}` : '—'}
                     </span>
                   </div>
 
-                  <div className="p-3.5 rounded-lg bg-[#f5f3ee] flex flex-col gap-1 border border-[#E5E1D8]">
-                    <div className="flex items-center gap-1.5 text-[#76777d] text-[11px] font-semibold uppercase">
-                      <Truck className="w-3.5 h-3.5 text-[#B87333]" />
+                  <div className="p-4 rounded-xl bg-slate-50 flex flex-col gap-1 border border-slate-200/80">
+                    <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase">
+                      <Truck className="w-3.5 h-3.5 text-[#2563EB]" />
                       <span>Manufacturing Scope &amp; Quality Standard</span>
                     </div>
-                    <span className="font-semibold text-sm text-[#1b1c19]">
+                    <span className="font-semibold text-sm text-slate-900">
                       DIN 7168 Medium Tolerances
                     </span>
-                    <p className="text-xs text-[#45474c] leading-relaxed">
+                    <p className="text-xs text-slate-600 leading-relaxed">
                       {quote.inspection_terms || 'Dimensional verification and material test certificates (MTC) supplied with dispatch.'}
                     </p>
-                    <span className="text-[11px] font-mono text-[#3F7D5A] mt-1 font-semibold">
+                    <span className="text-[11px] font-mono text-emerald-700 mt-1 font-semibold">
                       ISO 9001:2015 &amp; IATF 16949 Certified Facility
                     </span>
                   </div>
                 </div>
 
                 {/* Commercial Bill of Quantities Table */}
-                <div className="overflow-x-auto rounded-lg border border-[#E5E1D8]">
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-[#172033] text-white">
+                    <thead className="bg-[#0B1328] text-white">
                       <tr>
                         <th className="py-2.5 px-3 font-semibold w-12 text-center">Sr.</th>
                         <th className="py-2.5 px-3 font-semibold">Part Description &amp; Technical Spec</th>
@@ -494,10 +494,10 @@ export const QuotationPreviewPage: React.FC = () => {
                         <th className="py-2.5 px-3 font-semibold text-right">Subtotal (₹)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#E5E1D8] bg-white">
+                    <tbody className="divide-y divide-slate-200 bg-white">
                       {(quote.items || []).map((it, idx) => (
-                        <tr key={it.id || idx} className="hover:bg-[#fbf9f4] transition-colors">
-                          <td className="py-3 px-3 text-center font-mono font-bold text-[#76777d]">
+                        <tr key={it.id || idx} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 px-3 text-center font-mono font-bold text-slate-500">
                             {String(it.item_number || idx + 1).padStart(2, '0')}
                           </td>
                           <td className="py-3 px-3">
@@ -530,17 +530,17 @@ export const QuotationPreviewPage: React.FC = () => {
                     <span className="text-[10px] uppercase font-bold text-[#76777d]">
                       Commercial Total In Words
                     </span>
-                    <p className="text-xs italic font-medium text-[#1b1c19] bg-[#f5f3ee] p-3 rounded-lg border border-[#E5E1D8]">
+                    <p className="text-xs italic font-medium text-slate-900 bg-slate-50 p-3 rounded-xl border border-slate-200">
                       "{quote.final_total_in_words || quote.amount_in_words || 'Verified Commercial Total'}"
                     </p>
                     <div className="flex flex-col gap-1 text-[#45474c] text-xs pt-1">
-                      <span className="font-semibold text-[#1b1c19] uppercase text-[10px]">Commercial Notes:</span>
+                      <span className="font-semibold text-slate-900 uppercase text-[10px]">Commercial Notes:</span>
                       <p>• {quote.notes || 'Components manufactured strictly to engineering specifications. Pricing inclusive of machining, heat treatment, and surface finishing.'}</p>
                     </div>
                   </div>
 
                   {/* Tax Pane */}
-                  <div className="w-full sm:w-80 bg-[#f5f3ee] p-4 rounded-xl flex flex-col gap-2 text-xs border border-[#E5E1D8]">
+                  <div className="w-full sm:w-80 bg-slate-50 p-4 rounded-xl flex flex-col gap-2 text-xs border border-slate-200">
                     <div className="flex justify-between items-center text-[#45474c]">
                       <span>Taxable Value (Ex-Works)</span>
                       <span className="font-mono text-[#1b1c19] font-bold">
@@ -581,12 +581,12 @@ export const QuotationPreviewPage: React.FC = () => {
                       </>
                     )}
 
-                    <div className="pt-2 bg-white p-3 rounded-lg flex justify-between items-baseline border border-[#E5E1D8] shadow-xs">
+                    <div className="pt-2 bg-white p-3 rounded-xl flex justify-between items-baseline border border-slate-200 shadow-xs">
                       <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-[#B87333]">GRAND TOTAL (INR)</span>
-                        <span className="text-[10px] text-[#76777d]">Inclusive of GST</span>
+                        <span className="text-[10px] uppercase font-bold text-[#2563EB]">GRAND TOTAL (INR)</span>
+                        <span className="text-[10px] text-slate-500">Inclusive of GST</span>
                       </div>
-                      <span className="text-lg font-bold text-[#1b1c19] font-mono">
+                      <span className="text-lg font-bold text-slate-900 font-mono">
                         <TabularNumber value={quote.final_total || quote.grand_total || 0} />
                       </span>
                     </div>
@@ -594,22 +594,22 @@ export const QuotationPreviewPage: React.FC = () => {
                 </div>
 
                 {/* Signatory & Cryptographic Security Stamp */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 bg-[#f5f3ee] p-4 rounded-xl border border-[#E5E1D8]">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-white p-1 flex items-center justify-center shadow-xs border border-[#E5E1D8]">
-                      <Shield className="w-6 h-6 text-[#B87333]" />
+                    <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs border border-slate-200">
+                      <Shield className="w-6 h-6 text-[#2563EB]" />
                     </div>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5 text-[#3F7D5A]" />
-                        <span className="text-[10px] font-bold uppercase text-[#1b1c19]">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-[10px] font-bold uppercase text-slate-900">
                           {quote.status === 'FINAL' ? 'Verified Legal Immutability' : 'Deterministic Calculation Verified'}
                         </span>
                       </div>
-                      <span className="font-mono text-xs text-[#76777d] truncate max-w-[240px]">
+                      <span className="font-mono text-xs text-slate-500 truncate max-w-[240px]">
                         {quote.pdf_sha256 ? `SHA256: ${quote.pdf_sha256.slice(0, 16)}...` : 'Pending final authorization'}
                       </span>
-                      <span className="text-[11px] text-[#45474c]">
+                      <span className="text-[11px] text-slate-600">
                         {quote.finalized_at 
                           ? `Finalized: ${new Date(quote.finalized_at).toLocaleString('en-IN')}` 
                           : 'Draft Document — Subject to final human authorization'}
@@ -618,11 +618,11 @@ export const QuotationPreviewPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col sm:items-end text-center sm:text-right">
-                    <span className="text-xs font-bold text-[#1b1c19]">
+                    <span className="text-xs font-bold text-slate-900">
                       {quote.authorized_signatory || quote.prepared_by || 'Authorised Signatory'}
                     </span>
-                    <span className="text-[11px] text-[#45474c]">VP Operations &amp; Commercial Authority</span>
-                    <span className="text-[10px] text-[#76777d]">
+                    <span className="text-[11px] text-slate-600">VP Operations &amp; Commercial Authority</span>
+                    <span className="text-[10px] text-slate-500">
                       {quote.company_name || 'Bharat Precision Engineering'}
                     </span>
                   </div>
@@ -635,117 +635,117 @@ export const QuotationPreviewPage: React.FC = () => {
             <div className="lg:col-span-4 flex flex-col gap-5">
 
               {/* Tax Compliance Card */}
-              <div className="bg-white p-4 rounded-xl shadow-xs border border-[#E5E1D8] flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#3F7D5A] mt-0.5 shrink-0" />
+              <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/90 flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
                 <div>
-                  <span className="text-xs font-bold text-[#1b1c19] block">
+                  <span className="text-xs font-bold text-slate-900 block">
                     {quote.gst_type === 'IGST' ? 'Inter-State GST (18%)' : 'Intra-State GST (CGST 9% + SGST 9%)'}
                   </span>
-                  <p className="text-xs text-[#45474c] mt-0.5">
+                  <p className="text-xs text-slate-600 mt-0.5">
                     GST Rule 46 compliant tax invoice quotation format matching recipient registered jurisdiction.
                   </p>
                 </div>
               </div>
 
               {/* Card: Customer Recipient Details */}
-              <div className="bg-white p-4 rounded-xl shadow-xs border border-[#E5E1D8] flex flex-col gap-3">
-                <div className="flex items-center justify-between pb-2 border-b border-[#E5E1D8]">
+              <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col gap-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                   <div className="flex items-center gap-1.5">
-                    <Mail className="w-4 h-4 text-[#B87333]" />
-                    <h2 className="text-xs font-bold text-[#1b1c19] uppercase tracking-wide">Customer Transmission</h2>
+                    <Mail className="w-4 h-4 text-[#2563EB]" />
+                    <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Customer Transmission</h2>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-[#f0eee9] text-[#45474c] font-medium font-mono">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium font-mono">
                     Resend API
                   </span>
                 </div>
 
                 <div className="flex flex-col gap-2.5 text-xs">
                   <div>
-                    <label className="text-[10px] font-semibold uppercase text-[#76777d] block mb-1">Customer Recipient Email</label>
-                    <div className="bg-[#f5f3ee] px-3 py-2 rounded-lg flex items-center justify-between border border-[#E5E1D8]">
+                    <label className="text-[10px] font-semibold uppercase text-slate-500 block mb-1">Customer Recipient Email</label>
+                    <div className="bg-slate-50 px-3 py-2 rounded-xl flex items-center justify-between border border-slate-200">
                       <div className="flex flex-col truncate">
-                        <span className="font-semibold text-[#1b1c19] truncate">
+                        <span className="font-semibold text-slate-900 truncate">
                           {quote.customer_email || quote.resolved_email_recipient || 'procurement@customer.com'}
                         </span>
-                        <span className="text-[10px] text-[#76777d]">
+                        <span className="text-[10px] text-slate-500">
                           {quote.customer_name || 'Procurement Authority'}
                         </span>
                       </div>
-                      <CheckCircle2 className="w-4 h-4 text-[#3F7D5A] shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-semibold uppercase text-[#76777d] block mb-1">Transmission Subject</label>
+                    <label className="text-[10px] font-semibold uppercase text-slate-500 block mb-1">Transmission Subject</label>
                     <input
                       readOnly
                       type="text"
                       value={`Official Quotation ${quote.quotation_number} - ${quote.customer_name || 'Client'}`}
-                      className="w-full bg-[#f5f3ee] px-3 py-1.5 rounded-lg border border-[#E5E1D8] text-xs text-[#1b1c19] font-mono"
+                      className="w-full bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-900 font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-semibold uppercase text-[#76777d] block mb-1">Generated Official Document</label>
+                    <label className="text-[10px] font-semibold uppercase text-slate-500 block mb-1">Generated Official Document</label>
                     <div 
                       onClick={handleDownloadPdf}
-                      className="flex items-center justify-between p-2.5 bg-[#f5f3ee] rounded-lg hover:bg-[#eae8e3] transition-colors cursor-pointer border border-[#E5E1D8]"
+                      className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200"
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <div className="w-7 h-7 rounded bg-[#ba1a1a]/10 text-[#ba1a1a] flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded bg-red-100 text-red-700 flex items-center justify-center shrink-0">
                           <FileText className="w-4 h-4" />
                         </div>
                         <div className="flex flex-col truncate">
-                          <span className="font-semibold text-[#1b1c19] truncate">{quote.quotation_number}.pdf</span>
-                          <span className="text-[10px] text-[#76777d]">Official DIN A4 Quotation</span>
+                          <span className="font-semibold text-slate-900 truncate">{quote.quotation_number}.pdf</span>
+                          <span className="text-[10px] text-slate-500">Official DIN A4 Quotation</span>
                         </div>
                       </div>
-                      <Download className="w-4 h-4 text-[#76777d]" />
+                      <Download className="w-4 h-4 text-slate-500" />
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Real Audit & Immutability Telemetry */}
-              <div className="bg-white p-4 rounded-xl shadow-xs border border-[#E5E1D8] flex flex-col gap-3">
-                <div className="flex items-center gap-1.5 pb-2 border-b border-[#E5E1D8]">
-                  <ShieldCheck className="w-4 h-4 text-[#3F7D5A]" />
-                  <h2 className="text-xs font-bold text-[#1b1c19] uppercase tracking-wide">Audit &amp; Dispatch Telemetry</h2>
+              <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col gap-3">
+                <div className="flex items-center gap-1.5 pb-2 border-b border-slate-200">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Audit &amp; Dispatch Telemetry</h2>
                 </div>
 
                 <div className="flex flex-col gap-2 text-xs">
-                  <div className="p-2.5 rounded-lg bg-[#f5f3ee] border border-[#E5E1D8] flex justify-between items-center">
-                    <span className="text-[#76777d]">Document Status:</span>
-                    <span className="font-bold text-[#1b1c19]">{quote.status}</span>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+                    <span className="text-slate-500">Document Status:</span>
+                    <span className="font-bold text-slate-900">{quote.status}</span>
                   </div>
 
-                  <div className="p-2.5 rounded-lg bg-[#f5f3ee] border border-[#E5E1D8] flex justify-between items-center">
-                    <span className="text-[#76777d]">Storage Location:</span>
-                    <span className="font-mono text-[11px] text-[#1b1c19] truncate max-w-[180px]">
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+                    <span className="text-slate-500">Storage Location:</span>
+                    <span className="font-mono text-[11px] text-slate-900 truncate max-w-[180px]">
                       {quote.pdf_storage_path ? 'Supabase Storage' : 'Database Ready'}
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-lg bg-[#f5f3ee] border border-[#E5E1D8] flex justify-between items-center">
-                    <span className="text-[#76777d]">Email Status:</span>
-                    <span className={`font-semibold ${quote.email_status === 'SENT' ? 'text-[#3F7D5A]' : 'text-[#76777d]'}`}>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+                    <span className="text-slate-500">Email Status:</span>
+                    <span className={`font-semibold ${quote.email_status === 'SENT' ? 'text-emerald-700' : 'text-slate-500'}`}>
                       {quote.email_status || 'NOT_DISPATCHED'}
                     </span>
                   </div>
 
                   {quote.email_sent_at && (
-                    <div className="p-2.5 rounded-lg bg-[#f5f3ee] border border-[#E5E1D8] flex justify-between items-center">
-                      <span className="text-[#76777d]">Dispatched At:</span>
-                      <span className="font-mono text-[11px] text-[#1b1c19]">
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+                      <span className="text-slate-500">Dispatched At:</span>
+                      <span className="font-mono text-[11px] text-slate-900">
                         {new Date(quote.email_sent_at).toLocaleString('en-IN')}
                       </span>
                     </div>
                   )}
 
                   {quote.pdf_sha256 && (
-                    <div className="p-2.5 rounded-lg bg-[#f5f3ee] border border-[#E5E1D8] flex flex-col gap-0.5">
-                      <span className="text-[#76777d] text-[10px] uppercase font-bold">SHA-256 Integrity Hash:</span>
-                      <span className="font-mono text-[10px] text-[#1b1c19] break-all">
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-0.5">
+                      <span className="text-slate-500 text-[10px] uppercase font-bold">SHA-256 Integrity Hash:</span>
+                      <span className="font-mono text-[10px] text-slate-900 break-all">
                         {quote.pdf_sha256}
                       </span>
                     </div>
@@ -760,22 +760,22 @@ export const QuotationPreviewPage: React.FC = () => {
 
         {/* ACTION FOOTER BAR */}
         {quote && (
-          <div className="sticky bottom-0 bg-white p-4 rounded-xl shadow-lg border border-[#E5E1D8] flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 z-30">
+          <div className="sticky bottom-0 bg-white p-4 rounded-2xl shadow-lg border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 z-30">
             <div className="flex items-center gap-2.5 w-full sm:w-auto">
               <button
                 onClick={handleDownloadPdf}
                 disabled={isDownloadingPdf}
-                className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#f5f3ee] hover:bg-[#eae8e3] text-[#1b1c19] text-xs font-semibold transition-colors border border-[#E5E1D8]"
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition-colors border border-slate-200 cursor-pointer"
               >
-                <Download className="w-4 h-4 text-[#76777d]" />
+                <Download className="w-4 h-4 text-slate-500" />
                 <span>{isDownloadingPdf ? 'Generating PDF...' : 'Download Official PDF'}</span>
               </button>
             </div>
 
             <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
               <div className="flex flex-col text-left sm:text-right">
-                <span className="text-[10px] uppercase font-semibold text-[#76777d]">Total Quotation Value</span>
-                <span className="text-xl font-bold font-mono text-[#1b1c19]">
+                <span className="text-[10px] uppercase font-semibold text-slate-500">Total Quotation Value</span>
+                <span className="text-xl font-bold font-mono text-slate-900">
                   <TabularNumber value={quote.final_total || quote.grand_total || 0} />
                 </span>
               </div>
@@ -784,7 +784,7 @@ export const QuotationPreviewPage: React.FC = () => {
                 <button
                   onClick={handleFinalize}
                   disabled={isFinalizing}
-                  className="flex items-center gap-2 px-6 py-3 rounded-lg text-white text-xs font-bold transition-all shadow-md bg-[#2563EB] hover:bg-[#1D4ED8] shadow-[#2563EB]/20 active:scale-[0.99]"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl text-white text-xs font-bold transition-all shadow-md bg-[#2563EB] hover:bg-[#1D4ED8] shadow-[#2563EB]/20 active:scale-[0.99] cursor-pointer"
                 >
                   <Lock className="w-4 h-4" />
                   <span>{isFinalizing ? 'Finalizing...' : 'Finalize Quotation (Freeze & Store PDF)'}</span>
@@ -793,7 +793,7 @@ export const QuotationPreviewPage: React.FC = () => {
                 <button
                   onClick={() => setIsEmailModalOpen(true)}
                   disabled={isSendingEmail}
-                  className="flex items-center gap-2 px-6 py-3 rounded-lg text-white text-xs font-bold transition-all shadow-md bg-[#3F7D5A] hover:bg-[#326448] shadow-[#3F7D5A]/20 active:scale-[0.99]"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl text-white text-xs font-bold transition-all shadow-md bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 active:scale-[0.99] cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   <span>{quote.email_status === 'SENT' ? 'Re-send Quotation Email' : 'Email Quotation to Customer'}</span>
@@ -814,39 +814,39 @@ export const QuotationPreviewPage: React.FC = () => {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-[#45474c] block mb-1">Payment Terms</label>
+            <label className="text-xs font-semibold text-slate-700 block mb-1">Payment Terms</label>
             <input
               type="text"
               value={editForm.payment_terms}
               onChange={(e) => setEditForm(prev => ({ ...prev, payment_terms: e.target.value }))}
-              className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19]"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#45474c] block mb-1">Delivery Terms</label>
+            <label className="text-xs font-semibold text-slate-700 block mb-1">Delivery Terms</label>
             <input
               type="text"
               value={editForm.delivery_terms}
               onChange={(e) => setEditForm(prev => ({ ...prev, delivery_terms: e.target.value }))}
-              className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19]"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#45474c] block mb-1">Quality &amp; Inspection Clause</label>
+            <label className="text-xs font-semibold text-slate-700 block mb-1">Quality &amp; Inspection Clause</label>
             <input
               type="text"
               value={editForm.inspection_terms}
               onChange={(e) => setEditForm(prev => ({ ...prev, inspection_terms: e.target.value }))}
-              className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19]"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#45474c] block mb-1">Standard Manufacturing Notes</label>
+            <label className="text-xs font-semibold text-slate-700 block mb-1">Standard Manufacturing Notes</label>
             <textarea
               rows={3}
               value={editForm.notes}
               onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
-              className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19]"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -866,23 +866,23 @@ export const QuotationPreviewPage: React.FC = () => {
         size="md"
       >
         <div className="space-y-4">
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 leading-relaxed">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed">
             This operation retrieves the cryptographically verified final PDF from secure storage and delivers it to the customer via the Resend email service.
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-[#45474c] block mb-1">Recipient Email (Server Resolved)</label>
+            <label className="text-xs font-semibold text-slate-700 block mb-1">Recipient Email (Server Resolved)</label>
             <input
               readOnly
               type="text"
               value={quote?.customer_email || quote?.resolved_email_recipient || 'procurement@customer.com'}
-              className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19] font-mono cursor-not-allowed"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 font-mono cursor-not-allowed"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-[#45474c] block mb-1">Quotation Document Attached</label>
-            <div className="p-2.5 bg-[#f5f3ee] rounded-lg border border-[#E5E1D8] text-xs font-mono text-[#1b1c19]">
+            <label className="text-xs font-semibold text-slate-700 block mb-1">Quotation Document Attached</label>
+            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono text-slate-900">
               {quote?.quotation_number}.pdf (Signed &amp; Verified)
             </div>
           </div>

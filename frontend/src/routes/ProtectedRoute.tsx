@@ -8,10 +8,10 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#fbf9f4]">
+      <div className="flex items-center justify-center min-h-screen bg-[#f8fafc]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-3 border-[#172033]/20 border-t-[#B87333] rounded-full animate-spin" />
-          <span className="text-xs font-mono font-semibold text-[#64748B] tracking-wider uppercase">
+          <div className="w-10 h-10 border-3 border-slate-200 border-t-[#2563EB] rounded-full animate-spin" />
+          <span className="text-xs font-mono font-semibold text-slate-500 tracking-wider uppercase">
             Verifying Industrial Session...
           </span>
         </div>

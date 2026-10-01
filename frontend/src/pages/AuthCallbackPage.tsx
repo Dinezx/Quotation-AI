@@ -268,10 +268,10 @@ export const AuthCallbackPage: React.FC = () => {
   // Loading State - Clean, modern spinner
   if (statusState === 'loading') {
     return (
-      <div className="min-h-screen bg-[#fbf9f4] flex items-center justify-center p-4 antialiased font-sans">
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 antialiased font-sans">
         <div className="max-w-sm w-full bg-white rounded-2xl shadow-xl border border-slate-200/80 p-8 text-center space-y-4">
           <div className="flex items-center justify-center">
-            <div className="w-12 h-12 border-3 border-slate-200 border-t-[#B87333] rounded-full animate-spin" />
+            <div className="w-12 h-12 border-3 border-slate-200 border-t-[#2563EB] rounded-full animate-spin" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-slate-900">
@@ -289,8 +289,8 @@ export const AuthCallbackPage: React.FC = () => {
   // Session Expired / Timeout State
   if (statusState === 'expired') {
     return (
-      <div className="min-h-screen bg-[#fbf9f4] flex items-center justify-center p-4 antialiased font-sans">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-xl border border-amber-200 p-8 text-center space-y-5">
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 antialiased font-sans">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-amber-200 p-8 text-center space-y-5">
           <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 mx-auto flex items-center justify-center">
             <Clock className="w-6 h-6" />
           </div>
@@ -298,10 +298,10 @@ export const AuthCallbackPage: React.FC = () => {
             <span className="text-[11px] font-mono uppercase tracking-wider text-amber-800 font-semibold block">
               Session Notice
             </span>
-            <h2 className="text-xl font-bold text-[#172033] mt-1">
+            <h2 className="text-xl font-bold text-slate-900 mt-1">
               Authentication Window Timed Out
             </h2>
-            <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
               {errorMessage || 'Google sign-in could not be completed. Please try again.'}
             </p>
           </div>
@@ -329,8 +329,8 @@ export const AuthCallbackPage: React.FC = () => {
 
   // OAuth Failure or Network Error State
   return (
-    <div className="min-h-screen bg-[#fbf9f4] flex items-center justify-center p-4 antialiased font-sans">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-xl border border-[#ba1a1a]/30 p-8 text-center space-y-5">
+    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 antialiased font-sans">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-[#ba1a1a]/30 p-8 text-center space-y-5">
         <div className="w-12 h-12 rounded-full bg-red-100 text-red-700 mx-auto flex items-center justify-center">
           <AlertTriangle className="w-6 h-6" />
         </div>
@@ -338,10 +338,10 @@ export const AuthCallbackPage: React.FC = () => {
           <span className="text-[11px] font-mono uppercase tracking-wider text-red-700 font-semibold block">
             Authentication Notice
           </span>
-          <h2 className="text-xl font-bold text-[#172033] mt-1">
+          <h2 className="text-xl font-bold text-slate-900 mt-1">
             Sign In Was Not Completed
           </h2>
-          <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+          <p className="text-xs text-slate-500 mt-2 leading-relaxed">
             {errorMessage}
           </p>
         </div>
@@ -355,7 +355,7 @@ export const AuthCallbackPage: React.FC = () => {
           </button>
           <button
             onClick={() => navigate('/login')}
-            className="flex-1 h-11 bg-[#172033] hover:bg-[#202c45] text-white text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="flex-1 h-11 bg-[#0B1328] hover:bg-[#151f38] text-white text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>Return to Sign In</span>
             <ArrowRight className="w-3.5 h-3.5" />

@@ -169,37 +169,37 @@ export const PoReviewPage: React.FC = () => {
     : '98.6';
 
   return (
-    <div className="w-full bg-[#fbf9f4] p-6 md:p-8 font-sans antialiased text-[#1b1c19] min-h-screen">
+    <div className="w-full bg-[#f8fafc] p-6 md:p-8 font-sans antialiased text-slate-900 min-h-screen">
       <div className="max-w-[1180px] w-full mx-auto pb-16 flex flex-col gap-6">
 
         {/* WORKFLOW STEPPER (Step 2 Active) */}
-        <div className="w-full bg-white rounded-xl shadow-xs border border-[#E5E1D8] px-6 py-4">
+        <div className="w-full bg-white rounded-2xl shadow-xs border border-slate-200/90 px-6 py-4">
           <div className="grid grid-cols-5 items-center relative">
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-[#eae8e3] -z-0 mx-10" />
-            <div className="absolute left-10 w-1/4 top-1/2 -translate-y-1/2 h-0.5 bg-[#B87333] -z-0" />
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-100 -z-0 mx-10" />
+            <div className="absolute left-10 w-1/4 top-1/2 -translate-y-1/2 h-0.5 bg-[#2563EB] -z-0" />
 
             {/* Step 1: Completed */}
             <div 
               onClick={() => navigate('/upload')}
               className="relative z-10 flex items-center gap-3 cursor-pointer group"
             >
-              <div className="w-8 h-8 rounded-full bg-[#B87333] text-white flex items-center justify-center font-semibold text-xs shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-semibold text-xs shadow-xs">
                 <Check className="w-4 h-4" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-semibold">Step 01</span>
-                <span className="text-sm font-semibold text-[#1b1c19] group-hover:text-[#B87333] transition-colors">Upload</span>
+                <span className="text-[11px] uppercase tracking-wider text-[#2563EB] font-semibold">Step 01</span>
+                <span className="text-sm font-semibold text-slate-800 group-hover:text-[#2563EB] transition-colors">Upload</span>
               </div>
             </div>
 
             {/* Step 2: Active */}
             <div className="relative z-10 flex items-center gap-3 justify-center">
-              <div className="w-8 h-8 rounded-full bg-[#B87333] text-white flex items-center justify-center font-semibold text-xs shadow-md ring-4 ring-[#B87333]/20 font-mono">
+              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-semibold text-xs shadow-xs ring-4 ring-[#2563EB]/20 font-mono">
                 02
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-bold">Step 02</span>
-                <span className="text-sm font-bold text-[#1b1c19]">Review</span>
+                <span className="text-[11px] uppercase tracking-wider text-[#2563EB] font-bold">Step 02</span>
+                <span className="text-sm font-bold text-slate-900">Review</span>
               </div>
             </div>
 
@@ -208,34 +208,34 @@ export const PoReviewPage: React.FC = () => {
               onClick={() => po && navigate(`/calculation?po_id=${po.id}`)}
               className="relative z-10 flex items-center gap-3 justify-center cursor-pointer group"
             >
-              <div className="w-8 h-8 rounded-full bg-[#f0eee9] text-[#76777d] flex items-center justify-center font-semibold text-xs font-mono group-hover:bg-[#E5E1D8]">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-semibold text-xs font-mono group-hover:bg-slate-200">
                 03
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider text-[#76777d]">Step 03</span>
-                <span className="text-sm font-semibold text-[#76777d] group-hover:text-[#1b1c19]">Costing</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400">Step 03</span>
+                <span className="text-sm font-semibold text-slate-500 group-hover:text-slate-800">Costing</span>
               </div>
             </div>
 
             {/* Step 4: Inactive */}
             <div className="relative z-10 flex items-center gap-3 justify-center">
-              <div className="w-8 h-8 rounded-full bg-[#f0eee9] text-[#76777d] flex items-center justify-center font-semibold text-xs font-mono">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-semibold text-xs font-mono">
                 04
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider text-[#76777d]">Step 04</span>
-                <span className="text-sm font-semibold text-[#76777d]">Preview</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400">Step 04</span>
+                <span className="text-sm font-semibold text-slate-400">Preview</span>
               </div>
             </div>
 
             {/* Step 5: Inactive */}
             <div className="relative z-10 flex items-center gap-3 justify-end">
-              <div className="w-8 h-8 rounded-full bg-[#f0eee9] text-[#76777d] flex items-center justify-center font-semibold text-xs font-mono">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-semibold text-xs font-mono">
                 05
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-[11px] uppercase tracking-wider text-[#76777d]">Step 05</span>
-                <span className="text-sm font-semibold text-[#76777d]">Send</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400">Step 05</span>
+                <span className="text-sm font-semibold text-slate-400">Send</span>
               </div>
             </div>
           </div>
@@ -260,9 +260,9 @@ export const PoReviewPage: React.FC = () => {
           <div className="flex items-center gap-3 self-start sm:self-center">
             <button
               onClick={() => setInspectModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-white text-[#1b1c19] text-xs font-medium rounded-lg shadow-xs border border-[#E5E1D8] hover:bg-[#f0eee9] transition-colors"
+              className="flex items-center gap-2 px-3.5 py-2 bg-white text-slate-800 text-xs font-medium rounded-xl shadow-xs border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              <Eye className="w-4 h-4 text-[#76777d]" />
+              <Eye className="w-4 h-4 text-slate-500" />
               <span>Inspect Source Document</span>
             </button>
           </div>
@@ -290,18 +290,18 @@ export const PoReviewPage: React.FC = () => {
         )}
 
         {loading ? (
-          <div className="bg-white rounded-xl p-16 border border-[#E5E1D8] flex flex-col items-center justify-center gap-3 shadow-xs">
-            <RefreshCw className="w-8 h-8 text-[#B87333] animate-spin" />
-            <span className="text-sm font-medium text-[#45474c]">Loading extracted Purchase Order details...</span>
+          <div className="bg-white rounded-2xl p-16 border border-slate-200/90 flex flex-col items-center justify-center gap-3 shadow-xs">
+            <RefreshCw className="w-8 h-8 text-[#2563EB] animate-spin" />
+            <span className="text-sm font-medium text-slate-600">Loading extracted Purchase Order details...</span>
           </div>
         ) : !po ? (
-          <div className="bg-white rounded-xl p-12 border border-[#E5E1D8] flex flex-col items-center justify-center text-center gap-4 shadow-xs">
-            <div className="w-14 h-14 rounded-full bg-[#B87333]/10 text-[#B87333] flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-12 border border-slate-200/90 flex flex-col items-center justify-center text-center gap-4 shadow-xs">
+            <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center">
               <FileText className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-[#1b1c19]">No Purchase Order Loaded</h3>
-              <p className="text-xs text-[#76777d] mt-1 max-w-md">
+              <h3 className="text-lg font-semibold text-slate-900">No Purchase Order Loaded</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-md">
                 Upload a customer Purchase Order (PDF or image) to extract line items, verify metallurgy, and proceed with costing.
               </p>
             </div>
@@ -323,17 +323,17 @@ export const PoReviewPage: React.FC = () => {
           <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
 
             {/* Extracted Metadata Card */}
-            <div className="bg-white rounded-xl p-5 shadow-xs border border-[#E5E1D8]">
-              <div className="flex items-center justify-between pb-3 mb-4 bg-[#f5f3ee] -mx-5 -mt-5 px-5 pt-4 rounded-t-xl border-b border-[#E5E1D8]">
+            <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/90">
+              <div className="flex items-center justify-between pb-3 mb-4 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-2xl border-b border-slate-200/80">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#B87333]" />
-                  <span className="text-[11px] text-[#B87333] font-bold uppercase tracking-wider">
+                  <ShieldCheck className="w-4 h-4 text-[#2563EB]" />
+                  <span className="text-[11px] text-[#2563EB] font-bold uppercase tracking-wider">
                     Commercial Header Metadata
                   </span>
                 </div>
                 <button 
                   onClick={() => setEditHeaderOpen(true)}
-                  className="flex items-center gap-1 text-xs text-[#45474c] hover:text-[#B87333] font-medium transition-colors"
+                  className="flex items-center gap-1 text-xs text-slate-500 hover:text-[#2563EB] font-medium transition-colors"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                   <span>Edit Metadata</span>
@@ -342,58 +342,58 @@ export const PoReviewPage: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Customer Entity */}
-                <div className="p-3.5 bg-[#f5f3ee] rounded-lg flex flex-col justify-between">
-                  <div className="text-[11px] text-[#76777d] uppercase tracking-wider mb-1 font-semibold">
+                <div className="p-4 bg-slate-50/80 border border-slate-200/60 rounded-xl flex flex-col justify-between">
+                  <div className="text-[11px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
                     Customer Entity
                   </div>
-                  <div className="text-base font-semibold text-[#1b1c19]">
+                  <div className="text-base font-semibold text-slate-900">
                     {po.customer_name || 'Customer Name'}
                   </div>
-                  <div className="text-xs text-[#45474c] mt-0.5">
+                  <div className="text-xs text-slate-500 mt-0.5">
                     {po.extracted_data?.customer_gstin ? `GSTIN: ${po.extracted_data.customer_gstin}` : (po.extracted_data?.gstin ? `GSTIN: ${po.extracted_data.gstin}` : 'GSTIN: Not detected')}
                   </div>
                 </div>
 
                 {/* PO Number & Date */}
-                <div className="p-3.5 bg-[#f5f3ee] rounded-lg flex flex-col justify-between">
-                  <div className="text-[11px] text-[#76777d] uppercase tracking-wider mb-1 font-semibold">
+                <div className="p-4 bg-slate-50/80 border border-slate-200/60 rounded-xl flex flex-col justify-between">
+                  <div className="text-[11px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
                     PO Identification
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-base font-semibold text-[#1b1c19] font-mono">
+                    <span className="text-base font-semibold text-slate-900 font-mono">
                       {po.po_number || '—'}
                     </span>
-                    <span className="text-[11px] text-[#3F7D5A] font-semibold bg-[#3F7D5A]/10 px-2 py-0.5 rounded">
+                    <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
                       Active
                     </span>
                   </div>
-                  <div className="text-xs text-[#45474c] mt-0.5">
+                  <div className="text-xs text-slate-500 mt-0.5">
                     Issue Date: {po.po_date ? new Date(po.po_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                   </div>
                 </div>
 
                 {/* Delivery Location */}
-                <div className="p-3.5 bg-[#f5f3ee] rounded-lg flex flex-col justify-between">
-                  <div className="text-[11px] text-[#76777d] uppercase tracking-wider mb-1 font-semibold">
+                <div className="p-4 bg-slate-50/80 border border-slate-200/60 rounded-xl flex flex-col justify-between">
+                  <div className="text-[11px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
                     Delivery Destination
                   </div>
-                  <div className="text-sm text-[#1b1c19] font-medium">
+                  <div className="text-sm text-slate-900 font-medium">
                     {po.delivery_terms || '—'}
                   </div>
-                  <div className="text-xs text-[#45474c] mt-0.5">
+                  <div className="text-xs text-slate-500 mt-0.5">
                     {po.delivery_date ? `Delivery: ${new Date(po.delivery_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}` : 'Standard Delivery'}
                   </div>
                 </div>
 
                 {/* Payment Terms */}
-                <div className="p-3.5 bg-[#f5f3ee] rounded-lg flex flex-col justify-between">
-                  <div className="text-[11px] text-[#76777d] uppercase tracking-wider mb-1 font-semibold">
+                <div className="p-4 bg-slate-50/80 border border-slate-200/60 rounded-xl flex flex-col justify-between">
+                  <div className="text-[11px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
                     Payment &amp; Invoicing
                   </div>
-                  <div className="text-sm text-[#1b1c19] font-medium">
+                  <div className="text-sm text-slate-900 font-medium">
                     {po.payment_terms || 'Standard Payment Terms'}
                   </div>
-                  <div className="flex items-center gap-1 mt-0.5 text-xs text-[#3F7D5A]">
+                  <div className="flex items-center gap-1 mt-0.5 text-xs text-emerald-700">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span className="text-[11px] font-medium">Commercial Terms Extracted</span>
                   </div>
@@ -402,18 +402,18 @@ export const PoReviewPage: React.FC = () => {
             </div>
 
             {/* Extracted Line Items Section */}
-            <div className="bg-white rounded-xl shadow-xs border border-[#E5E1D8] overflow-hidden flex flex-col">
-              <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#f5f3ee] border-b border-[#E5E1D8]">
+            <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden flex flex-col">
+              <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 border-b border-slate-200">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-[#1b1c19]">
+                    <h2 className="text-base font-bold text-slate-900">
                       Extracted Line Items ({po.items.length})
                     </h2>
-                    <span className="px-2 py-0.5 bg-[#01081a] text-white text-[11px] font-semibold rounded">
+                    <span className="px-2 py-0.5 bg-[#0B1328] text-white text-[11px] font-semibold rounded">
                       Extracted
                     </span>
                   </div>
-                  <p className="text-xs text-[#45474c] mt-0.5">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Extracted and mapped from source purchase order document
                   </p>
                 </div>
@@ -441,7 +441,7 @@ export const PoReviewPage: React.FC = () => {
                       };
                       setPo(prev => (prev ? { ...prev, items: [...prev.items, newItem] } : null));
                     }}
-                    className="px-3 py-1.5 bg-white text-[#1b1c19] text-xs font-medium rounded-lg border border-[#E5E1D8] hover:bg-[#f0eee9] transition-colors flex items-center gap-1"
+                    className="px-3 py-1.5 bg-white text-slate-800 text-xs font-medium rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Line</span>
@@ -453,7 +453,7 @@ export const PoReviewPage: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-[#eae8e3]/60 text-[#76777d] uppercase text-[11px] font-semibold tracking-wider">
+                    <tr className="bg-slate-100/70 text-slate-500 uppercase text-[11px] font-semibold tracking-wider">
                       <th className="py-3 px-4 w-12 text-center">#</th>
                       <th className="py-3 px-4">Part &amp; Description</th>
                       <th className="py-3 px-4">Material Grade</th>
@@ -463,7 +463,7 @@ export const PoReviewPage: React.FC = () => {
                       <th className="py-3 px-4 text-center">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#eae8e3] text-sm text-[#1b1c19]">
+                  <tbody className="divide-y divide-slate-200 text-sm text-slate-900">
                     {po.items.map((item, idx) => {
                       const isConfirmed = confirmedItems[item.id] ?? false;
                       const hasFlags = (item.review_flags && item.review_flags.length > 0) || !isConfirmed;
@@ -472,7 +472,7 @@ export const PoReviewPage: React.FC = () => {
                       return (
                         <tr 
                           key={item.id} 
-                          className={`transition-colors ${hasFlags ? 'bg-[#ffdcc2]/10 hover:bg-[#ffdcc2]/20' : 'hover:bg-[#f5f3ee]'}`}
+                          className={`transition-colors ${hasFlags ? 'bg-amber-500/10 hover:bg-amber-500/15' : 'hover:bg-slate-50'}`}
                         >
                           <td className="py-3.5 px-4 text-center font-mono text-xs text-[#76777d]">
                             {String(idx + 1).padStart(2, '0')}
@@ -535,14 +535,14 @@ export const PoReviewPage: React.FC = () => {
               </div>
 
               {/* Bottom line summary */}
-              <div className="p-3 bg-[#f5f3ee] flex flex-col sm:flex-row items-center justify-between text-[#45474c] text-xs gap-2 border-t border-[#E5E1D8]">
+              <div className="p-3 bg-slate-50 flex flex-col sm:flex-row items-center justify-between text-slate-600 text-xs gap-2 border-t border-slate-200">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#3F7D5A]" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>All rows cross-validated against customer catalog revision <strong>2026.1</strong></span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-[#1b1c19]">
-                    Total Requisition: <span className="font-bold font-mono text-[#B87333]">{totalQuantity} Units</span>
+                  <span className="text-xs text-slate-900">
+                    Total Requisition: <span className="font-bold font-mono text-[#2563EB]">{totalQuantity} Units</span>
                   </span>
                 </div>
               </div>
@@ -554,13 +554,13 @@ export const PoReviewPage: React.FC = () => {
           <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
 
             {/* Original PO Document Preview Card */}
-            <div className="bg-white rounded-xl shadow-xs border border-[#E5E1D8] overflow-hidden flex flex-col">
-              <div className="p-4 bg-[#f5f3ee] flex items-center justify-between border-b border-[#E5E1D8]">
+            <div className="bg-white rounded-2xl shadow-xs border border-slate-200/90 overflow-hidden flex flex-col">
+              <div className="p-4 bg-slate-50 flex items-center justify-between border-b border-slate-200">
                 <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#76777d]" />
-                  <span className="text-sm font-semibold text-[#1b1c19]">Source PO Document</span>
+                  <FileText className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm font-semibold text-slate-900">Source PO Document</span>
                 </div>
-                <span className="px-2 py-0.5 bg-[#eae8e3] rounded text-[11px] font-medium text-[#76777d]">
+                <span className="px-2 py-0.5 bg-slate-200 rounded text-[11px] font-medium text-slate-700">
                   Page 1 of 2
                 </span>
               </div>
@@ -568,7 +568,7 @@ export const PoReviewPage: React.FC = () => {
               <div className="p-4 flex flex-col gap-3">
                 <div 
                   onClick={() => setInspectModalOpen(true)}
-                  className="relative w-full aspect-[4/3] bg-[#f0eee9] rounded-lg overflow-hidden flex items-center justify-center group cursor-pointer shadow-inner border border-[#E5E1D8]"
+                  className="relative w-full aspect-[4/3] bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center group cursor-pointer shadow-inner border border-slate-200"
                 >
                   <img 
                     alt="Technical blueprint preview" 
@@ -577,26 +577,26 @@ export const PoReviewPage: React.FC = () => {
                   />
                   {/* Simulated Bounding Boxes Overlay */}
                   <div className="absolute inset-0 p-3 pointer-events-none flex flex-col justify-between">
-                    <div className="self-end bg-[#B87333]/20 border border-[#B87333]/40 px-2 py-0.5 rounded text-[10px] text-[#B87333] font-mono font-bold">
+                    <div className="self-end bg-[#2563EB]/20 border border-[#2563EB]/40 px-2 py-0.5 rounded text-[10px] text-[#2563EB] font-mono font-bold">
                       OCR REGION #01
                     </div>
-                    <div className="w-3/4 h-7 bg-[#3F7D5A]/20 border border-[#3F7D5A]/40 rounded flex items-center px-2">
-                      <span className="text-[9px] text-[#3F7D5A] font-mono font-bold tracking-tight">
+                    <div className="w-3/4 h-7 bg-emerald-500/20 border border-emerald-500/40 rounded flex items-center px-2">
+                      <span className="text-[9px] text-emerald-700 font-mono font-bold tracking-tight">
                         • SOURCE PURCHASE ORDER HEADER
                       </span>
                     </div>
                   </div>
 
                   {/* Hover Inspect CTA */}
-                  <div className="absolute inset-0 bg-[#01081a]/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[1px]">
-                    <button className="px-3 py-1.5 bg-white text-[#1b1c19] rounded-lg text-xs font-semibold shadow-lg flex items-center gap-1.5">
+                  <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[1px]">
+                    <button className="px-3 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-semibold shadow-lg flex items-center gap-1.5">
                       <Maximize2 className="w-3.5 h-3.5" />
                       <span>Inspect PDF Regions</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-[#45474c] pt-1">
+                <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
                   <div className="truncate max-w-[180px]">
                     <span className="font-medium text-[#1b1c19] truncate block">{po.source_file_name || (po.po_number ? `${po.po_number}.pdf` : 'Source_Document.pdf')}</span>
                     <span className="text-[11px] text-[#76777d]">Extracted Document</span>
@@ -612,25 +612,25 @@ export const PoReviewPage: React.FC = () => {
             </div>
 
             {/* AI Extraction Telemetry Card */}
-            <div className="bg-white rounded-xl p-5 shadow-xs border border-[#E5E1D8] flex flex-col gap-4">
+            <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-[#76777d] uppercase tracking-wider font-semibold">
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
                   Extraction Telemetry
                 </span>
-                <span className="flex items-center text-xs text-[#3F7D5A] font-semibold bg-[#3F7D5A]/10 px-2 py-0.5 rounded-full">
+                <span className="flex items-center text-xs text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
                   High Fidelity
                 </span>
               </div>
 
               {/* Confidence Score Bar */}
-              <div className="p-3 bg-[#f5f3ee] rounded-lg flex flex-col gap-2">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-2">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-xs text-[#45474c]">Aggregate Confidence</span>
-                  <span className="font-mono font-bold text-sm text-[#1b1c19]">{avgConfidence}%</span>
+                  <span className="text-xs text-slate-500">Aggregate Confidence</span>
+                  <span className="font-mono font-bold text-sm text-slate-900">{avgConfidence}%</span>
                 </div>
-                <div className="w-full bg-[#eae8e3] h-2 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                   <div 
-                    className="bg-[#3F7D5A] h-full rounded-full transition-all duration-500"
+                    className="bg-emerald-600 h-full rounded-full transition-all duration-500"
                     style={{ width: `${avgConfidence}%` }}
                   />
                 </div>
@@ -638,27 +638,27 @@ export const PoReviewPage: React.FC = () => {
 
               {/* Parameter Grid */}
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-2.5 bg-[#f5f3ee] rounded-lg">
-                  <div className="text-[10px] text-[#76777d] uppercase tracking-wider">Detected Rows</div>
-                  <div className="text-sm font-semibold text-[#1b1c19] mt-0.5">{po.items.length} of {po.items.length} Rows</div>
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider">Detected Rows</div>
+                  <div className="text-sm font-semibold text-slate-900 mt-0.5">{po.items.length} of {po.items.length} Rows</div>
                 </div>
-                <div className="p-2.5 bg-[#f5f3ee] rounded-lg">
-                  <div className="text-[10px] text-[#76777d] uppercase tracking-wider">Currency</div>
-                  <div className="text-sm font-semibold text-[#1b1c19] mt-0.5">INR (₹) Lakhs</div>
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider">Currency</div>
+                  <div className="text-sm font-semibold text-slate-900 mt-0.5">INR (₹) Lakhs</div>
                 </div>
-                <div className="p-2.5 bg-[#f5f3ee] rounded-lg">
-                  <div className="text-[10px] text-[#76777d] uppercase tracking-wider">OCR Latency</div>
-                  <div className="text-sm font-semibold text-[#1b1c19] mt-0.5">1.24s</div>
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider">OCR Latency</div>
+                  <div className="text-sm font-semibold text-slate-900 mt-0.5">1.24s</div>
                 </div>
-                <div className="p-2.5 bg-[#f5f3ee] rounded-lg">
-                  <div className="text-[10px] text-[#76777d] uppercase tracking-wider">Format Standard</div>
-                  <div className="text-sm font-semibold text-[#1b1c19] mt-0.5 truncate">ISO 9001:2015</div>
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider">Format Standard</div>
+                  <div className="text-sm font-semibold text-slate-900 mt-0.5 truncate">ISO 9001:2015</div>
                 </div>
               </div>
             </div>
 
             {/* Engineering Standard Notice Card */}
-            <div className="p-4 bg-[#f5f3ee] rounded-xl flex items-start gap-3 text-[#45474c] shadow-xs border border-[#E5E1D8]">
+            <div className="p-4 bg-blue-50/50 rounded-2xl flex items-start gap-3 text-slate-700 shadow-xs border border-blue-200/80">
               <Info className="w-5 h-5 text-[#2563EB] shrink-0 mt-0.5" />
               <p className="text-xs leading-relaxed">
                 All unassigned dimensional tolerances have been automatically mapped to <strong>ISO 2768-m</strong> standard machining practice.
@@ -670,34 +670,34 @@ export const PoReviewPage: React.FC = () => {
         </div>
 
         {/* ACTION FOOTER BAR */}
-        <div className="w-full bg-white rounded-xl p-4 shadow-sm border border-[#E5E1D8] flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+        <div className="w-full bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button 
               onClick={handleSaveDraft}
               disabled={saving}
-              className="px-4 py-2 bg-[#f5f3ee] hover:bg-[#eae8e3] text-[#1b1c19] text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 border border-[#E5E1D8]"
+              className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-medium rounded-xl transition-colors flex items-center gap-1.5 border border-slate-200 cursor-pointer"
             >
-              <Bookmark className="w-4 h-4 text-[#76777d]" />
+              <Bookmark className="w-4 h-4 text-slate-500" />
               <span>{saving ? 'Saving...' : 'Save as Draft'}</span>
             </button>
             <button 
               onClick={() => navigate('/upload')}
-              className="px-4 py-2 bg-[#f5f3ee] hover:bg-[#eae8e3] text-[#45474c] hover:text-[#1b1c19] text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 border border-[#E5E1D8]"
+              className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium rounded-xl transition-colors flex items-center gap-1.5 border border-slate-200 cursor-pointer"
             >
-              <RefreshCw className="w-4 h-4 text-[#76777d]" />
+              <RefreshCw className="w-4 h-4 text-slate-500" />
               <span>Re-upload File</span>
             </button>
           </div>
 
           <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
-            <div className="hidden md:flex items-center gap-1.5 text-xs text-[#3F7D5A] font-semibold">
+            <div className="hidden md:flex items-center gap-1.5 text-xs text-emerald-600 font-semibold">
               <CheckCircle2 className="w-4 h-4" />
               <span>Mandatory Fields Validated</span>
             </div>
             <button 
               onClick={handleApproveAndProceed}
               disabled={approving}
-              className="px-6 py-2.5 bg-[#2563EB] text-white rounded-lg text-xs font-bold tracking-wide hover:bg-[#1D4ED8] transition-all shadow-md shadow-[#2563EB]/20 flex items-center gap-2 group"
+              className="px-6 py-2.5 bg-[#2563EB] text-white rounded-xl text-xs font-bold tracking-wide hover:bg-[#1D4ED8] transition-all shadow-md shadow-[#2563EB]/20 flex items-center gap-2 group cursor-pointer"
             >
               <span>{approving ? 'Verifying...' : 'Continue to Costing Matrix'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -718,7 +718,7 @@ export const PoReviewPage: React.FC = () => {
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border border-[#E5E1D8] rounded-xl overflow-hidden bg-slate-900 flex flex-col">
+            <div className="border border-slate-700 rounded-xl overflow-hidden bg-slate-900 flex flex-col">
               <div className="bg-[#172033] px-3 py-2 text-xs text-white font-mono flex justify-between">
                 <span>{po?.source_file_name || 'Purchase_Order.pdf'}</span>
                 <span>Zoom: 100%</span>
@@ -731,16 +731,16 @@ export const PoReviewPage: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="border border-[#E5E1D8] rounded-xl p-4 bg-[#f5f3ee] flex flex-col gap-3">
-              <h4 className="font-semibold text-sm text-[#1b1c19]">Verified Vision Bounding Boxes</h4>
-              <p className="text-xs text-[#45474c]">
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 flex flex-col gap-3">
+              <h4 className="font-semibold text-sm text-slate-900">Verified Vision Bounding Boxes</h4>
+              <p className="text-xs text-slate-500">
                 The optical character recognition model has verified line items, buyer terms, and delivery address.
               </p>
               <div className="space-y-2 mt-2">
                 {(po?.items || []).map((it, i) => (
-                  <div key={it.id} className="p-2.5 bg-white rounded-lg border border-[#E5E1D8] text-xs">
-                    <div className="font-semibold text-[#1b1c19]">Row {i + 1}: {it.part_name}</div>
-                    <div className="text-[#76777d] mt-0.5">Qty: {it.quantity} {it.unit} • Grade: {it.material_grade}</div>
+                  <div key={it.id} className="p-2.5 bg-white rounded-lg border border-slate-200 text-xs">
+                    <div className="font-semibold text-slate-900">Row {i + 1}: {it.part_name}</div>
+                    <div className="text-slate-500 mt-0.5">Qty: {it.quantity} {it.unit} • Grade: {it.material_grade}</div>
                   </div>
                 ))}
               </div>
@@ -761,39 +761,39 @@ export const PoReviewPage: React.FC = () => {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-[#45474c] block mb-1">Customer Entity</label>
+            <label className="text-xs font-semibold text-slate-600 block mb-1">Customer Entity</label>
             <input
               type="text"
               value={po?.customer_name || ''}
               onChange={(e) => handleHeaderChange('customer_name', e.target.value)}
-              className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19] focus:outline-none focus:border-[#B87333]"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#45474c] block mb-1">PO Identification Number</label>
+            <label className="text-xs font-semibold text-slate-600 block mb-1">PO Identification Number</label>
             <input
               type="text"
               value={po?.po_number || ''}
               onChange={(e) => handleHeaderChange('po_number', e.target.value)}
-              className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19] font-mono focus:outline-none focus:border-[#B87333]"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 font-mono focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#45474c] block mb-1">Delivery Destination</label>
+            <label className="text-xs font-semibold text-slate-600 block mb-1">Delivery Destination</label>
             <input
               type="text"
               value={po?.delivery_terms || ''}
               onChange={(e) => handleHeaderChange('delivery_terms', e.target.value)}
-              className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19] focus:outline-none focus:border-[#B87333]"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#45474c] block mb-1">Payment Terms</label>
+            <label className="text-xs font-semibold text-slate-600 block mb-1">Payment Terms</label>
             <input
               type="text"
               value={po?.payment_terms || ''}
               onChange={(e) => handleHeaderChange('payment_terms', e.target.value)}
-              className="w-full px-3 py-2 bg-[#f5f3ee] border border-[#E5E1D8] rounded-lg text-sm text-[#1b1c19] focus:outline-none focus:border-[#B87333]"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">

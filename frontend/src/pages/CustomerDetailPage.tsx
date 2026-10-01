@@ -186,7 +186,7 @@ export const CustomerDetailPage: React.FC = () => {
   const isQuotationOverride = Boolean(customer.quotation_email && customer.quotation_email.trim());
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="w-full px-6 md:px-8 py-7 bg-[#f8fafc] min-h-screen space-y-6 pb-16">
       {/* Top Navigation & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -204,7 +204,7 @@ export const CustomerDetailPage: React.FC = () => {
               <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
                 {customer.name}
               </h1>
-              <Badge variant={customer.is_active ? 'success' : 'slate'} size="sm">
+              <Badge variant={customer.is_active ? 'success' : 'slate'} size="sm" dot>
                 {customer.is_active ? 'Active Account' : 'Deactivated'}
               </Badge>
             </div>
@@ -237,16 +237,16 @@ export const CustomerDetailPage: React.FC = () => {
       {/* Overview Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Card 1: Identification & Commercial Details */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3.5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5 text-blue-600" />
+              <Building2 className="w-4 h-4 text-[#2563EB]" />
               Identification & Tax
             </h3>
             <span className="text-[10px] font-mono text-slate-400">Master Record</span>
           </div>
 
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2.5 text-xs">
             <div>
               <span className="text-slate-500 block text-[11px]">Customer Code:</span>
               <span className="font-mono font-bold text-slate-900">{customer.code || `CUST-${customer.id.slice(0, 6).toUpperCase()}`}</span>
@@ -267,10 +267,10 @@ export const CustomerDetailPage: React.FC = () => {
         </div>
 
         {/* Card 2: Communication & Quotation Delivery Settings */}
-        <div className="bg-white border border-blue-200/70 rounded-xl p-5 shadow-xs space-y-3.5 md:col-span-2 relative overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4 md:col-span-2 relative overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-blue-600" />
+              <Mail className="w-4 h-4 text-[#2563EB]" />
               Communication & Delivery Preference
             </h3>
             <Badge variant="info" size="sm">2-Tier Resolution</Badge>
@@ -345,16 +345,16 @@ export const CustomerDetailPage: React.FC = () => {
       </div>
 
       {/* Addresses Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-        <div className="space-y-0.5">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-            <MapPin className="w-3 h-3 text-slate-400" /> Billing Address
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div className="space-y-1">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-slate-400" /> Billing Address
           </span>
           <p className="text-slate-700 leading-snug">{customer.billing_address || <span className="text-slate-400 italic">No billing address specified</span>}</p>
         </div>
-        <div className="space-y-0.5">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-            <MapPin className="w-3 h-3 text-slate-400" /> Shipping / Delivery Hub
+        <div className="space-y-1">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-slate-400" /> Shipping / Delivery Hub
           </span>
           <p className="text-slate-700 leading-snug">{customer.shipping_address || customer.billing_address || <span className="text-slate-400 italic">Same as billing address</span>}</p>
         </div>
@@ -366,67 +366,68 @@ export const CustomerDetailPage: React.FC = () => {
           <button
             onClick={() => setActiveTab('quotations')}
             className={`pb-2.5 text-xs font-bold transition-colors relative cursor-pointer ${
-              activeTab === 'quotations' ? 'text-blue-700' : 'text-slate-500 hover:text-slate-800'
+              activeTab === 'quotations' ? 'text-[#2563EB]' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             Quotation History ({quotations.length})
-            {activeTab === 'quotations' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700 rounded-full" />}
+            {activeTab === 'quotations' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2563EB] rounded-full" />}
           </button>
           <button
             onClick={() => setActiveTab('pos')}
             className={`pb-2.5 text-xs font-bold transition-colors relative cursor-pointer ${
-              activeTab === 'pos' ? 'text-blue-700' : 'text-slate-500 hover:text-slate-800'
+              activeTab === 'pos' ? 'text-[#2563EB]' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             Purchase Orders ({purchaseOrders.length})
-            {activeTab === 'pos' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700 rounded-full" />}
+            {activeTab === 'pos' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2563EB] rounded-full" />}
           </button>
         </div>
 
         {/* Tab 1: Quotations History Table */}
         {activeTab === 'quotations' && (
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+          <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
             {quotations.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-500 space-y-2">
-                <FileText className="w-6 h-6 text-slate-300 mx-auto" />
+              <div className="p-10 text-center text-xs text-slate-500 space-y-2">
+                <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+                <div className="font-semibold text-slate-700">No quotations found</div>
                 <div>No quotations have been generated for this customer account yet.</div>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                  <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-[11px] uppercase tracking-wider font-semibold">
                     <tr>
-                      <th className="p-3">Quotation Number</th>
-                      <th className="p-3">Date</th>
-                      <th className="p-3">PO Number</th>
-                      <th className="p-3 text-right">Final Amount</th>
-                      <th className="p-3 text-center">Status</th>
-                      <th className="p-3 text-center">Email Status</th>
-                      <th className="p-3 text-right">Actions</th>
+                      <th className="py-3 px-4">Quotation Number</th>
+                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">PO Number</th>
+                      <th className="py-3 px-4 text-right">Final Amount</th>
+                      <th className="py-3 px-4 text-center">Status</th>
+                      <th className="py-3 px-4 text-center">Email Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {quotations.map((q) => (
                       <tr key={q.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="p-3 font-mono font-bold text-blue-700">
+                        <td className="py-3.5 px-4 font-mono font-bold text-[#2563EB]">
                           <Link to={`/quotation/${q.id}`} className="hover:underline">
                             {q.quotation_number}
                           </Link>
                         </td>
-                        <td className="p-3 text-slate-600">
+                        <td className="py-3.5 px-4 text-slate-600">
                           {new Date(q.quotation_date || q.created_at).toLocaleDateString('en-GB', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric',
                           })}
                         </td>
-                        <td className="p-3 font-mono text-slate-700">
+                        <td className="py-3.5 px-4 font-mono text-slate-700">
                           {q.po_number || q.purchase_order?.po_number || '—'}
                         </td>
-                        <td className="p-3 text-right font-mono font-bold text-slate-900">
+                        <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">
                           <TabularNumber value={Number(q.final_total || 0)} />
                         </td>
-                        <td className="p-3 text-center">
+                        <td className="py-3.5 px-4 text-center">
                           <Badge
                             variant={q.status === 'FINAL' ? 'success' : 'slate'}
                             size="sm"
@@ -434,7 +435,7 @@ export const CustomerDetailPage: React.FC = () => {
                             {q.status}
                           </Badge>
                         </td>
-                        <td className="p-3 text-center">
+                        <td className="py-3.5 px-4 text-center">
                           <Badge
                             variant={q.email_status === 'SENT' ? 'success' : q.email_status === 'FAILED' ? 'danger' : 'slate'}
                             size="sm"
@@ -442,7 +443,7 @@ export const CustomerDetailPage: React.FC = () => {
                             {q.email_status || 'NOT_SENT'}
                           </Badge>
                         </td>
-                        <td className="p-3 text-right">
+                        <td className="py-3.5 px-4 text-right">
                           <Button
                             variant="outline"
                             size="sm"
@@ -463,23 +464,24 @@ export const CustomerDetailPage: React.FC = () => {
 
         {/* Tab 2: Purchase Orders Table */}
         {activeTab === 'pos' && (
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+          <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
             {purchaseOrders.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-500 space-y-2">
-                <FileText className="w-6 h-6 text-slate-300 mx-auto" />
+              <div className="p-10 text-center text-xs text-slate-500 space-y-2">
+                <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+                <div className="font-semibold text-slate-700">No purchase orders found</div>
                 <div>No purchase orders found for this customer.</div>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                  <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-[11px] uppercase tracking-wider font-semibold">
                     <tr>
-                      <th className="p-3">PO Number</th>
-                      <th className="p-3">PO Date</th>
-                      <th className="p-3">Items Count</th>
-                      <th className="p-3 text-center">Status</th>
-                      <th className="p-3">Created</th>
-                      <th className="p-3 text-right">Actions</th>
+                      <th className="py-3 px-4">PO Number</th>
+                      <th className="py-3 px-4">PO Date</th>
+                      <th className="py-3 px-4">Items Count</th>
+                      <th className="py-3 px-4 text-center">Status</th>
+                      <th className="py-3 px-4">Created</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">

@@ -101,34 +101,34 @@ export const CompanyOnboardingPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#fbf9f4] min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans antialiased text-[#1b1c19]">
+    <div className="bg-[#f8fafc] min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans antialiased text-slate-900">
       <main className="w-full flex items-center justify-center">
         <div className="flex flex-col w-full max-w-5xl mx-auto my-auto py-6">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="bg-white rounded-xl shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px] border border-[#E5E1D8]"
+            className="bg-white rounded-2xl shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px] border border-slate-200/90"
           >
             {/* Left Telemetry & Welcome Panel */}
-            <div className="lg:col-span-4 bg-[#172033] text-white p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-[#1f2d47]">
+            <div className="lg:col-span-4 bg-[#0B1328] text-white p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-[#151f38]">
               {/* Subtle ambient lighting */}
-              <div className="absolute -right-16 -top-16 w-60 h-60 rounded-full bg-[#B87333] opacity-10 blur-3xl pointer-events-none" />
+              <div className="absolute -right-16 -top-16 w-60 h-60 rounded-full bg-[#2563EB] opacity-15 blur-3xl pointer-events-none" />
               <div className="absolute left-0 bottom-0 w-60 h-60 rounded-full bg-[#3b82f6] opacity-10 blur-2xl pointer-events-none" />
 
               <div className="relative z-10 space-y-4">
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#B87333]/20 border border-[#B87333]/40 text-[#fdad67] text-[11px] font-mono font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#B87333] animate-pulse" />
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/10 text-slate-200 text-[11px] font-mono font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />
                   <span>STEP 1 OF 1 • TENANT INITIALIZATION</span>
                 </div>
 
                 <div className="pt-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm">
+                    <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm">
                       <svg width="22" height="22" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="5" y="5" width="26" height="26" rx="6" stroke="#172033" strokeWidth="2.5" />
-                        <circle cx="18" cy="18" r="3.2" fill="#B87333" />
-                        <path d="M18 5V11.5M18 24.5V31M5 18H11.5M24.5 18H31" stroke="#172033" strokeWidth="2" strokeLinecap="round" />
+                        <rect x="5" y="5" width="26" height="26" rx="6" stroke="#0B1328" strokeWidth="2.5" />
+                        <circle cx="18" cy="18" r="3.2" fill="#2563EB" />
+                        <path d="M18 5V11.5M18 24.5V31M5 18H11.5M24.5 18H31" stroke="#0B1328" strokeWidth="2" strokeLinecap="round" />
                       </svg>
                     </div>
                     <span className="text-xl font-black tracking-wider text-white uppercase font-sans">
@@ -139,28 +139,28 @@ export const CompanyOnboardingPage: React.FC = () => {
                   <h2 className="mt-5 text-xl font-bold text-white tracking-tight leading-snug">
                     Register Your Manufacturing Facility.
                   </h2>
-                  <p className="text-xs text-[#94a3b8] mt-2 leading-relaxed">
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
                     Set up your precision plant's statutory identity to unlock automated purchase order extractions, deterministic rate-card matching, and DIN A4 quotation generation.
                   </p>
                 </div>
 
                 <div className="pt-4 space-y-3">
                   <div className="flex items-start gap-2.5 text-xs text-slate-300">
-                    <CheckCircle2 className="w-4 h-4 text-[#fdad67] shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                     <span>Instant benchmark rate cards (EN8, SS 304, AL 6061, CNC 4-Axis)</span>
                   </div>
                   <div className="flex items-start gap-2.5 text-xs text-slate-300">
-                    <CheckCircle2 className="w-4 h-4 text-[#fdad67] shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                     <span>Indian GST statutory invoice and remittance layout</span>
                   </div>
                   <div className="flex items-start gap-2.5 text-xs text-slate-300">
-                    <CheckCircle2 className="w-4 h-4 text-[#fdad67] shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                     <span>Cryptographically isolated tenant database storage</span>
                   </div>
                 </div>
               </div>
 
-              <div className="relative z-10 pt-6 border-t border-[#1f2d47] text-[11px] text-[#7f879f] font-mono">
+              <div className="relative z-10 pt-6 border-t border-[#151f38] text-[11px] text-slate-400 font-mono">
                 AUTHENTICATED VIA: <span className="text-white font-semibold">{user?.email || 'Google Account'}</span>
               </div>
             </div>
@@ -169,27 +169,27 @@ export const CompanyOnboardingPage: React.FC = () => {
             <div className="lg:col-span-8 bg-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs uppercase tracking-wider text-[#B87333] font-semibold">
+                  <span className="text-xs uppercase tracking-wider text-[#2563EB] font-bold">
                     First-Time Facility Registration
                   </span>
-                  <span className="text-[11px] text-[#64748B] font-mono">
+                  <span className="text-[11px] text-slate-500 font-mono">
                     Node: IND-MUM-01
                   </span>
                 </div>
-                <h1 className="text-2xl font-bold text-[#172033] tracking-tight">
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                   Company &amp; Works Profile
                 </h1>
-                <p className="text-xs text-[#64748B] mt-1 leading-relaxed">
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                   Provide your plant's commercial details. These will appear on all finalized quotation commercial dossiers sent to customer purchasing teams.
                 </p>
 
                 {errorMessage && (
-                  <div className="mt-4 bg-[#ffdad6] border border-[#ba1a1a]/30 text-[#93000a] px-3.5 py-2.5 rounded-lg text-xs flex items-center justify-between">
+                  <div className="mt-4 bg-red-50 border border-red-200 text-red-800 px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between">
                     <span>{errorMessage}</span>
                     <button
                       type="button"
                       onClick={() => setErrorMessage(null)}
-                      className="text-[#93000a] font-bold ml-2 hover:opacity-75"
+                      className="text-red-800 font-bold ml-2 hover:opacity-75"
                     >
                       ✕
                     </button>
@@ -200,11 +200,11 @@ export const CompanyOnboardingPage: React.FC = () => {
                   {/* Row 1: Company / Trade Name & Legal Name */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-[#1b1c19]" htmlFor="companyName">
-                        Plant / Trade Name <span className="text-[#ba1a1a]">*</span>
+                      <label className="block text-xs font-semibold text-slate-800" htmlFor="companyName">
+                        Plant / Trade Name <span className="text-red-600">*</span>
                       </label>
-                      <div className="relative flex items-center rounded-lg bg-[#f5f3ee] border border-transparent focus-within:border-[#B87333] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#B87333] transition-all">
-                        <Building2 className="w-4 h-4 text-[#76777d] absolute left-3 pointer-events-none" />
+                      <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-[#2563EB] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#2563EB] transition-all">
+                        <Building2 className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
                         <input
                           id="companyName"
                           name="companyName"
@@ -216,17 +216,17 @@ export const CompanyOnboardingPage: React.FC = () => {
                             if (!legalName) setLegalName(e.target.value);
                           }}
                           placeholder="Bharat Precision Engineering"
-                          className="w-full h-10 pl-9 pr-3 bg-transparent text-[#1b1c19] text-xs rounded-lg focus:outline-none placeholder:text-[#76777d]/70"
+                          className="w-full h-10 pl-9 pr-3 bg-transparent text-slate-900 text-xs rounded-xl focus:outline-none placeholder:text-slate-400"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-[#1b1c19]" htmlFor="legalName">
+                      <label className="block text-xs font-semibold text-slate-800" htmlFor="legalName">
                         Statutory Legal Name
                       </label>
-                      <div className="relative flex items-center rounded-lg bg-[#f5f3ee] border border-transparent focus-within:border-[#B87333] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#B87333] transition-all">
-                        <FileText className="w-4 h-4 text-[#76777d] absolute left-3 pointer-events-none" />
+                      <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-[#2563EB] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#2563EB] transition-all">
+                        <FileText className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
                         <input
                           id="legalName"
                           name="legalName"
@@ -234,7 +234,7 @@ export const CompanyOnboardingPage: React.FC = () => {
                           value={legalName}
                           onChange={(e) => setLegalName(e.target.value)}
                           placeholder="Bharat Precision Engineering Pvt Ltd"
-                          className="w-full h-10 pl-9 pr-3 bg-transparent text-[#1b1c19] text-xs rounded-lg focus:outline-none placeholder:text-[#76777d]/70"
+                          className="w-full h-10 pl-9 pr-3 bg-transparent text-slate-900 text-xs rounded-xl focus:outline-none placeholder:text-slate-400"
                         />
                       </div>
                     </div>
@@ -244,12 +244,12 @@ export const CompanyOnboardingPage: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <label className="block text-xs font-semibold text-[#1b1c19]" htmlFor="gstin">
+                        <label className="block text-xs font-semibold text-slate-800" htmlFor="gstin">
                           GST Identification Number (GSTIN)
                         </label>
-                        <span className="text-[10px] text-[#76777d]">15-digit alphanumeric</span>
+                        <span className="text-[10px] text-slate-500">15-digit alphanumeric</span>
                       </div>
-                      <div className="relative flex items-center rounded-lg bg-[#f5f3ee] border border-transparent focus-within:border-[#B87333] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#B87333] transition-all">
+                      <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-[#2563EB] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#2563EB] transition-all">
                         <input
                           id="gstin"
                           name="gstin"
@@ -258,17 +258,17 @@ export const CompanyOnboardingPage: React.FC = () => {
                           value={gstin}
                           onChange={(e) => setGstin(e.target.value.toUpperCase())}
                           placeholder="27AAACB1234F1Z8"
-                          className="w-full h-10 px-3 bg-transparent text-[#1b1c19] text-xs font-mono uppercase rounded-lg focus:outline-none placeholder:text-[#76777d]/70"
+                          className="w-full h-10 px-3 bg-transparent text-slate-900 text-xs font-mono uppercase rounded-xl focus:outline-none placeholder:text-slate-400"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-[#1b1c19]" htmlFor="fullName">
+                      <label className="block text-xs font-semibold text-slate-800" htmlFor="fullName">
                         Plant Lead / Costing Head Name
                       </label>
-                      <div className="relative flex items-center rounded-lg bg-[#f5f3ee] border border-transparent focus-within:border-[#B87333] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#B87333] transition-all">
-                        <User className="w-4 h-4 text-[#76777d] absolute left-3 pointer-events-none" />
+                      <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-[#2563EB] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#2563EB] transition-all">
+                        <User className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
                         <input
                           id="fullName"
                           name="fullName"
@@ -276,7 +276,7 @@ export const CompanyOnboardingPage: React.FC = () => {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           placeholder="Rajesh Deshmukh"
-                          className="w-full h-10 pl-9 pr-3 bg-transparent text-[#1b1c19] text-xs rounded-lg focus:outline-none placeholder:text-[#76777d]/70"
+                          className="w-full h-10 pl-9 pr-3 bg-transparent text-slate-900 text-xs rounded-xl focus:outline-none placeholder:text-slate-400"
                         />
                       </div>
                     </div>
@@ -284,11 +284,11 @@ export const CompanyOnboardingPage: React.FC = () => {
 
                   {/* Row 3: Plant Address */}
                   <div className="space-y-1">
-                    <label className="block text-xs font-semibold text-[#1b1c19]" htmlFor="address">
-                      Physical Factory / Works Address <span className="text-[#ba1a1a]">*</span>
+                    <label className="block text-xs font-semibold text-slate-800" htmlFor="address">
+                      Physical Factory / Works Address <span className="text-red-600">*</span>
                     </label>
-                    <div className="relative flex items-start rounded-lg bg-[#f5f3ee] border border-transparent focus-within:border-[#B87333] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#B87333] transition-all pt-2.5">
-                      <MapPin className="w-4 h-4 text-[#76777d] absolute left-3 top-3 pointer-events-none" />
+                    <div className="relative flex items-start rounded-xl bg-slate-50 border border-slate-200 focus-within:border-[#2563EB] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#2563EB] transition-all pt-2.5">
+                      <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                       <textarea
                         id="address"
                         name="address"
@@ -297,7 +297,7 @@ export const CompanyOnboardingPage: React.FC = () => {
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         placeholder="Gat No. 248, Alandi-Markal Road, MIDC Chakan Phase 2, Pune, Maharashtra 410501"
-                        className="w-full pl-9 pr-3 pb-2 bg-transparent text-[#1b1c19] text-xs rounded-lg focus:outline-none placeholder:text-[#76777d]/70 resize-none"
+                        className="w-full pl-9 pr-3 pb-2 bg-transparent text-slate-900 text-xs rounded-xl focus:outline-none placeholder:text-slate-400 resize-none"
                       />
                     </div>
                   </div>
@@ -305,11 +305,11 @@ export const CompanyOnboardingPage: React.FC = () => {
                   {/* Row 4: Phone & Contact Email */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-[#1b1c19]" htmlFor="phone">
-                        Plant Phone / WhatsApp <span className="text-[#ba1a1a]">*</span>
+                      <label className="block text-xs font-semibold text-slate-800" htmlFor="phone">
+                        Plant Phone / WhatsApp <span className="text-red-600">*</span>
                       </label>
-                      <div className="relative flex items-center rounded-lg bg-[#f5f3ee] border border-transparent focus-within:border-[#B87333] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#B87333] transition-all">
-                        <Phone className="w-4 h-4 text-[#76777d] absolute left-3 pointer-events-none" />
+                      <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-[#2563EB] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#2563EB] transition-all">
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
                         <input
                           id="phone"
                           name="phone"
@@ -318,17 +318,17 @@ export const CompanyOnboardingPage: React.FC = () => {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           placeholder="+91 98220 12345"
-                          className="w-full h-10 pl-9 pr-3 bg-transparent text-[#1b1c19] text-xs rounded-lg focus:outline-none placeholder:text-[#76777d]/70"
+                          className="w-full h-10 pl-9 pr-3 bg-transparent text-slate-900 text-xs rounded-xl focus:outline-none placeholder:text-slate-400"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-[#1b1c19]" htmlFor="contactEmail">
-                        Commercial Quotation Email <span className="text-[#ba1a1a]">*</span>
+                      <label className="block text-xs font-semibold text-slate-800" htmlFor="contactEmail">
+                        Commercial Quotation Email <span className="text-red-600">*</span>
                       </label>
-                      <div className="relative flex items-center rounded-lg bg-[#f5f3ee] border border-transparent focus-within:border-[#B87333] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#B87333] transition-all">
-                        <Mail className="w-4 h-4 text-[#76777d] absolute left-3 pointer-events-none" />
+                      <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-[#2563EB] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#2563EB] transition-all">
+                        <Mail className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
                         <input
                           id="contactEmail"
                           name="contactEmail"
@@ -337,7 +337,7 @@ export const CompanyOnboardingPage: React.FC = () => {
                           value={contactEmail}
                           onChange={(e) => setContactEmail(e.target.value)}
                           placeholder="rfq@bharatprecision.co.in"
-                          className="w-full h-10 pl-9 pr-3 bg-transparent text-[#1b1c19] text-xs rounded-lg focus:outline-none placeholder:text-[#76777d]/70"
+                          className="w-full h-10 pl-9 pr-3 bg-transparent text-slate-900 text-xs rounded-xl focus:outline-none placeholder:text-slate-400"
                         />
                       </div>
                     </div>
@@ -348,7 +348,7 @@ export const CompanyOnboardingPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full h-12 bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.99] text-white text-xs font-bold rounded-lg shadow-md shadow-[#2563EB]/25 flex items-center justify-center gap-2.5 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#2563EB] disabled:opacity-60"
+                      className="w-full h-12 bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.99] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#2563EB] disabled:opacity-60"
                     >
                       {isSubmitting ? (
                         <div className="flex items-center gap-2">
@@ -362,7 +362,7 @@ export const CompanyOnboardingPage: React.FC = () => {
                         </>
                       )}
                     </button>
-                    <p className="text-[11px] text-center text-[#64748B] mt-2">
+                    <p className="text-[11px] text-center text-slate-500 mt-2">
                       Zero AI Pricing Hallucination • Authoritative Machine Rate Cards Pre-Seeded
                     </p>
                   </div>
@@ -370,7 +370,7 @@ export const CompanyOnboardingPage: React.FC = () => {
               </div>
 
               {/* Status Footer */}
-              <div className="pt-4 border-t border-[#eae8e3] mt-6 flex flex-wrap items-center justify-between text-[11px] text-[#64748B]">
+              <div className="pt-4 border-t border-slate-200 mt-6 flex flex-wrap items-center justify-between text-[11px] text-slate-500">
                 <div className="flex items-center gap-1.5 font-mono">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   <span>TENANT ISOLATION GUARANTEED</span>

@@ -145,22 +145,36 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
     <motion.aside 
       animate={{ width: isCollapsed ? 72 : 252 }}
       transition={{ type: 'spring', damping: 25, stiffness: 240 }}
-      className="bg-[#0b1328] flex flex-col h-full select-none shrink-0 relative z-40 text-slate-200 border-r border-[#19243d]"
+      className="bg-[#0b1328] flex flex-col h-full select-none shrink-0 relative z-40 text-slate-200 border-r border-[#19243d] overflow-hidden"
       style={{
         width: isCollapsed ? 72 : 252,
         minWidth: isCollapsed ? 72 : 252,
         maxWidth: isCollapsed ? 72 : 252
       }}
     >
+      {/* Background Semi-Transparent Manufacturing Plant Image */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+        aria-hidden="true"
+      >
+        <img
+          src="/sidebar-manufacturing-bg.jpg"
+          alt=""
+          className="absolute bottom-0 left-0 w-full h-[65%] object-cover object-center opacity-25 mix-blend-luminosity filter contrast-125"
+        />
+        {/* Seamless dark navy gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0b1328] via-[#0b1328]/60 to-[#0b1328] pointer-events-none" />
+      </div>
+
       {/* Brand Header */}
-      <div className={`h-[72px] px-4 bg-[#090f20] border-b border-[#19243d] flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+      <div className={`relative z-10 h-[72px] px-4 bg-[#090f20]/95 border-b border-[#19243d] flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         <div className="flex items-center gap-3 overflow-hidden cursor-pointer" onClick={() => navigate('/dashboard')}>
-          {/* Quotation AI Blue Diamond Logo Mark */}
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3b82f6] to-[#1d4ed8] flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20 border border-blue-400/30">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2 17L12 22L22 17" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2 12L12 17L22 12" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          {/* Transparent Quotation AI Blue Hexagon Logo Mark */}
+          <div className="w-8 h-8 flex items-center justify-center shrink-0">
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 2L29 9.5V22.5L16 30L3 22.5V9.5L16 2Z" fill="#2563EB" />
+              <path d="M16 8L23 16L16 24L9 16L16 8Z" fill="#FFFFFF" />
+              <circle cx="16" cy="16" r="2.5" fill="#2563EB" />
             </svg>
           </div>
 
@@ -189,7 +203,7 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
 
       {/* Expand trigger when collapsed */}
       {onToggleCollapse && isCollapsed && (
-        <div className="p-2 border-b border-[#19243d] flex justify-center bg-[#090f20]">
+        <div className="relative z-10 p-2 border-b border-[#19243d] flex justify-center bg-[#090f20]">
           <button
             onClick={onToggleCollapse}
             title="Expand sidebar"
@@ -201,7 +215,7 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
       )}
 
       {/* Primary Action CTA */}
-      <div className="p-3.5 pb-2">
+      <div className="relative z-10 p-3.5 pb-2">
         <motion.button
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
@@ -220,7 +234,7 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
       </div>
 
       {/* Navigation Sections */}
-      <nav className="flex-1 px-3 py-1 space-y-4 overflow-y-auto overflow-x-hidden scrollbar-none">
+      <nav className="relative z-10 flex-1 px-3 py-1 space-y-4 overflow-y-auto overflow-x-hidden scrollbar-none">
         {navSections.map((section, idx) => (
           <div key={section.title || `section-${idx}`} className="flex flex-col gap-1">
             {!isCollapsed && section.title && (
@@ -261,7 +275,7 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
       </nav>
 
       {/* Bottom Section: Help Card & User Profile */}
-      <div className="p-3 bg-[#090f20]/90 border-t border-[#19243d] flex flex-col gap-2.5 mt-auto shrink-0">
+      <div className="relative z-10 p-3 bg-[#090f20]/90 border-t border-[#19243d] flex flex-col gap-2.5 mt-auto shrink-0">
         {/* Need Help Card (matching reference image) */}
         {!isCollapsed ? (
           <div

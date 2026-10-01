@@ -8,8 +8,13 @@ import {
   AlertCircle,
   Mail,
   ChevronRight,
+  ChevronLeft,
   Eye,
   CheckCircle2,
+  Clock,
+  TrendingUp,
+  Lightbulb,
+  X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { quotationApi, QuotationDTO } from '../api/quotationApi';
@@ -184,6 +189,22 @@ export const QuotationHistoryPage: React.FC = () => {
     });
   }, [quotations, dateFilter]);
 
+  const [showTips, setShowTips] = useState<boolean>(true);
+
+  // Derived KPI metrics
+  const finalizedCount = useMemo(
+    () => quotations.filter((q) => q.status === 'FINAL' || q.status === 'FINALIZED' || q.status === 'APPROVED').length,
+    [quotations]
+  );
+  const draftCount = useMemo(
+    () => quotations.filter((q) => q.status === 'DRAFT').length,
+    [quotations]
+  );
+  const totalValueSum = useMemo(
+    () => quotations.reduce((acc, q) => acc + (q.final_total || 0), 0),
+    [quotations]
+  );
+
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   const toggleRow = (id: string) => {
@@ -247,10 +268,89 @@ export const QuotationHistoryPage: React.FC = () => {
         </div>
       </div>
 
+      {/* ── KPI METRICS CARDS ──────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Quotations */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center gap-4 transition-all hover:border-blue-200 hover:shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight">
+                {totalCount}
+              </div>
+              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded-md font-mono">
+                TOTAL
+              </span>
+            </div>
+            <div className="text-xs font-bold text-slate-700 mt-0.5">Total Quotations</div>
+            <div className="text-[11px] text-slate-400 truncate">Generated across plant</div>
+          </div>
+        </div>
+
+        {/* Finalized Quotes */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center gap-4 transition-all hover:border-emerald-200 hover:shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100/80">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight">
+                {finalizedCount}
+              </div>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.5 rounded-md font-mono">
+                LOCKED
+              </span>
+            </div>
+            <div className="text-xs font-bold text-slate-700 mt-0.5">Finalized Quotes</div>
+            <div className="text-[11px] text-slate-400 truncate">Legally signed & locked</div>
+          </div>
+        </div>
+
+        {/* Draft Quotations */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center gap-4 transition-all hover:border-amber-200 hover:shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100/80">
+            <Clock className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight">
+                {draftCount}
+              </div>
+              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded-md font-mono">
+                IN PROGRESS
+              </span>
+            </div>
+            <div className="text-xs font-bold text-slate-700 mt-0.5">Draft Quotations</div>
+            <div className="text-[11px] text-slate-400 truncate">Pending costing review</div>
+          </div>
+        </div>
+
+        {/* Quoted Pipeline Value */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex items-center gap-4 transition-all hover:border-purple-200 hover:shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100/80">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono tracking-tight truncate">
+                {fmtCurrency(totalValueSum)}
+              </div>
+              <span className="text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200/60 px-1.5 py-0.5 rounded-md font-mono shrink-0">
+                PAGE SUM
+              </span>
+            </div>
+            <div className="text-xs font-bold text-slate-700 mt-0.5">Pipeline Value</div>
+            <div className="text-[11px] text-slate-400 truncate">Active page commercial total</div>
+          </div>
+        </div>
+      </div>
+
       {/* ── FEEDBACK ALERT ──────────────────────────────────────────────────── */}
       {feedbackMessage && (
         <div
-          className={`p-3 rounded-lg text-xs flex items-center justify-between gap-2 border ${
+          className={`p-3.5 rounded-2xl text-xs flex items-center justify-between gap-2 border ${
             feedbackMessage.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : 'bg-red-50 text-red-800 border-red-200'
@@ -274,11 +374,11 @@ export const QuotationHistoryPage: React.FC = () => {
       )}
 
       {/* ── FILTER RIBBON ──────────────────────────────────────────────────── */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
           {/* Search input */}
           <div className="md:col-span-6 relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
@@ -287,7 +387,7 @@ export const QuotationHistoryPage: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Search quotation #, customer, PO number..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#2563EB] transition-colors"
+              className="w-full pl-10 pr-3.5 py-2.5 bg-[#f8fafc] hover:bg-slate-100/60 focus:bg-white border border-slate-200/90 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 transition-all outline-none"
             />
           </div>
 
@@ -299,14 +399,14 @@ export const QuotationHistoryPage: React.FC = () => {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 appearance-none focus:outline-none focus:bg-white focus:border-[#2563EB] cursor-pointer"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc] hover:bg-slate-100/60 focus:bg-white border border-slate-200/90 focus:border-[#2563EB] rounded-xl text-xs text-slate-800 appearance-none focus:outline-none cursor-pointer"
             >
               <option value="ALL">All Statuses</option>
               <option value="DRAFT">Draft</option>
               <option value="FINAL">Finalized</option>
               <option value="SENT">Sent</option>
             </select>
-            <ChevronRight className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-90" />
+            <ChevronRight className="w-3.5 h-3.5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-90" />
           </div>
 
           {/* Date range filter */}
@@ -317,20 +417,20 @@ export const QuotationHistoryPage: React.FC = () => {
                 setDateFilter(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 appearance-none focus:outline-none focus:bg-white focus:border-[#2563EB] cursor-pointer"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc] hover:bg-slate-100/60 focus:bg-white border border-slate-200/90 focus:border-[#2563EB] rounded-xl text-xs text-slate-800 appearance-none focus:outline-none cursor-pointer"
             >
               <option value="ALL">All Dates</option>
               <option value="30_DAYS">Last 30 Days</option>
               <option value="90_DAYS">Last 90 Days</option>
               <option value="YEAR">This Year</option>
             </select>
-            <ChevronRight className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-90" />
+            <ChevronRight className="w-3.5 h-3.5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-90" />
           </div>
         </div>
       </div>
 
       {/* ── MAIN TABLE ─────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden flex flex-col">
         <div className="overflow-x-auto">
           {loading ? (
             <div className="p-14 text-center flex flex-col items-center gap-3 text-slate-500 text-xs">
@@ -582,6 +682,66 @@ export const QuotationHistoryPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* ── BOTTOM GUIDANCE CARD ───────────────────────────────────────────── */}
+      {showTips && (
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs relative transition-all">
+          <button
+            type="button"
+            onClick={() => setShowTips(false)}
+            title="Dismiss tips"
+            className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-start gap-3 mb-5 pr-8">
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center shrink-0 border border-amber-200/60 shadow-2xs">
+              <Lightbulb className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">
+                Tips for Quotation Dispatch & Legal Audit Trail
+              </h4>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Ensure compliant pricing, customer communication, and audit-ready records.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-[#f8fafc] border border-slate-200/80 rounded-xl p-3.5 space-y-1">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Immutable Finalization
+              </span>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Quotations marked <strong className="text-slate-700">Finalized</strong> are cryptographically sealed with SHA-256 signatures to guarantee non-repudiation during tax audits.
+              </p>
+            </div>
+
+            <div className="bg-[#f8fafc] border border-slate-200/80 rounded-xl p-3.5 space-y-1">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-blue-600" />
+                Two-Tier Email Dispatch
+              </span>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Quotation PDFs are dispatched automatically to the customer's dedicated <strong className="text-slate-700">Quotation Email</strong> override, falling back to login email.
+              </p>
+            </div>
+
+            <div className="bg-[#f8fafc] border border-slate-200/80 rounded-xl p-3.5 space-y-1">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-purple-600" />
+                Full PO Traceability
+              </span>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Clicking any quotation row opens the complete audit trail linking original customer PO files, OCR raw extractions, and calculated material rate breakdowns.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

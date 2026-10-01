@@ -142,26 +142,26 @@ export const CalculationReviewPage: React.FC = () => {
   const selectedPo = approvedPOs.find(p => p.id === selectedPoId);
 
   return (
-    <div className="w-full bg-[#fbf9f4] p-6 md:p-8 font-sans antialiased text-[#1b1c19] min-h-screen">
+    <div className="w-full bg-[#f8fafc] p-6 md:p-8 font-sans antialiased text-slate-900 min-h-screen">
       <div className="max-w-[1180px] w-full mx-auto pb-16 flex flex-col gap-6">
 
         {/* MASTER WORKFLOW STEPPER (Step 3 Active) */}
-        <div className="w-full bg-white rounded-xl shadow-xs border border-[#E5E1D8] px-6 py-4">
+        <div className="w-full bg-white rounded-2xl shadow-xs border border-slate-200/90 px-6 py-4">
           <div className="grid grid-cols-5 items-center relative">
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-[#eae8e3] -z-0 mx-10" />
-            <div className="absolute left-10 w-1/2 top-1/2 -translate-y-1/2 h-0.5 bg-[#B87333] -z-0" />
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-100 -z-0 mx-10" />
+            <div className="absolute left-10 w-1/2 top-1/2 -translate-y-1/2 h-0.5 bg-[#2563EB] -z-0" />
 
             {/* Step 1: Completed */}
             <div 
               onClick={() => navigate('/upload')}
               className="relative z-10 flex items-center gap-3 cursor-pointer group"
             >
-              <div className="w-8 h-8 rounded-full bg-[#B87333] text-white flex items-center justify-center font-semibold text-xs shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-semibold text-xs shadow-xs">
                 <Check className="w-4 h-4" />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-semibold">01</span>
-                <span className="text-sm font-semibold text-[#1b1c19] group-hover:text-[#B87333] transition-colors">Upload</span>
+                <span className="text-[11px] uppercase tracking-wider text-[#2563EB] font-semibold">01</span>
+                <span className="text-sm font-semibold text-slate-800 group-hover:text-[#2563EB] transition-colors">Upload</span>
               </div>
             </div>
 
@@ -170,23 +170,23 @@ export const CalculationReviewPage: React.FC = () => {
               onClick={() => navigate(selectedPoId ? `/review/${selectedPoId}` : '/review')}
               className="relative z-10 flex items-center gap-3 justify-center cursor-pointer group"
             >
-              <div className="w-8 h-8 rounded-full bg-[#B87333] text-white flex items-center justify-center font-semibold text-xs shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-semibold text-xs shadow-xs">
                 <Check className="w-4 h-4" />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-semibold">02</span>
-                <span className="text-sm font-semibold text-[#1b1c19] group-hover:text-[#B87333] transition-colors">Review</span>
+                <span className="text-[11px] uppercase tracking-wider text-[#2563EB] font-semibold">02</span>
+                <span className="text-sm font-semibold text-slate-800 group-hover:text-[#2563EB] transition-colors">Review</span>
               </div>
             </div>
 
             {/* Step 3: Costing (Active) */}
             <div className="relative z-10 flex items-center gap-3 justify-center">
-              <div className="w-9 h-9 rounded-full bg-[#B87333] text-white flex items-center justify-center shadow-md ring-4 ring-[#B87333]/20">
+              <div className="w-9 h-9 rounded-full bg-[#2563EB] text-white flex items-center justify-center shadow-xs ring-4 ring-[#2563EB]/20">
                 <Calculator className="w-4 h-4" />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-bold">03</span>
-                <span className="text-sm font-bold text-[#1b1c19]">Costing</span>
+                <span className="text-[11px] uppercase tracking-wider text-[#2563EB] font-bold">03</span>
+                <span className="text-sm font-bold text-slate-900">Costing</span>
               </div>
             </div>
 
@@ -199,17 +199,17 @@ export const CalculationReviewPage: React.FC = () => {
               }}
               className="relative z-10 flex items-center gap-3 justify-center cursor-pointer group"
             >
-              <div className="w-8 h-8 rounded-full bg-[#f0eee9] text-[#76777d] flex items-center justify-center font-semibold text-xs font-mono group-hover:bg-[#E5E1D8]">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-semibold text-xs font-mono group-hover:bg-slate-200">
                 04
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#76777d]">Preview</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400">Preview</span>
               </div>
             </div>
 
             {/* Step 5: Send (Inactive) */}
             <div className="relative z-10 flex items-center gap-3 justify-end">
-              <div className="w-8 h-8 rounded-full bg-[#f0eee9] text-[#76777d] flex items-center justify-center font-semibold text-xs font-mono">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-semibold text-xs font-mono">
                 05
               </div>
               <div className="flex items-center gap-1">
@@ -272,50 +272,50 @@ export const CalculationReviewPage: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-semibold text-[#1b1c19] tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                 Build Quotation
               </h1>
-              <span className="px-2 py-0.5 bg-[#B87333]/10 text-[#B87333] text-xs font-semibold rounded uppercase tracking-wider">
+              <span className="px-2.5 py-0.5 bg-blue-50 text-[#2563EB] border border-blue-200 text-xs font-semibold rounded-full uppercase tracking-wider">
                 Deterministic Engine
               </span>
             </div>
-            <p className="text-sm text-[#45474c] mt-0.5">
+            <p className="text-sm text-slate-600 mt-1">
               Review direct material and process machining costs calculated strictly per database rate masters.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg shadow-xs border border-[#E5E1D8]">
-              <span className="w-2 h-2 rounded-full bg-[#B87333]"></span>
-              <span className="text-xs font-semibold text-[#1b1c19]">Rate Master Active</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg shadow-xs border border-slate-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span className="text-xs font-semibold text-slate-800">Rate Master Active</span>
             </div>
             <button 
               onClick={() => selectedPoId && executeCalculation(selectedPoId)}
-              className="p-2 bg-white hover:bg-[#f0eee9] text-[#45474c] rounded-lg transition-colors shadow-xs border border-[#E5E1D8]" 
+              className="p-2 bg-white hover:bg-slate-50 text-slate-700 rounded-lg transition-colors shadow-xs border border-slate-200 cursor-pointer" 
               title="Refresh Rates from Master"
             >
-              <RefreshCw className={`w-4 h-4 ${isRecalculating ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isRecalculating ? 'animate-spin text-[#2563EB]' : ''}`} />
             </button>
           </div>
         </div>
 
         {/* PO & Order Context Summary Banner */}
-        <div className="bg-white rounded-xl p-4 shadow-xs border border-[#E5E1D8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-lg bg-[#172033] text-white flex items-center justify-center shrink-0">
-              <Cpu className="w-5 h-5 text-[#ffdcc2]" />
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
+              <Cpu className="w-5 h-5" />
             </div>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2 truncate">
-                <span className="text-base font-semibold text-[#1b1c19] truncate">
+                <span className="text-base font-semibold text-slate-900 truncate">
                   {selectedPo?.customer_name || 'Manufacturing Client'}
                 </span>
-                <span className="px-2 py-0.5 bg-[#f0eee9] text-[#45474c] rounded text-[11px] font-semibold shrink-0">
+                <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[11px] font-semibold shrink-0">
                   Approved PO
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-[#45474c] text-xs mt-0.5">
-                <span className="font-mono text-[#1b1c19] font-medium">
+              <div className="flex items-center gap-2 text-slate-500 text-xs mt-0.5">
+                <span className="font-mono text-slate-900 font-medium">
                   {calcResult?.po_number || selectedPo?.po_number || 'PO Ref'}
                 </span>
                 <span>•</span>
@@ -329,7 +329,7 @@ export const CalculationReviewPage: React.FC = () => {
               <select
                 value={selectedPoId || ''}
                 onChange={(e) => setSelectedPoId(e.target.value)}
-                className="text-xs font-mono font-medium border border-[#E5E1D8] rounded-lg px-2.5 py-1 bg-white text-[#1b1c19] shadow-xs focus:outline-none focus:border-[#B87333]"
+                className="text-xs font-mono font-medium border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-900 shadow-xs focus:outline-none focus:border-[#2563EB]"
               >
                 {approvedPOs.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -342,18 +342,18 @@ export const CalculationReviewPage: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-xl p-16 border border-[#E5E1D8] flex flex-col items-center justify-center gap-3 shadow-xs">
-            <RefreshCw className="w-8 h-8 text-[#B87333] animate-spin" />
-            <span className="text-sm font-medium text-[#45474c]">Computing deterministic cost breakdown from rate cards...</span>
+          <div className="bg-white rounded-2xl p-16 border border-slate-200/90 flex flex-col items-center justify-center gap-3 shadow-xs">
+            <RefreshCw className="w-8 h-8 text-[#2563EB] animate-spin" />
+            <span className="text-sm font-medium text-slate-600">Computing deterministic cost breakdown from rate cards...</span>
           </div>
         ) : approvedPOs.length === 0 && !selectedPoId ? (
-          <div className="bg-white rounded-xl p-12 border border-[#E5E1D8] flex flex-col items-center justify-center text-center gap-4 shadow-xs">
-            <div className="w-14 h-14 rounded-full bg-[#B87333]/10 text-[#B87333] flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-12 border border-slate-200/90 flex flex-col items-center justify-center text-center gap-4 shadow-xs">
+            <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center">
               <Calculator className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-[#1b1c19]">No Approved Purchase Orders Ready for Costing</h3>
-              <p className="text-xs text-[#76777d] mt-1 max-w-md">
+              <h3 className="text-lg font-semibold text-slate-900">No Approved Purchase Orders Ready for Costing</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-md">
                 Review and approve an uploaded Purchase Order first to generate deterministic manufacturing pricing and bill of quantities.
               </p>
             </div>
@@ -374,18 +374,18 @@ export const CalculationReviewPage: React.FC = () => {
           <div className="lg:col-span-8 flex flex-col gap-5">
 
             {/* Itemized Cost Breakdown Card */}
-            <div className="bg-white rounded-xl shadow-xs border border-[#E5E1D8] overflow-hidden flex flex-col">
-              <div className="p-4 bg-[#f5f3ee] flex items-center justify-between border-b border-[#E5E1D8]">
+            <div className="bg-white rounded-2xl shadow-xs border border-slate-200/90 overflow-hidden flex flex-col">
+              <div className="p-4 bg-slate-50 flex items-center justify-between border-b border-slate-200">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-[#B87333]" />
-                  <span className="text-sm font-bold text-[#1b1c19]">Itemized Engineering Cost Breakdown</span>
+                  <Layers className="w-4 h-4 text-[#2563EB]" />
+                  <span className="text-sm font-bold text-slate-900">Itemized Engineering Cost Breakdown</span>
                 </div>
-                <span className="text-xs font-mono text-[#76777d]">
+                <span className="text-xs font-mono text-slate-500">
                   {calcResult?.items?.length || 0} Parts Verified
                 </span>
               </div>
 
-              <div className="divide-y divide-[#eae8e3]">
+              <div className="divide-y divide-slate-100">
                 {(calcResult?.items || []).map((item, idx) => {
                   const isExpanded = expandedItems[item.item_id || String(idx)] ?? true;
                   const itemBlocked = item.rate_match_status !== 'MATCHED';
@@ -395,32 +395,32 @@ export const CalculationReviewPage: React.FC = () => {
                       {/* Item Main Row */}
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <span className="w-6 h-6 rounded bg-[#f0eee9] text-[#76777d] font-mono text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">
+                          <span className="w-6 h-6 rounded bg-slate-100 text-slate-600 font-mono text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">
                             {String(idx + 1).padStart(2, '0')}
                           </span>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-sm text-[#1b1c19]">{item.part_name}</h3>
-                              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#3F7D5A]/10 text-[#3F7D5A]">
+                              <h3 className="font-semibold text-sm text-slate-900">{item.part_name}</h3>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 {item.rate_match_status}
                               </span>
                             </div>
-                            <div className="text-xs text-[#76777d] mt-0.5 font-mono">
-                              Material: <strong className="text-[#1b1c19] font-medium">{item.material}</strong> • Process: <strong className="text-[#1b1c19] font-medium">{item.process}</strong>
+                            <div className="text-xs text-slate-500 mt-0.5 font-mono">
+                              Material: <strong className="text-slate-800 font-medium">{item.material}</strong> • Process: <strong className="text-slate-800 font-medium">{item.process}</strong>
                             </div>
                           </div>
                         </div>
 
                         <div className="text-right flex flex-col items-end">
-                          <span className="font-mono font-bold text-base text-[#1b1c19]">
+                          <span className="font-mono font-bold text-base text-slate-900">
                             <TabularNumber value={item.subtotal || 0} />
                           </span>
-                          <span className="text-xs text-[#76777d]">
+                          <span className="text-xs text-slate-500">
                             ₹{Number(item.unit_cost || 0).toFixed(2)} / {item.unit} ({item.quantity} {item.unit})
                           </span>
                           <button
                             onClick={() => toggleExpand(item.item_id || String(idx))}
-                            className="text-xs text-[#B87333] hover:underline mt-1 flex items-center gap-0.5 font-medium"
+                            className="text-xs text-[#2563EB] hover:underline mt-1 flex items-center gap-0.5 font-medium cursor-pointer"
                           >
                             <span>{isExpanded ? 'Hide Specs' : 'View Specs'}</span>
                             {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -430,32 +430,32 @@ export const CalculationReviewPage: React.FC = () => {
 
                       {/* Expandable Technical Detail Ledger */}
                       {isExpanded && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-[#f0eee9] text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
                           {/* Raw Material Sub-ledger */}
-                          <div className="p-3 bg-[#f5f3ee] rounded-lg border border-[#E5E1D8] flex flex-col gap-1.5">
-                            <div className="flex items-center justify-between text-[11px] font-semibold text-[#76777d] uppercase tracking-wider">
+                          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/70 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                               <span className="flex items-center gap-1">
-                                <Layers className="w-3.5 h-3.5 text-[#B87333]" />
+                                <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
                                 <span>Raw Material Billet</span>
                               </span>
-                              <span className="font-mono text-[#1b1c19] font-bold">₹{Number(item.material_rate).toFixed(2)}/kg</span>
+                              <span className="font-mono text-slate-900 font-bold">₹{Number(item.material_rate).toFixed(2)}/kg</span>
                             </div>
-                            <div className="text-xs text-[#45474c] space-y-0.5">
+                            <div className="text-xs text-slate-600 space-y-0.5">
                               <div className="flex justify-between">
                                 <span>Gross Billet Wt:</span>
-                                <span className="font-mono font-medium text-[#1b1c19]">{item.gross_weight_kg} kg</span>
+                                <span className="font-mono font-medium text-slate-900">{item.gross_weight_kg} kg</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Finished Net Wt:</span>
-                                <span className="font-mono font-medium text-[#1b1c19]">{item.net_weight_kg} kg</span>
+                                <span className="font-mono font-medium text-slate-900">{item.net_weight_kg} kg</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Scrap Recovered:</span>
-                                <span className="font-mono font-medium text-[#3F7D5A]">
+                                <span className="font-mono font-medium text-emerald-700">
                                   {item.scrap_weight_kg} kg (-₹{Number(item.scrap_credit || 0).toFixed(2)})
                                 </span>
                               </div>
-                              <div className="flex justify-between pt-1 border-t border-[#E5E1D8] font-semibold text-[#1b1c19]">
+                              <div className="flex justify-between pt-1 border-t border-slate-200 font-semibold text-slate-900">
                                 <span>Net Material Cost:</span>
                                 <span className="font-mono">₹{Number(item.net_material_cost).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                               </div>
@@ -463,30 +463,30 @@ export const CalculationReviewPage: React.FC = () => {
                           </div>
 
                           {/* Machining & Setup Sub-ledger */}
-                          <div className="p-3 bg-[#f5f3ee] rounded-lg border border-[#E5E1D8] flex flex-col gap-1.5">
-                            <div className="flex items-center justify-between text-[11px] font-semibold text-[#76777d] uppercase tracking-wider">
+                          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/70 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                               <span className="flex items-center gap-1">
-                                <Cpu className="w-3.5 h-3.5 text-[#B87333]" />
+                                <Cpu className="w-3.5 h-3.5 text-[#2563EB]" />
                                 <span>Machining Operations</span>
                               </span>
-                              <span className="font-mono text-[#1b1c19] font-bold">₹{Number(item.process_rate).toFixed(2)}/hr</span>
+                              <span className="font-mono text-slate-900 font-bold">₹{Number(item.process_rate).toFixed(2)}/hr</span>
                             </div>
-                            <div className="text-xs text-[#45474c] space-y-0.5">
+                            <div className="text-xs text-slate-600 space-y-0.5">
                               <div className="flex justify-between">
                                 <span>Cycle Time:</span>
-                                <span className="font-mono font-medium text-[#1b1c19]">{item.machining_hours} hrs/unit</span>
+                                <span className="font-mono font-medium text-slate-900">{item.machining_hours} hrs/unit</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Tooling & Setup:</span>
-                                <span className="font-mono font-medium text-[#1b1c19]">₹{Number(item.setup_cost || 0).toFixed(2)} amortized</span>
+                                <span className="font-mono font-medium text-slate-900">₹{Number(item.setup_cost || 0).toFixed(2)} amortized</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Direct Process Run:</span>
-                                <span className="font-mono font-medium text-[#1b1c19]">
+                                <span className="font-mono font-medium text-slate-900">
                                   ₹{Number(item.machining_cost).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </span>
                               </div>
-                              <div className="flex justify-between pt-1 border-t border-[#E5E1D8] font-semibold text-[#1b1c19]">
+                              <div className="flex justify-between pt-1 border-t border-slate-200 font-semibold text-slate-900">
                                 <span>Total Process Cost:</span>
                                 <span className="font-mono">₹{Number(item.process_cost).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                               </div>
@@ -500,13 +500,13 @@ export const CalculationReviewPage: React.FC = () => {
               </div>
 
               {/* Bottom Summary Bar */}
-              <div className="p-4 bg-[#f5f3ee] border-t border-[#E5E1D8] flex items-center justify-between text-xs text-[#45474c]">
+              <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
                 <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#3F7D5A]" />
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   <span>All bill-of-material rates verified against DIN 7168 standards.</span>
                 </div>
-                <div className="font-semibold text-[#1b1c19]">
-                  Direct Manufacturing Cost: <span className="font-mono font-bold text-sm text-[#B87333]">
+                <div className="font-semibold text-slate-900">
+                  Direct Manufacturing Cost: <span className="font-mono font-bold text-sm text-[#2563EB]">
                     <TabularNumber value={calcResult?.manufacturing_subtotal || 0} />
                   </span>
                 </div>
@@ -517,37 +517,37 @@ export const CalculationReviewPage: React.FC = () => {
 
           {/* RIGHT 4-COLUMN COMMERCIAL MARKUP & TAX ENGINE */}
           <div className="lg:col-span-4 flex flex-col gap-5">
-            <div className="bg-white rounded-xl shadow-xs border border-[#E5E1D8] p-5 flex flex-col gap-4 sticky top-5">
+            <div className="bg-white rounded-2xl shadow-xs border border-slate-200/90 p-5 flex flex-col gap-4 sticky top-5">
               
-              <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D8]">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
-                  <h3 className="text-sm font-bold text-[#1b1c19] uppercase tracking-wide">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                     Commercial Cost Ledger
                   </h3>
-                  <div className="text-xs text-[#76777d] mt-0.5">PO #{calcResult?.po_number || 'TML/PO/2026/0942'}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">PO #{calcResult?.po_number || 'TML/PO/2026/0942'}</div>
                 </div>
-                <span className="px-2 py-0.5 bg-[#3F7D5A]/10 text-[#3F7D5A] font-semibold text-xs rounded">
+                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-xs rounded">
                   Deterministic
                 </span>
               </div>
 
               {/* Breakdown Rows */}
               <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-1 border-b border-[#f0eee9]">
-                  <span className="text-[#45474c]">Raw Material Cost</span>
-                  <span className="font-mono font-bold text-[#1b1c19]">
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">Raw Material Cost</span>
+                  <span className="font-mono font-bold text-slate-900">
                     <TabularNumber value={calcResult?.material_cost || 0} />
                   </span>
                 </div>
 
-                <div className="flex justify-between py-1 border-b border-[#f0eee9]">
-                  <span className="text-[#45474c]">Machining & Operations</span>
-                  <span className="font-mono font-bold text-[#1b1c19]">
+                <div className="flex justify-between py-1 border-b border-slate-100">
+                  <span className="text-slate-600">Machining & Operations</span>
+                  <span className="font-mono font-bold text-slate-900">
                     <TabularNumber value={calcResult?.process_cost || 0} />
                   </span>
                 </div>
 
-                <div className="flex justify-between py-2 font-bold text-[#1b1c19] bg-[#f5f3ee] px-3 rounded-lg">
+                <div className="flex justify-between py-2 font-bold text-slate-900 bg-slate-50 px-3 rounded-lg border border-slate-100">
                   <span>Manufacturing Subtotal</span>
                   <span className="font-mono text-sm">
                     <TabularNumber value={calcResult?.manufacturing_subtotal || 0} />
@@ -556,12 +556,12 @@ export const CalculationReviewPage: React.FC = () => {
               </div>
 
               {/* Overheads & Margin Controls */}
-              <div className="space-y-4 pt-2 border-t border-[#E5E1D8]">
+              <div className="space-y-4 pt-2 border-t border-slate-200">
                 {/* Factory Overhead */}
                 <div>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="font-semibold text-[#1b1c19]">Factory Overhead ({overheadPct}%)</span>
-                    <span className="font-mono font-bold text-[#1b1c19]">
+                    <span className="font-semibold text-slate-900">Factory Overhead ({overheadPct}%)</span>
+                    <span className="font-mono font-bold text-slate-900">
                       +<TabularNumber value={calcResult?.overhead_amount || 0} />
                     </span>
                   </div>
@@ -572,9 +572,9 @@ export const CalculationReviewPage: React.FC = () => {
                     step="0.5"
                     value={overheadPct}
                     onChange={(e) => setOverheadPct(Number(e.target.value))}
-                    className="w-full h-1.5 bg-[#eae8e3] rounded-lg appearance-none cursor-pointer accent-[#B87333]"
+                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#2563EB]"
                   />
-                  <div className="flex justify-between text-[10px] text-[#76777d] font-mono mt-0.5">
+                  <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-0.5">
                     <span>0%</span>
                     <span>Company Default: {companyDefaultOverhead}%</span>
                     <span>35%</span>
@@ -584,8 +584,8 @@ export const CalculationReviewPage: React.FC = () => {
                 {/* Profit Margin */}
                 <div>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="font-semibold text-[#1b1c19]">Operating Profit ({profitPct}%)</span>
-                    <span className="font-mono font-bold text-[#1b1c19]">
+                    <span className="font-semibold text-slate-900">Operating Profit ({profitPct}%)</span>
+                    <span className="font-mono font-bold text-slate-900">
                       +<TabularNumber value={calcResult?.profit_amount || 0} />
                     </span>
                   </div>
@@ -596,9 +596,9 @@ export const CalculationReviewPage: React.FC = () => {
                     step="0.5"
                     value={profitPct}
                     onChange={(e) => setProfitPct(Number(e.target.value))}
-                    className="w-full h-1.5 bg-[#eae8e3] rounded-lg appearance-none cursor-pointer accent-[#3F7D5A]"
+                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                   />
-                  <div className="flex justify-between text-[10px] text-[#76777d] font-mono mt-0.5">
+                  <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-0.5">
                     <span>0%</span>
                     <span>Company Default: {companyDefaultProfit}%</span>
                     <span>45%</span>
@@ -607,8 +607,8 @@ export const CalculationReviewPage: React.FC = () => {
               </div>
 
               {/* Taxable Assessable Value */}
-              <div className="pt-2 border-t border-[#E5E1D8]">
-                <div className="flex justify-between text-xs font-bold text-[#1b1c19] py-1">
+              <div className="pt-2 border-t border-slate-200">
+                <div className="flex justify-between text-xs font-bold text-slate-900 py-1">
                   <span>Taxable Assessable Value</span>
                   <span className="font-mono text-sm">
                     <TabularNumber value={calcResult?.taxable_amount || 0} />
@@ -617,15 +617,15 @@ export const CalculationReviewPage: React.FC = () => {
               </div>
 
               {/* Statutory Tax (GST) */}
-              <div className="space-y-1.5 pt-2 border-t border-[#f0eee9] text-xs">
-                <div className="flex items-center justify-between text-xs text-[#76777d] mb-1">
+              <div className="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+                <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                   <span className="font-medium">Statutory Tax (GST)</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium text-[#1b1c19]">
+                  <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-900">
                     <input
                       type="checkbox"
                       checked={isInterstate}
                       onChange={(e) => setIsInterstate(e.target.checked)}
-                      className="rounded text-[#B87333] focus:ring-0 w-3.5 h-3.5"
+                      className="rounded text-[#2563EB] accent-[#2563EB] focus:ring-0 w-3.5 h-3.5 cursor-pointer"
                     />
                     <span>Interstate (IGST 18%)</span>
                   </label>
@@ -633,23 +633,23 @@ export const CalculationReviewPage: React.FC = () => {
 
                 {!isInterstate ? (
                   <>
-                    <div className="flex justify-between text-[#45474c]">
+                    <div className="flex justify-between text-slate-600">
                       <span>CGST (9.0%)</span>
-                      <span className="font-mono font-semibold text-[#1b1c19]">
+                      <span className="font-mono font-semibold text-slate-900">
                         <TabularNumber value={calcResult?.cgst_amount || 0} />
                       </span>
                     </div>
-                    <div className="flex justify-between text-[#45474c]">
+                    <div className="flex justify-between text-slate-600">
                       <span>SGST (9.0%)</span>
-                      <span className="font-mono font-semibold text-[#1b1c19]">
+                      <span className="font-mono font-semibold text-slate-900">
                         <TabularNumber value={calcResult?.sgst_amount || 0} />
                       </span>
                     </div>
                   </>
                 ) : (
-                  <div className="flex justify-between text-[#45474c]">
+                  <div className="flex justify-between text-slate-600">
                     <span>IGST (18.0%)</span>
-                    <span className="font-mono font-semibold text-[#1b1c19]">
+                    <span className="font-mono font-semibold text-slate-900">
                       <TabularNumber value={calcResult?.igst_amount || 0} />
                     </span>
                   </div>
@@ -657,14 +657,14 @@ export const CalculationReviewPage: React.FC = () => {
               </div>
 
               {/* Grand Total Box */}
-              <div className="rounded-xl p-4 bg-[#172033] text-white flex flex-col gap-1 shadow-md">
-                <span className="text-[10px] uppercase tracking-wider text-[#bdc6e0] font-semibold">
+              <div className="rounded-2xl p-5 bg-[#0B1328] text-white flex flex-col gap-1 shadow-md border border-slate-800">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
                   Grand Commercial Total
                 </span>
-                <span className="text-2xl font-bold font-mono text-[#ffdcc2]">
+                <span className="text-2xl font-bold font-mono text-white">
                   <TabularNumber value={calcResult?.grand_total || 0} />
                 </span>
-                <span className="text-[11px] text-[#bdc6e0] italic mt-0.5 line-clamp-2">
+                <span className="text-[11px] text-slate-400 italic mt-0.5 line-clamp-2">
                   {calcResult?.final_total_in_words || 'Eight Lakh Twenty-One Thousand Five Hundred Eighty-Two Rupees'}
                 </span>
               </div>
@@ -678,10 +678,10 @@ export const CalculationReviewPage: React.FC = () => {
                       navigate(`/quotation/${calcResult.quotation_id}`);
                     }
                   }}
-                  className={`w-full py-2.5 text-white font-bold text-xs rounded-lg transition-all shadow-md flex items-center justify-center gap-2 group ${
+                  className={`w-full py-2.5 text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-2 group cursor-pointer ${
                     isBlocked || !calcResult?.quotation_id
                       ? 'bg-slate-400 cursor-not-allowed shadow-none'
-                      : 'bg-[#2563EB] hover:bg-[#1D4ED8] shadow-[#2563EB]/20 active:scale-[0.99]'
+                      : 'bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.99]'
                   }`}
                 >
                   <span>{isBlocked ? 'Resolve Missing Rates to Proceed' : 'Continue to Quotation Preview'}</span>
@@ -690,15 +690,15 @@ export const CalculationReviewPage: React.FC = () => {
 
                 <button
                   onClick={() => navigate(selectedPoId ? `/review/${selectedPoId}` : '/review')}
-                  className="w-full py-2 bg-[#f5f3ee] hover:bg-[#eae8e3] text-[#1b1c19] text-xs font-semibold rounded-lg transition-colors border border-[#E5E1D8] flex items-center justify-center gap-1.5"
+                  className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-semibold rounded-lg transition-colors border border-slate-200 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Back to PO Review</span>
                 </button>
               </div>
 
-              <div className="text-[11px] text-[#76777d] text-center flex items-center justify-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#B87333]" />
+              <div className="text-[11px] text-slate-500 text-center flex items-center justify-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#2563EB]" />
                 <span>Zero AI estimation • Mathematical audit trail verified</span>
               </div>
 

@@ -568,51 +568,51 @@ export const LandingPage: React.FC = () => {
       {/* ========================================================================= */}
       <section className="bg-white py-12 border-b border-[#E5E1D8]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 divide-y md:divide-y-0 md:divide-x divide-[#E5E1D8]">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 divide-y md:divide-y-0 md:divide-x divide-slate-200">
             
             <div className="flex items-start gap-3.5 pt-4 md:pt-0 md:px-4">
-              <div className="w-10 h-10 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center shrink-0 border border-[#E5E1D8]">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 border border-blue-200">
                 <Clock className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-[#111827]">Rapid RFQ Turnaround</h3>
-                <p className="text-xs text-[#64748B] mt-1 leading-relaxed">
+                <h3 className="font-bold text-sm text-slate-900">Rapid RFQ Turnaround</h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                   Respond to OEM inquiries in minutes instead of days, securing preferred tier ranking.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3.5 pt-4 md:pt-0 md:px-4">
-              <div className="w-10 h-10 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center shrink-0 border border-[#E5E1D8]">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 border border-blue-200">
                 <Calculator className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-[#111827]">100% Deterministic Rates</h3>
-                <p className="text-xs text-[#64748B] mt-1 leading-relaxed">
+                <h3 className="font-bold text-sm text-slate-900">100% Deterministic Rates</h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                   Prices originate purely from your plant’s rate cards. AI never guesses or discounts.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3.5 pt-4 md:pt-0 md:px-4">
-              <div className="w-10 h-10 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center shrink-0 border border-[#E5E1D8]">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 border border-blue-200">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-[#111827]">Mandatory Human Approval</h3>
-                <p className="text-xs text-[#64748B] mt-1 leading-relaxed">
+                <h3 className="font-bold text-sm text-slate-900">Mandatory Human Approval</h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                   Unmapped materials or processes block quotation generation until confirmed by an engineer.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3.5 pt-4 md:pt-0 md:px-4">
-              <div className="w-10 h-10 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center shrink-0 border border-[#E5E1D8]">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 border border-blue-200">
                 <Lock className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-[#111827]">Sealed DIN A4 Immutability</h3>
-                <p className="text-xs text-[#64748B] mt-1 leading-relaxed">
+                <h3 className="font-bold text-sm text-slate-900">Sealed DIN A4 Immutability</h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                   Finalized quotations produce cryptographically sealed PDFs that cannot be tampered with.
                 </p>
               </div>
@@ -625,7 +625,7 @@ export const LandingPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* 5. THE PROBLEM SECTION — WHY SPREADSHEETS FAIL MACHINE SHOPS              */}
       {/* ========================================================================= */}
-      <section className="py-20 lg:py-28 bg-[#fbf9f4] border-b border-[#E5E1D8]">
+      <section className="py-20 lg:py-28 bg-[#f8fafc] border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto">
@@ -1080,62 +1080,62 @@ export const LandingPage: React.FC = () => {
 
           <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8">
             
-            <div className="bg-white p-7 rounded-xl border border-[#E5E1D8] shadow-xs space-y-4">
-              <div className="w-11 h-11 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center border border-[#E5E1D8]">
+            <div className="bg-white p-7 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center border border-blue-200">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-lg text-[#111827]">Zero AI Price Hallucination</h3>
-              <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
+              <h3 className="font-bold text-lg text-slate-900">Zero AI Price Hallucination</h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 Large language models are strictly prohibited from generating monetary figures. OCR extracts technical text only. All pricing is determined deterministically by your database rates.
               </p>
             </div>
 
-            <div className="bg-white p-7 rounded-xl border border-[#E5E1D8] shadow-xs space-y-4">
-              <div className="w-11 h-11 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center border border-[#E5E1D8]">
+            <div className="bg-white p-7 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center border border-blue-200">
                 <Coins className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-lg text-[#111827]">True Scrap Credit Recovery</h3>
-              <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
+              <h3 className="font-bold text-lg text-slate-900">True Scrap Credit Recovery</h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 Unlike simplistic billing apps, Quotation AI computes true raw stock volume minus finish part weight to give accurate swarf recovery credits for steel, aluminum, and brass.
               </p>
             </div>
 
-            <div className="bg-white p-7 rounded-xl border border-[#E5E1D8] shadow-xs space-y-4">
-              <div className="w-11 h-11 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center border border-[#E5E1D8]">
+            <div className="bg-white p-7 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center border border-blue-200">
                 <Lock className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-lg text-[#111827]">SHA-256 Legal Immutability</h3>
-              <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
-                When a quotation is finalized, its database record is locked to <code className="bg-slate-100 text-[#B87333] px-1 py-0.5 rounded text-xs">FINAL</code> and sealed with a SHA-256 hash. Any attempt to modify rates triggers an HTTP 409 Conflict.
+              <h3 className="font-bold text-lg text-slate-900">SHA-256 Legal Immutability</h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                When a quotation is finalized, its database record is locked to <code className="bg-slate-100 text-[#2563EB] px-1 py-0.5 rounded text-xs font-mono">FINAL</code> and sealed with a SHA-256 hash. Any attempt to modify rates triggers an HTTP 409 Conflict.
               </p>
             </div>
 
-            <div className="bg-white p-7 rounded-xl border border-[#E5E1D8] shadow-xs space-y-4">
-              <div className="w-11 h-11 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center border border-[#E5E1D8]">
+            <div className="bg-white p-7 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center border border-blue-200">
                 <Sliders className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-lg text-[#111827]">Machine Setup Amortization</h3>
-              <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
+              <h3 className="font-bold text-lg text-slate-900">Machine Setup Amortization</h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 Amortize tooling setup and CNC program validation costs dynamically across batch sizes. A 50-piece prototype run correctly factors setup differently than a 10,000-piece production run.
               </p>
             </div>
 
-            <div className="bg-white p-7 rounded-xl border border-[#E5E1D8] shadow-xs space-y-4">
-              <div className="w-11 h-11 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center border border-[#E5E1D8]">
+            <div className="bg-white p-7 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center border border-blue-200">
                 <Building2 className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-lg text-[#111827]">Strict Multi-Tenant Isolation</h3>
-              <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
+              <h3 className="font-bold text-lg text-slate-900">Strict Multi-Tenant Isolation</h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 Your company rate cards, client catalog prices, profit margins, and PO documents are cryptographically isolated by tenant company ID. No other facility can ever view your costing.
               </p>
             </div>
 
-            <div className="bg-white p-7 rounded-xl border border-[#E5E1D8] shadow-xs space-y-4">
-              <div className="w-11 h-11 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center border border-[#E5E1D8]">
+            <div className="bg-white p-7 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center border border-blue-200">
                 <Mail className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-lg text-[#111827]">Direct Buyer Dispatch</h3>
-              <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
+              <h3 className="font-bold text-lg text-slate-900">Direct Buyer Dispatch</h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 Dispatch quotations with PDF attachments directly through transactional email. Customer recipient emails are resolved securely from verified customer records to prevent misdirected quotes.
               </p>
             </div>
@@ -1258,7 +1258,7 @@ export const LandingPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* 10. FREQUENTLY ASKED QUESTIONS (FAQ)                                      */}
       {/* ========================================================================= */}
-      <section id="faq" className="py-20 lg:py-28 bg-[#fbf9f4] border-b border-[#E5E1D8]">
+      <section id="faq" className="py-20 lg:py-28 bg-[#f8fafc] border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center">
