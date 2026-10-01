@@ -93,13 +93,15 @@ class SimpleCleanTemplate(BaseQuotationTemplate):
         ]
         right_p = Paragraph("<br/>".join(right_lines), style_quote_r)
 
-        hdr_tbl = Table([[left_p, right_p]], colWidths=[315, 200])
-        hdr_tbl.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ]))
-        content.append(hdr_tbl)
+        content.extend(self.build_header_logo_flowables(
+            company=company,
+            cfg=cfg,
+            left_cell=left_p,
+            right_cell=right_p,
+            col_widths=[315, 200],
+            max_width=130,
+            max_height=42,
+        ))
         content.append(Spacer(1, 8))
         content.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cbd5e1"), spaceAfter=8))
 

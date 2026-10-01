@@ -65,7 +65,8 @@ export interface TemplateGalleryItem {
   name: string;
   category: TemplateCategory;
   description: string;
-  recommended_for: string;
+  recommended_for?: string;
+  best_for?: string;
   default_primary_color: string;
   default_secondary_color: string;
 }

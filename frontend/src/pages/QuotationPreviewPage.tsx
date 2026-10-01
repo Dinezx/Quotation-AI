@@ -27,10 +27,15 @@ import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { TabularNumber } from '../components/common/TabularNumber';
 import { quotationApi, QuotationDTO } from '../api/quotationApi';
+import { useAuth } from '../context/AuthContext';
+import { CompanyLogo } from '../components/common/CompanyLogo';
+import { useCompanySettings } from '../hooks/useCompanySettings';
 
 export const QuotationPreviewPage: React.FC = () => {
   const navigate = useNavigate();
   const { quoteId } = useParams<{ quoteId?: string }>();
+  const { company } = useAuth();
+  const { settings } = useCompanySettings();
 
   const [quote, setQuote] = useState<QuotationDTO | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -366,36 +371,49 @@ export const QuotationPreviewPage: React.FC = () => {
 
                 {/* Corporate Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-[#E5E1D8]">
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="font-serif font-black text-2xl tracking-wider text-[#172033]">
-                        {quote.company_name || 'Bharat Precision Engineering'}
+                  <div className="flex items-center gap-4">
+                    {settings?.template?.show_logo !== false && (
+                      <CompanyLogo
+                        variant="preview"
+                        position={settings?.template?.logo_position || 'left'}
+                        showPlaceholderIfEmpty={false}
+                        maxHeight="52px"
+                        maxWidth="140px"
+                      />
+                    )}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-serif font-black text-2xl tracking-wider text-[#172033]">
+                          {quote.company_name || company?.name || 'Company Name'}
+                        </span>
+                        <span className="text-[10px] uppercase font-bold tracking-widest bg-[#172033] text-white px-2 py-0.5 rounded">
+                          Manufacturing
+                        </span>
+                      </div>
+                      <span className="text-xs text-[#45474c] font-medium mt-1">
+                        {quote.company_legal_name || quote.company_name || company?.legalName || company?.name || ''}
                       </span>
-                      <span className="text-[10px] uppercase font-bold tracking-widest bg-[#172033] text-white px-2 py-0.5 rounded">
-                        Manufacturing
+                      <span className="text-xs text-[#76777d]">
+                        {quote.company_address || company?.address || ''}
                       </span>
+                      {(quote.company_gstin || company?.gstin) && (
+                        <span className="text-[11px] text-[#76777d] mt-1 font-mono">
+                          GSTIN: {quote.company_gstin || company?.gstin}
+                        </span>
+                      )}
                     </div>
-                    <span className="text-xs text-[#45474c] font-medium mt-1">
-                      {quote.company_legal_name || quote.company_name || 'Bharat Precision Engineering Pvt. Ltd.'}
-                    </span>
-                    <span className="text-xs text-[#76777d]">
-                      {quote.company_address || 'MIDC Industrial Area, Phase-II, Bhosari, Pune 411026, Maharashtra'}
-                    </span>
-                    <span className="text-[11px] text-[#76777d] mt-1 font-mono">
-                      GSTIN: {quote.company_gstin || '27AABCB2018Q1Z2'}
-                    </span>
                   </div>
 
                   <div className="flex flex-col sm:items-end text-left sm:text-right">
-                    <span className="text-[10px] uppercase font-bold text-[#76777d] tracking-wider">Formal Commercial Quotation</span>
+                    <span className="text-[10px] uppercase font-bold text-[#76777d] tracking-wider">Commercial Quotation</span>
                     <span className="text-xl font-bold font-mono text-[#1b1c19]">
                       {quote.quotation_number}
                     </span>
                     <div className="flex items-center gap-1 text-xs text-[#45474c] mt-0.5">
-                      <span>Date: <strong>{new Date(quote.quotation_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></span>
+                      <span>Date: <strong>{new Date(quote.quotation_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></span>
                     </div>
                     <span className="text-xs text-[#76777d] mt-0.5">
-                      Validity: {quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '30 Calendar Days'}
+                      Validity: {quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '30 Calendar Days'}
                     </span>
                   </div>
                 </div>
@@ -405,25 +423,25 @@ export const QuotationPreviewPage: React.FC = () => {
                   <div>
                     <span className="text-[10px] text-[#76777d] uppercase font-semibold">PO Reference</span>
                     <div className="text-xs font-semibold text-[#1b1c19] mt-0.5 font-mono">
-                      {quote.po_number || 'N/A'}
+                      {quote.po_number || '—'}
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[#76777d] uppercase font-semibold">Buyer Entity</span>
+                    <span className="text-[10px] text-[#76777d] uppercase font-semibold">Customer</span>
                     <div className="text-xs font-semibold text-[#1b1c19] mt-0.5 truncate">
-                      {quote.customer_name || 'Client Master'}
+                      {quote.customer_name || '—'}
                     </div>
                   </div>
                   <div>
                     <span className="text-[10px] text-[#76777d] uppercase font-semibold">Delivery Protocol</span>
                     <div className="text-xs font-semibold text-[#1b1c19] mt-0.5">
-                      {quote.delivery_terms || 'EX-Works (Plant)'}
+                      {quote.delivery_terms || '—'}
                     </div>
                   </div>
                   <div>
                     <span className="text-[10px] text-[#76777d] uppercase font-semibold">Payment Terms</span>
                     <div className="text-xs font-semibold text-[#3F7D5A] mt-0.5">
-                      {quote.payment_terms || '30 Days Net'}
+                      {quote.payment_terms || '—'}
                     </div>
                   </div>
                 </div>
@@ -436,13 +454,13 @@ export const QuotationPreviewPage: React.FC = () => {
                       <span>Quotation Addressed To</span>
                     </div>
                     <span className="font-semibold text-sm text-[#1b1c19]">
-                      {quote.customer_name || 'Buyer Entity'}
+                      {quote.customer_name || 'Customer'}
                     </span>
                     <p className="text-xs text-[#45474c] leading-relaxed">
-                      {quote.customer_address || 'Plant Works & Delivery Receiving Gate'}
+                      {quote.customer_address || '—'}
                     </p>
                     <span className="text-[11px] font-mono text-[#76777d] mt-1">
-                      GSTIN: {quote.customer_gstin || 'Buyer GST Registered'}
+                      {quote.customer_gstin ? `GSTIN: ${quote.customer_gstin}` : '—'}
                     </span>
                   </div>
 
@@ -766,7 +784,7 @@ export const QuotationPreviewPage: React.FC = () => {
                 <button
                   onClick={handleFinalize}
                   disabled={isFinalizing}
-                  className="flex items-center gap-2 px-6 py-3 rounded-lg text-white text-xs font-bold transition-all shadow-md bg-[#B87333] hover:bg-[#A46328] shadow-[#B87333]/20 active:scale-[0.99]"
+                  className="flex items-center gap-2 px-6 py-3 rounded-lg text-white text-xs font-bold transition-all shadow-md bg-[#2563EB] hover:bg-[#1D4ED8] shadow-[#2563EB]/20 active:scale-[0.99]"
                 >
                   <Lock className="w-4 h-4" />
                   <span>{isFinalizing ? 'Finalizing...' : 'Finalize Quotation (Freeze & Store PDF)'}</span>

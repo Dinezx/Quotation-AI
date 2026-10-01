@@ -88,14 +88,25 @@ export const RateManagementPage: React.FC = () => {
   const [gstType, setGstType] = useState<string>('CGST_SGST');
   const [defaultGstRate, setDefaultGstRate] = useState<number>(18.0);
   const [isSavingRules, setIsSavingRules] = useState(false);
+  const [isEditingRules, setIsEditingRules] = useState(false);
 
-  // Sync pricing rules when loaded
+  const isRulesConfigured = Boolean(pricingRules?.is_configured);
+
+  // Sync pricing rules when loaded from authoritative company settings
   useEffect(() => {
-    if (pricingRules) {
-      setOverheadPct(Number(pricingRules.overhead_percentage) || 10.0);
-      setProfitPct(Number(pricingRules.profit_percentage) || 15.0);
-      setGstType(pricingRules.gst_type || 'CGST_SGST');
-      setDefaultGstRate(Number(pricingRules.default_gst_rate) || 18.0);
+    if (pricingRules && pricingRules.is_configured) {
+      if (pricingRules.overhead_percentage !== null) {
+        setOverheadPct(Number(pricingRules.overhead_percentage));
+      }
+      if (pricingRules.profit_percentage !== null) {
+        setProfitPct(Number(pricingRules.profit_percentage));
+      }
+      if (pricingRules.gst_type) {
+        setGstType(pricingRules.gst_type);
+      }
+      if (pricingRules.default_gst_rate !== null) {
+        setDefaultGstRate(Number(pricingRules.default_gst_rate));
+      }
     }
   }, [pricingRules]);
 
@@ -118,37 +129,53 @@ export const RateManagementPage: React.FC = () => {
 
   const handleCreateMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!matGrade.trim() || !matName.trim() || !matBaseRate) {
-      showToast('Please fill in Grade, Name, and Base Rate.', 'error');
+    const cleanGrade = matGrade.trim();
+    const cleanName = matName.trim();
+    if (!cleanGrade || !cleanName || !matBaseRate) {
+      showToast('Please fill in Grade, Material Name, and Base Rate.', 'error');
       return;
     }
+
+    // Check duplicate grade against existing tenant catalog
+    const gradeExists = materials.some(
+      (m) => (m.grade || m.gradeAndSpec || '').trim().toLowerCase() === cleanGrade.toLowerCase()
+    );
+    if (gradeExists) {
+      showToast(`Material grade '${cleanGrade}' already exists in your master.`, 'error');
+      return;
+    }
+
     const baseRateNum = parseFloat(matBaseRate);
     const scrapCreditNum = parseFloat(matScrapCredit || '0');
-    const densityNum = parseFloat(matDensity || '7.85');
+    const densityNum = matDensity ? parseFloat(matDensity) : 7.85;
 
     if (isNaN(baseRateNum) || baseRateNum < 0) {
-      showToast('Base Rate must be a non-negative number.', 'error');
+      showToast('Base Rate cannot be negative and must be a valid number.', 'error');
       return;
     }
     if (isNaN(scrapCreditNum) || scrapCreditNum < 0) {
-      showToast('Scrap Credit must be a non-negative number.', 'error');
+      showToast('Scrap Credit cannot be negative and must be a valid number.', 'error');
+      return;
+    }
+    if (isNaN(densityNum) || densityNum <= 0) {
+      showToast('Density must be a valid positive number.', 'error');
       return;
     }
 
     setIsSubmittingMat(true);
     try {
       const payload: MaterialCreateDTO = {
-        grade: matGrade.trim(),
-        name: matName.trim(),
+        grade: cleanGrade,
+        name: cleanName,
         base_rate: baseRateNum,
         scrap_credit_rate: scrapCreditNum,
-        density: densityNum > 0 ? densityNum : undefined,
+        density: densityNum,
         unit: matUnit || 'kg',
         is_active: true,
       };
       await createMaterial(payload);
       setAddMaterialOpen(false);
-      showToast(`Material grade '${matGrade.trim()}' added to master.`);
+      showToast(`Material grade '${cleanGrade}' added to master.`);
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Failed to add material';
       showToast(msg, 'error');
@@ -197,15 +224,29 @@ export const RateManagementPage: React.FC = () => {
       return;
     }
 
+    // Check duplicate grade across other materials
+    const gradeCollision = materials.some(
+      (m) => m.id !== editMaterialModal.id && (m.grade || m.gradeAndSpec || '').trim().toLowerCase() === gradeClean.toLowerCase()
+    );
+    if (gradeCollision) {
+      showToast(`Another material with grade '${gradeClean}' already exists.`, 'error');
+      return;
+    }
+
     const baseRateNum = Number(editMaterialModal.baseRatePerKg);
     const scrapCreditNum = Number(editMaterialModal.scrapCreditPerKg);
+    const densityNum = editMaterialModal.densityGPerCm3 !== undefined ? Number(editMaterialModal.densityGPerCm3) : 7.85;
 
     if (isNaN(baseRateNum) || baseRateNum < 0) {
-      showToast('Base Rate must be a non-negative number.', 'error');
+      showToast('Base Rate cannot be negative and must be a valid number.', 'error');
       return;
     }
     if (isNaN(scrapCreditNum) || scrapCreditNum < 0) {
-      showToast('Scrap Credit must be a non-negative number.', 'error');
+      showToast('Scrap Credit cannot be negative and must be a valid number.', 'error');
+      return;
+    }
+    if (isNaN(densityNum) || densityNum <= 0) {
+      showToast('Density must be a valid positive number.', 'error');
       return;
     }
 
@@ -218,7 +259,7 @@ export const RateManagementPage: React.FC = () => {
           grade: gradeClean,
           base_rate: baseRateNum,
           scrap_credit_rate: scrapCreditNum,
-          density: editMaterialModal.densityGPerCm3,
+          density: densityNum,
           is_active: editMaterialModal.is_active,
         },
       });
@@ -257,26 +298,37 @@ export const RateManagementPage: React.FC = () => {
 
   const handleCreateProcess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!procName.trim() || !procHourlyRate) {
+    const cleanProcName = procName.trim();
+    if (!cleanProcName || !procHourlyRate) {
       showToast('Please enter Process Name and Hourly Rate.', 'error');
       return;
     }
+
+    // Check duplicate process name against existing catalog
+    const procExists = processes.some(
+      (p) => p.workstationName.trim().toLowerCase() === cleanProcName.toLowerCase()
+    );
+    if (procExists) {
+      showToast(`Process '${cleanProcName}' already exists in your master.`, 'error');
+      return;
+    }
+
     const hourlyNum = parseFloat(procHourlyRate);
     const setupNum = parseFloat(procSetupCost || '0');
 
     if (isNaN(hourlyNum) || hourlyNum < 0) {
-      showToast('Hourly Rate must be a non-negative number.', 'error');
+      showToast('Hourly Rate cannot be negative and must be a valid number.', 'error');
       return;
     }
     if (isNaN(setupNum) || setupNum < 0) {
-      showToast('Setup Cost must be a non-negative number.', 'error');
+      showToast('Setup Cost cannot be negative and must be a valid number.', 'error');
       return;
     }
 
     setIsSubmittingProc(true);
     try {
       const payload: ProcessCreateDTO = {
-        name: procName.trim(),
+        name: cleanProcName,
         unit: procUnit || 'hour',
         hourly_rate: hourlyNum,
         setup_cost: setupNum,
@@ -284,7 +336,7 @@ export const RateManagementPage: React.FC = () => {
       };
       await createProcess(payload);
       setAddProcessOpen(false);
-      showToast(`Process '${procName.trim()}' added to master.`);
+      showToast(`Process '${cleanProcName}' added to master.`);
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Failed to add process';
       showToast(msg, 'error');
@@ -301,15 +353,25 @@ export const RateManagementPage: React.FC = () => {
       showToast('Process Name cannot be empty.', 'error');
       return;
     }
+
+    // Check duplicate process name across other processes
+    const nameCollision = processes.some(
+      (p) => p.id !== editProcessModal.id && p.workstationName.trim().toLowerCase() === nameClean.toLowerCase()
+    );
+    if (nameCollision) {
+      showToast(`Another process with name '${nameClean}' already exists.`, 'error');
+      return;
+    }
+
     const hourlyNum = Number(editProcessModal.hourlyRate);
     const setupNum = Number(editProcessModal.setupCost);
 
     if (isNaN(hourlyNum) || hourlyNum < 0) {
-      showToast('Hourly Rate must be a non-negative number.', 'error');
+      showToast('Hourly Rate cannot be negative and must be a valid number.', 'error');
       return;
     }
     if (isNaN(setupNum) || setupNum < 0) {
-      showToast('Setup Cost must be a non-negative number.', 'error');
+      showToast('Setup Cost cannot be negative and must be a valid number.', 'error');
       return;
     }
 
@@ -495,19 +557,28 @@ export const RateManagementPage: React.FC = () => {
 
         <MetricCard
           title="Factory Overhead Rule"
-          value={`${overheadPct.toFixed(2)}%`}
-          subtitle="Applied on manufacturing subtotal"
+          value={isRulesConfigured ? `${overheadPct.toFixed(2)}%` : 'Unconfigured'}
+          subtitle={isRulesConfigured ? 'Applied on manufacturing subtotal' : 'Not set for company'}
+          badge={!isRulesConfigured ? <Badge variant="warning" size="sm">Action Required</Badge> : undefined}
           icon={<Sliders className="w-4 h-4 text-amber-600" />}
-          footer={<span className="text-[11px] text-slate-500">Electricity, Tooling, Indirect</span>}
+          footer={
+            <span className={`text-[11px] ${isRulesConfigured ? 'text-slate-500' : 'text-amber-600 font-medium'}`}>
+              {isRulesConfigured ? 'Electricity, Tooling, Indirect' : 'Configure in Pricing Rules'}
+            </span>
+          }
         />
 
         <MetricCard
           title="Profit Margin & GST"
-          value={`${profitPct.toFixed(2)}% Margin`}
-          subtitle={`Default GST: ${defaultGstRate}% (${gstType})`}
-          badge={<Badge variant="info" size="sm">Statutory</Badge>}
+          value={isRulesConfigured ? `${profitPct.toFixed(2)}% Margin` : 'Unconfigured'}
+          subtitle={isRulesConfigured ? `Default GST: ${defaultGstRate}% (${gstType})` : 'Statutory tax not configured'}
+          badge={isRulesConfigured ? <Badge variant="info" size="sm">Statutory</Badge> : <Badge variant="warning" size="sm">Action Required</Badge>}
           icon={<Percent className="w-4 h-4 text-purple-600" />}
-          footer={<span className="text-[11px] text-slate-500">Cascades to Grand Total</span>}
+          footer={
+            <span className={`text-[11px] ${isRulesConfigured ? 'text-slate-500' : 'text-amber-600 font-medium'}`}>
+              {isRulesConfigured ? 'Cascades to Grand Total' : 'Configure in Pricing Rules'}
+            </span>
+          }
         />
       </div>
 
@@ -560,8 +631,12 @@ export const RateManagementPage: React.FC = () => {
             >
               <Sliders className="w-3.5 h-3.5" />
               <span>Pricing Rules</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800">
-                Active
+              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                isRulesConfigured
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-amber-100 text-amber-800 font-bold'
+              }`}>
+                {isRulesConfigured ? 'Active' : 'Unconfigured'}
               </span>
             </button>
           </div>
@@ -593,462 +668,543 @@ export const RateManagementPage: React.FC = () => {
         {/* TAB 1: MATERIALS */}
         {activeTab === 'materials' && (
           <div>
-            {/* Filter & Search Toolbar */}
-            <div className="px-5 py-3 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs bg-white">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Search materials by grade or name..."
-                  value={materialSearch}
-                  onChange={(e) => setMaterialSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-blue-500 bg-slate-50"
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 text-slate-500">
-                  <span>Status:</span>
-                  <select
-                    value={materialStatusFilter}
-                    onChange={(e) => setMaterialStatusFilter(e.target.value as any)}
-                    className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-slate-800 font-medium focus:outline-none"
-                  >
-                    <option value="ALL">All Materials ({materials.length})</option>
-                    <option value="ACTIVE">Active Only ({materials.filter(m => m.is_active).length})</option>
-                    <option value="INACTIVE">Inactive Only ({materials.filter(m => !m.is_active).length})</option>
-                  </select>
+            {materials.length === 0 ? (
+              <div className="text-center py-16 px-4">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <Layers className="w-6 h-6" />
                 </div>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">No material rates added yet.</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mb-5">
+                  Add raw material grades and purchasing rates to enable deterministic quote calculations.
+                </p>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Plus className="w-3.5 h-3.5" />}
+                  onClick={handleOpenAddMaterial}
+                >
+                  Add Material
+                </Button>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Filter & Search Toolbar */}
+                <div className="px-5 py-3 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs bg-white">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Search materials by grade or name..."
+                      value={materialSearch}
+                      onChange={(e) => setMaterialSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-blue-500 bg-slate-50"
+                    />
+                  </div>
 
-            {/* Materials Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px] tracking-wider">
-                    <th className="py-2.5 px-4">Material</th>
-                    <th className="py-2.5 px-4">Grade</th>
-                    <th className="py-2.5 px-4">Rate/kg</th>
-                    <th className="py-2.5 px-4">Scrap</th>
-                    <th className="py-2.5 px-4">Net Billet Cost</th>
-                    <th className="py-2.5 px-4">Density</th>
-                    <th className="py-2.5 px-4">Status</th>
-                    <th className="py-2.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {filteredMaterials.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="py-8 text-center text-slate-400">
-                        No materials found matching search criteria.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredMaterials.map((m) => {
-                      const netCost = m.baseRatePerKg - m.scrapCreditPerKg;
-                      return (
-                        <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3 px-4">
-                            <div className="font-bold text-slate-900">{m.name || m.gradeAndSpec}</div>
-                            {m.subSpec && m.subSpec !== m.name && (
-                              <div className="text-[10px] text-slate-500 font-mono mt-0.5">{m.subSpec}</div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                              {m.grade || m.gradeAndSpec}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                            ₹{m.baseRatePerKg.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">/kg</span>
-                          </td>
-                          <td className="py-3 px-4 font-mono font-medium text-emerald-600">
-                            -₹{m.scrapCreditPerKg.toFixed(2)}
-                          </td>
-                          <td className="py-3 px-4 font-mono font-bold text-blue-700">
-                            ₹{Math.max(0, netCost).toFixed(2)}/kg
-                          </td>
-                          <td className="py-3 px-4 font-mono text-slate-600">
-                            {m.densityGPerCm3 ? `${m.densityGPerCm3.toFixed(2)} g/cm³` : '-'}
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge variant={m.is_active ? 'success' : 'slate'} size="sm" dot>
-                              {m.is_active ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => setEditMaterialModal({ ...m })}
-                                className="p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                                title="Edit Rates"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleToggleMaterialStatus(m)}
-                                className={`p-1 rounded transition-colors cursor-pointer ${
-                                  m.is_active
-                                    ? 'hover:bg-rose-100 text-slate-400 hover:text-rose-600'
-                                    : 'hover:bg-emerald-100 text-slate-400 hover:text-emerald-600'
-                                }`}
-                                title={m.is_active ? 'Deactivate Material' : 'Reactivate Material'}
-                              >
-                                {m.is_active ? (
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                ) : (
-                                  <RotateCcw className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 text-slate-500">
+                      <span>Status:</span>
+                      <select
+                        value={materialStatusFilter}
+                        onChange={(e) => setMaterialStatusFilter(e.target.value as any)}
+                        className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-slate-800 font-medium focus:outline-none"
+                      >
+                        <option value="ALL">All Materials ({materials.length})</option>
+                        <option value="ACTIVE">Active Only ({materials.filter(m => m.is_active).length})</option>
+                        <option value="INACTIVE">Inactive Only ({materials.filter(m => !m.is_active).length})</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Materials Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px] tracking-wider">
+                        <th className="py-2.5 px-4">Material Name</th>
+                        <th className="py-2.5 px-4">Grade</th>
+                        <th className="py-2.5 px-4">Base Rate / kg</th>
+                        <th className="py-2.5 px-4">Scrap Credit / kg</th>
+                        <th className="py-2.5 px-4">Net Material Rate / kg</th>
+                        <th className="py-2.5 px-4">Density</th>
+                        <th className="py-2.5 px-4">Status</th>
+                        <th className="py-2.5 px-4">Last Updated</th>
+                        <th className="py-2.5 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {filteredMaterials.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} className="py-8 text-center text-slate-400">
+                            No materials found matching search criteria.
                           </td>
                         </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      ) : (
+                        filteredMaterials.map((m) => {
+                          const netCost = m.baseRatePerKg - m.scrapCreditPerKg;
+                          return (
+                            <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="font-bold text-slate-900">{m.name || m.gradeAndSpec}</div>
+                                {m.subSpec && m.subSpec !== m.name && (
+                                  <div className="text-[10px] text-slate-500 font-mono mt-0.5">{m.subSpec}</div>
+                                )}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                  {m.grade || m.gradeAndSpec}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                                ₹{m.baseRatePerKg.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">/kg</span>
+                              </td>
+                              <td className="py-3 px-4 font-mono font-medium">
+                                <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block font-semibold">
+                                  ₹{m.scrapCreditPerKg.toFixed(2)} credit
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 font-mono font-bold text-blue-700">
+                                ₹{Math.max(0, netCost).toFixed(2)}/kg
+                              </td>
+                              <td className="py-3 px-4 font-mono text-slate-600">
+                                {m.densityGPerCm3 ? `${m.densityGPerCm3.toFixed(2)} g/cm³` : '-'}
+                              </td>
+                              <td className="py-3 px-4">
+                                <Badge variant={m.is_active ? 'success' : 'slate'} size="sm" dot>
+                                  {m.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4 text-slate-500 text-[11px] font-mono whitespace-nowrap">
+                                {m.lastUpdated || '-'}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => setEditMaterialModal({ ...m })}
+                                    className="p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                                    title="Edit Rates"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleToggleMaterialStatus(m)}
+                                    className={`p-1 rounded transition-colors cursor-pointer ${
+                                      m.is_active
+                                        ? 'hover:bg-rose-100 text-slate-400 hover:text-rose-600'
+                                        : 'hover:bg-emerald-100 text-slate-400 hover:text-emerald-600'
+                                    }`}
+                                    title={m.is_active ? 'Deactivate Material' : 'Reactivate Material'}
+                                  >
+                                    {m.is_active ? (
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <RotateCcw className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-            {/* Materials Table Footer with Prominent Add Button */}
-            <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between">
-              <span className="text-xs text-slate-500 font-medium">
-                Showing {filteredMaterials.length} of {materials.length} registered material grades
-              </span>
-              <Button
-                variant="primary"
-                size="sm"
-                icon={<Plus className="w-3.5 h-3.5" />}
-                onClick={handleOpenAddMaterial}
-              >
-                Add Material
-              </Button>
-            </div>
+                {/* Materials Table Footer with Prominent Add Button */}
+                <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between">
+                  <span className="text-xs text-slate-500 font-medium">
+                    Showing {filteredMaterials.length} of {materials.length} registered material grades
+                  </span>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<Plus className="w-3.5 h-3.5" />}
+                    onClick={handleOpenAddMaterial}
+                  >
+                    Add Material
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
 
         {/* TAB 2: PROCESSES */}
         {activeTab === 'processes' && (
           <div>
-            {/* Filter & Search Toolbar */}
-            <div className="px-5 py-3 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs bg-white">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Search processes..."
-                  value={processSearch}
-                  onChange={(e) => setProcessSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-blue-500 bg-slate-50"
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 text-slate-500">
-                  <span>Status:</span>
-                  <select
-                    value={processStatusFilter}
-                    onChange={(e) => setProcessStatusFilter(e.target.value as any)}
-                    className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-slate-800 font-medium focus:outline-none"
-                  >
-                    <option value="ALL">All Processes ({processes.length})</option>
-                    <option value="ACTIVE">Active Only ({processes.filter(p => p.is_active).length})</option>
-                    <option value="INACTIVE">Inactive Only ({processes.filter(p => !p.is_active).length})</option>
-                  </select>
+            {processes.length === 0 ? (
+              <div className="text-center py-16 px-4">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <Cpu className="w-6 h-6" />
                 </div>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">No process rates added yet.</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mb-5">
+                  Add manufacturing process centers, hourly rates, and setup costs to power machining estimates.
+                </p>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Plus className="w-3.5 h-3.5" />}
+                  onClick={handleOpenAddProcess}
+                >
+                  Add Process
+                </Button>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Filter & Search Toolbar */}
+                <div className="px-5 py-3 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs bg-white">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Search processes..."
+                      value={processSearch}
+                      onChange={(e) => setProcessSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-blue-500 bg-slate-50"
+                    />
+                  </div>
 
-            {/* Processes Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px] tracking-wider">
-                    <th className="py-2.5 px-4">Process</th>
-                    <th className="py-2.5 px-4">Hourly Rate</th>
-                    <th className="py-2.5 px-4">Setup Cost</th>
-                    <th className="py-2.5 px-4">Unit</th>
-                    <th className="py-2.5 px-4">Status</th>
-                    <th className="py-2.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {filteredProcesses.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-400">
-                        No manufacturing processes found matching search criteria.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredProcesses.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-slate-900">{p.workstationName}</div>
-                          <div className="text-[10px] font-mono text-slate-400">{p.code}</div>
-                        </td>
-                        <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                          ₹{p.hourlyRate.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">/hr</span>
-                        </td>
-                        <td className="py-3 px-4 font-mono text-slate-700">
-                          ₹{p.setupCost.toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4 font-mono text-slate-600">
-                          hour
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge variant={p.is_active ? 'success' : 'slate'} size="sm" dot>
-                            {p.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => setEditProcessModal({ ...p })}
-                              className="p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                              title="Edit Process"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleToggleProcessStatus(p)}
-                              className={`p-1 rounded transition-colors cursor-pointer ${
-                                p.is_active
-                                  ? 'hover:bg-rose-100 text-slate-400 hover:text-rose-600'
-                                  : 'hover:bg-emerald-100 text-slate-400 hover:text-emerald-600'
-                              }`}
-                              title={p.is_active ? 'Deactivate Process' : 'Reactivate Process'}
-                            >
-                              {p.is_active ? (
-                                <Trash2 className="w-3.5 h-3.5" />
-                              ) : (
-                                <RotateCcw className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                          </div>
-                        </td>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 text-slate-500">
+                      <span>Status:</span>
+                      <select
+                        value={processStatusFilter}
+                        onChange={(e) => setProcessStatusFilter(e.target.value as any)}
+                        className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-slate-800 font-medium focus:outline-none"
+                      >
+                        <option value="ALL">All Processes ({processes.length})</option>
+                        <option value="ACTIVE">Active Only ({processes.filter(p => p.is_active).length})</option>
+                        <option value="INACTIVE">Inactive Only ({processes.filter(p => !p.is_active).length})</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Processes Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px] tracking-wider">
+                        <th className="py-2.5 px-4">Process Name</th>
+                        <th className="py-2.5 px-4">Hourly Rate</th>
+                        <th className="py-2.5 px-4">Setup Cost</th>
+                        <th className="py-2.5 px-4">Unit</th>
+                        <th className="py-2.5 px-4">Status</th>
+                        <th className="py-2.5 px-4">Last Updated</th>
+                        <th className="py-2.5 px-4 text-right">Actions</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Processes Table Footer with Prominent Add Button */}
-            <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between">
-              <span className="text-xs text-slate-500 font-medium">
-                Showing {filteredProcesses.length} of {processes.length} manufacturing process centers
-              </span>
-              <Button
-                variant="primary"
-                size="sm"
-                icon={<Plus className="w-3.5 h-3.5" />}
-                onClick={handleOpenAddProcess}
-              >
-                Add Process
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: PRICING RULES */}
-        {activeTab === 'pricing-rules' && (
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Form Controls (Left / 7 cols) */}
-              <form onSubmit={handleSavePricingRules} className="lg:col-span-7 space-y-5">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Commercial Pricing Rules</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Configure standard factory overhead, commercial profit margin, and statutory tax classification applied to calculated quotations.
-                  </p>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {filteredProcesses.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-slate-400">
+                            No manufacturing processes found matching search criteria.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredProcesses.map((p) => (
+                          <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-slate-900">{p.workstationName}</div>
+                              <div className="text-[10px] font-mono text-slate-400">{p.code}</div>
+                            </td>
+                            <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                              ₹{p.hourlyRate.toFixed(2)} <span className="text-[10px] text-slate-400 font-normal">/hr</span>
+                            </td>
+                            <td className="py-3 px-4 font-mono text-slate-700">
+                              ₹{p.setupCost.toFixed(2)}
+                            </td>
+                            <td className="py-3 px-4 font-mono text-slate-600">
+                              {p.unit || 'hour'}
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge variant={p.is_active ? 'success' : 'slate'} size="sm" dot>
+                                {p.is_active ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-slate-500 text-[11px] font-mono whitespace-nowrap">
+                              {p.lastUpdated || '-'}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => setEditProcessModal({ ...p })}
+                                  className="p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                                  title="Edit Process"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleToggleProcessStatus(p)}
+                                  className={`p-1 rounded transition-colors cursor-pointer ${
+                                    p.is_active
+                                      ? 'hover:bg-rose-100 text-slate-400 hover:text-rose-600'
+                                      : 'hover:bg-emerald-100 text-slate-400 hover:text-emerald-600'
+                                  }`}
+                                  title={p.is_active ? 'Deactivate Process' : 'Reactivate Process'}
+                                >
+                                  {p.is_active ? (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
 
-                <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800">
-                      Standard Factory Overhead (%)
-                    </label>
-                    <span className="text-[11px] font-mono text-slate-400">0% – 100%</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Applied onto manufacturing subtotal (material net + process cost) to account for electricity, machine maintenance, coolant, and indirect labor.
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={overheadPct}
-                      onChange={(e) => setOverheadPct(parseFloat(e.target.value) || 0)}
-                      className="w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-900 bg-white focus:outline-blue-500"
-                    />
-                    <span className="text-xs font-mono font-semibold text-slate-500">%</span>
-                  </div>
-                </div>
-
-                <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800">
-                      Commercial Profit Margin (%)
-                    </label>
-                    <span className="text-[11px] font-mono text-slate-400">0% – 100%</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Target commercial net margin calculated on total assessable cost (subtotal + overhead) before tax.
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={profitPct}
-                      onChange={(e) => setProfitPct(parseFloat(e.target.value) || 0)}
-                      className="w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-900 bg-white focus:outline-blue-500"
-                    />
-                    <span className="text-xs font-mono font-semibold text-slate-500">%</span>
-                  </div>
-                </div>
-
-                <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-3">
-                  <label className="text-xs font-bold text-slate-800 block">
-                    Statutory GST Configuration
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setGstType('CGST_SGST')}
-                      className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
-                        gstType === 'CGST_SGST'
-                          ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold'
-                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="text-[11px] uppercase tracking-wider font-semibold">Intrastate</div>
-                      <div className="text-xs mt-1">CGST (9%) + SGST (9%)</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setGstType('IGST')}
-                      className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
-                        gstType === 'IGST'
-                          ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold'
-                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="text-[11px] uppercase tracking-wider font-semibold">Interstate</div>
-                      <div className="text-xs mt-1">IGST (18%)</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setGstType('EXEMPT')}
-                      className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
-                        gstType === 'EXEMPT'
-                          ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold'
-                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="text-[11px] uppercase tracking-wider font-semibold">Exempt / Export</div>
-                      <div className="text-xs mt-1">GST (0%)</div>
-                    </button>
-                  </div>
-
-                  <div className="pt-2 flex items-center gap-3 text-xs">
-                    <span className="text-slate-600 font-medium">Default GST Rate:</span>
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      max="100"
-                      value={defaultGstRate}
-                      disabled={gstType === 'EXEMPT'}
-                      onChange={(e) => setDefaultGstRate(parseFloat(e.target.value) || 0)}
-                      className="w-24 px-2.5 py-1.5 border border-slate-300 rounded font-mono font-bold text-slate-900 bg-white focus:outline-blue-500 disabled:opacity-50"
-                    />
-                    <span className="text-slate-500 font-mono">%</span>
-                  </div>
-                </div>
-
-                <div className="pt-2">
+                {/* Processes Table Footer with Prominent Add Button */}
+                <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between">
+                  <span className="text-xs text-slate-500 font-medium">
+                    Showing {filteredProcesses.length} of {processes.length} manufacturing process centers
+                  </span>
                   <Button
-                    type="submit"
                     variant="primary"
-                    size="md"
-                    loading={isSavingRules}
-                    icon={<Check className="w-4 h-4" />}
+                    size="sm"
+                    icon={<Plus className="w-3.5 h-3.5" />}
+                    onClick={handleOpenAddProcess}
                   >
-                    Save Pricing Rules
+                    Add Process
                   </Button>
                 </div>
-              </form>
-
-              {/* Simulation Card (Right / 5 cols) */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="border border-slate-200 rounded-xl bg-slate-900 text-white p-5 space-y-4 shadow-lg">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-emerald-400" />
-                      <h4 className="text-xs font-bold tracking-tight uppercase text-slate-300">
-                        Live Cascading Math Preview
-                      </h4>
-                    </div>
-                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
-                      Deterministic Engine
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-slate-400">
-                    Based on an illustrative ₹100,000 baseline manufacturing cost, your pricing rules cascade through:
-                  </p>
-
-                  <div className="space-y-2.5 text-xs font-mono">
-                    <div className="flex justify-between text-slate-300">
-                      <span>1. Manufacturing Subtotal:</span>
-                      <span>₹{simSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-
-                    <div className="flex justify-between text-amber-400">
-                      <span>2. Overhead ({overheadPct.toFixed(1)}%):</span>
-                      <span>+₹{simOverhead.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-
-                    <div className="flex justify-between font-bold text-slate-200 pt-1 border-t border-slate-800">
-                      <span>Assessable Base:</span>
-                      <span>₹{simAssessable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-
-                    <div className="flex justify-between text-purple-400">
-                      <span>3. Profit Margin ({profitPct.toFixed(1)}%):</span>
-                      <span>+₹{simProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-
-                    <div className="flex justify-between font-bold text-slate-200 pt-1 border-t border-slate-800">
-                      <span>Taxable Commercial Base:</span>
-                      <span>₹{simTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              </>
+            )}
+          </div>
+        )}
+        {/* TAB 3: PRICING RULES */}
+        {activeTab === 'pricing-rules' && (
+          <div className="p-6">
+            {!isRulesConfigured && !isEditingRules ? (
+              <div className="text-center py-16 px-4 border border-dashed border-slate-300 rounded-xl bg-slate-50/50 my-2">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <Sliders className="w-6 h-6" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">No pricing rules configured yet.</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto mb-5">
+                  Configure your company's standard factory overhead %, commercial profit margin %, and statutory GST rules. Quotation calculations require these rules to determine final pricing.
+                </p>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Sliders className="w-3.5 h-3.5" />}
+                  onClick={() => {
+                    setOverheadPct(10);
+                    setProfitPct(15);
+                    setDefaultGstRate(18);
+                    setGstType('CGST_SGST');
+                    setIsEditingRules(true);
+                  }}
+                >
+                  Configure Pricing Rules
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Form Controls (Left / 7 cols) */}
+                  <form onSubmit={handleSavePricingRules} className="lg:col-span-7 space-y-5">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">Commercial Pricing Rules</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Configure standard factory overhead, commercial profit margin, and statutory tax classification applied to calculated quotations.
+                      </p>
                     </div>
 
-                    <div className="flex justify-between text-blue-400">
-                      <span>4. GST ({simGstRate.toFixed(1)}% - {gstType}):</span>
-                      <span>+₹{simGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-800">
+                          Standard Factory Overhead (%)
+                        </label>
+                        <span className="text-[11px] font-mono text-slate-400">0% – 100%</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Applied onto manufacturing subtotal (material net + process cost) to account for electricity, machine maintenance, coolant, and indirect labor.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={overheadPct}
+                          onChange={(e) => setOverheadPct(parseFloat(e.target.value) || 0)}
+                          className="w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-900 bg-white focus:outline-blue-500"
+                        />
+                        <span className="text-xs font-mono font-semibold text-slate-500">%</span>
+                      </div>
                     </div>
 
-                    <div className="flex justify-between font-bold text-emerald-400 text-sm pt-2 border-t-2 border-slate-700">
-                      <span>Grand Total:</span>
-                      <span>₹{simGrandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-800">
+                          Commercial Profit Margin (%)
+                        </label>
+                        <span className="text-[11px] font-mono text-slate-400">0% – 100%</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Target commercial net margin calculated on total assessable cost (subtotal + overhead) before tax.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={profitPct}
+                          onChange={(e) => setProfitPct(parseFloat(e.target.value) || 0)}
+                          className="w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-900 bg-white focus:outline-blue-500"
+                        />
+                        <span className="text-xs font-mono font-semibold text-slate-500">%</span>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="pt-2 text-[10px] text-slate-400 border-t border-slate-800 flex items-center justify-between">
-                    <span>Formula: Python Decimal Arithmetic</span>
-                    <span>Zero AI Intervention</span>
+                    <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-3">
+                      <label className="text-xs font-bold text-slate-800 block">
+                        Statutory GST Configuration
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setGstType('CGST_SGST')}
+                          className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
+                            gstType === 'CGST_SGST'
+                              ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="text-[11px] uppercase tracking-wider font-semibold">Intrastate</div>
+                          <div className="text-xs mt-1">CGST (9%) + SGST (9%)</div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setGstType('IGST')}
+                          className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
+                            gstType === 'IGST'
+                              ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="text-[11px] uppercase tracking-wider font-semibold">Interstate</div>
+                          <div className="text-xs mt-1">IGST (18%)</div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setGstType('EXEMPT')}
+                          className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
+                            gstType === 'EXEMPT'
+                              ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="text-[11px] uppercase tracking-wider font-semibold">Exempt / Export</div>
+                          <div className="text-xs mt-1">GST (0%)</div>
+                        </button>
+                      </div>
+
+                      <div className="pt-2 flex items-center gap-3 text-xs">
+                        <span className="text-slate-600 font-medium">Default GST Rate:</span>
+                        <input
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          max="100"
+                          value={defaultGstRate}
+                          disabled={gstType === 'EXEMPT'}
+                          onChange={(e) => setDefaultGstRate(parseFloat(e.target.value) || 0)}
+                          className="w-24 px-2.5 py-1.5 border border-slate-300 rounded font-mono font-bold text-slate-900 bg-white focus:outline-blue-500 disabled:opacity-50"
+                        />
+                        <span className="text-slate-500 font-mono">%</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        size="md"
+                        loading={isSavingRules}
+                        icon={<Check className="w-4 h-4" />}
+                      >
+                        Save Pricing Rules
+                      </Button>
+                    </div>
+                  </form>
+
+                  {/* Simulation Card (Right / 5 cols) */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <div className="border border-slate-200 rounded-xl bg-slate-900 text-white p-5 space-y-4 shadow-lg">
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-emerald-400" />
+                          <h4 className="text-xs font-bold tracking-tight uppercase text-slate-300">
+                            Live Cascading Math Preview
+                          </h4>
+                        </div>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                          Deterministic Engine
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-slate-400">
+                        Based on an illustrative ₹100,000 baseline manufacturing cost, your pricing rules cascade through:
+                      </p>
+
+                      <div className="space-y-2.5 text-xs font-mono">
+                        <div className="flex justify-between text-slate-300">
+                          <span>1. Manufacturing Subtotal:</span>
+                          <span>₹{simSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+
+                        <div className="flex justify-between text-amber-400">
+                          <span>2. Overhead ({overheadPct.toFixed(1)}%):</span>
+                          <span>+₹{simOverhead.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+
+                        <div className="flex justify-between font-bold text-slate-200 pt-1 border-t border-slate-800">
+                          <span>Assessable Base:</span>
+                          <span>₹{simAssessable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+
+                        <div className="flex justify-between text-purple-400">
+                          <span>3. Profit Margin ({profitPct.toFixed(1)}%):</span>
+                          <span>+₹{simProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+
+                        <div className="flex justify-between font-bold text-slate-200 pt-1 border-t border-slate-800">
+                          <span>Taxable Commercial Base:</span>
+                          <span>₹{simTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+
+                        <div className="flex justify-between text-blue-400">
+                          <span>4. GST ({simGstRate.toFixed(1)}% - {gstType}):</span>
+                          <span>+₹{simGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+
+                        <div className="flex justify-between font-bold text-emerald-400 text-sm pt-2 border-t-2 border-slate-700">
+                          <span>Grand Total:</span>
+                          <span>₹{simGrandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 text-[10px] text-slate-400 border-t border-slate-800 flex items-center justify-between">
+                        <span>Formula: Python Decimal Arithmetic</span>
+                        <span>Zero AI Intervention</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
@@ -1109,7 +1265,7 @@ export const RateManagementPage: React.FC = () => {
 
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Scrap Credit (₹/kg)
+                Scrap Credit (₹/kg credit)
               </label>
               <input
                 type="number"
@@ -1120,7 +1276,21 @@ export const RateManagementPage: React.FC = () => {
                 onChange={(e) => setMatScrapCredit(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold focus:outline-blue-500"
               />
+              <span className="text-[10px] text-slate-500 mt-0.5 block">
+                Positive recovery credit deducted from base rate for net cost
+              </span>
             </div>
+          </div>
+
+          {/* Live Net Material Calculation Preview */}
+          <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between text-xs">
+            <div>
+              <span className="font-semibold text-blue-900 block">Net Material Rate / kg:</span>
+              <span className="text-[10px] text-blue-700">Base Rate - Scrap Credit</span>
+            </div>
+            <span className="font-mono font-bold text-blue-900 text-sm">
+              ₹{Math.max(0, (parseFloat(matBaseRate || '0') - parseFloat(matScrapCredit || '0'))).toFixed(2)}/kg
+            </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -1240,7 +1410,7 @@ export const RateManagementPage: React.FC = () => {
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Scrap Credit (₹/kg)
+                  Scrap Credit (₹/kg credit)
                 </label>
                 <input
                   type="number"
@@ -1256,7 +1426,21 @@ export const RateManagementPage: React.FC = () => {
                   required
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold focus:outline-blue-500"
                 />
+                <span className="text-[10px] text-slate-500 mt-0.5 block">
+                  Positive recovery credit deducted from base rate for net cost
+                </span>
               </div>
+            </div>
+
+            {/* Live Net Material Calculation Preview */}
+            <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between text-xs">
+              <div>
+                <span className="font-semibold text-blue-900 block">Net Material Rate / kg:</span>
+                <span className="text-[10px] text-blue-700">Base Rate - Scrap Credit</span>
+              </div>
+              <span className="font-mono font-bold text-blue-900 text-sm">
+                ₹{Math.max(0, ((editMaterialModal.baseRatePerKg || 0) - (editMaterialModal.scrapCreditPerKg || 0))).toFixed(2)}/kg
+              </span>
             </div>
 
             <div>

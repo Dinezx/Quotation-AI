@@ -97,18 +97,25 @@ class CreativeModernTemplate(BaseQuotationTemplate):
         ]
         right_p = Paragraph("<br/>".join(right_lines), style_quote_meta)
 
-        header_tbl = Table([[left_p, right_p]], colWidths=[319, 200])
-        header_tbl.setStyle(TableStyle([
-            ("LINEAFTER", (0, 0), (0, 0), 2, primary),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (0, 0), 0),
-            ("RIGHTPADDING", (0, 0), (0, 0), 10),
-            ("LEFTPADDING", (1, 0), (1, 0), 10),
-            ("RIGHTPADDING", (1, 0), (1, 0), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
-        content.append(header_tbl)
+        content.extend(self.build_header_logo_flowables(
+            company=company,
+            cfg=cfg,
+            left_cell=left_p,
+            right_cell=right_p,
+            col_widths=[319, 200],
+            max_width=125,
+            max_height=40,
+            table_style=[
+                ("LINEAFTER", (0, 0), (0, 0), 2, primary),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (0, 0), 0),
+                ("RIGHTPADDING", (0, 0), (0, 0), 10),
+                ("LEFTPADDING", (1, 0), (1, 0), 10),
+                ("RIGHTPADDING", (1, 0), (1, 0), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        ))
         content.append(Spacer(1, 10))
 
         # 2. Customer & Reference Cards

@@ -304,6 +304,7 @@ def preview_template_pdf(
 
 @router.get("/logo")
 def get_company_logo(
+    v: Optional[str] = Query(None, description="Cache buster parameter"),
     company_id: str = Depends(get_current_company_id),
     db: Session = Depends(get_db)
 ):
@@ -315,9 +316,27 @@ def get_company_logo(
     storage = get_storage_service()
     bucket = getattr(settings, "QUOTATION_PDF_BUCKET", "quotations")
 
+    data = None
     try:
         data = storage.download(bucket=bucket, path=company.logo_url)
     except Exception:
+        # Check local storage filesystem fallback
+        from app.services.storage.storage_service import UPLOAD_DIR
+        possible_paths = [
+            company.logo_url,
+            os.path.join(UPLOAD_DIR, "storage", bucket, company.logo_url.lstrip("/")),
+            os.path.join(UPLOAD_DIR, company.logo_url.lstrip("/")),
+        ]
+        for p in possible_paths:
+            if os.path.isfile(p):
+                try:
+                    with open(p, "rb") as f:
+                        data = f.read()
+                    break
+                except Exception:
+                    pass
+
+    if not data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Logo file not found in storage")
 
     # Determine content-type from file extension
@@ -328,7 +347,12 @@ def get_company_logo(
     return Response(
         content=data,
         media_type=content_type,
-        headers={"Content-Type": content_type}
+        headers={
+            "Content-Type": content_type,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
     )
 
 

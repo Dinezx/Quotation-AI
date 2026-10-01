@@ -417,9 +417,9 @@ def test_pricing_rules_lifecycle_and_tenant_isolation(auth_headers, auth_headers
 
     # 3. Multi-tenancy check: Company B cannot see Company A's rules
     res_b_get = client.get("/api/v1/rates/pricing-rules", headers=auth_headers_company_b)
-    assert res_b_get.status_code == 200
-    # Company B's overhead is different (or default)
-    assert Decimal(str(res_b_get.json()["overhead_percentage"])) != Decimal("14.50")
+    # Company B's overhead is different (or unconfigured None)
+    b_ovh = res_b_get.json()["overhead_percentage"]
+    assert b_ovh is None or Decimal(str(b_ovh)) != Decimal("14.50")
 
     # 4. Validation tests
     # Negative overhead rejected

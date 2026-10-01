@@ -326,11 +326,22 @@ def get_pricing_rules(
         raise HTTPException(status_code=404, detail="Company not found")
 
     settings = company.settings or {}
+    has_rules = "overhead_percentage" in settings or "profit_percentage" in settings
+    if not has_rules:
+        return PricingRulesResponse(
+            is_configured=False,
+            overhead_percentage=None,
+            profit_percentage=None,
+            gst_type=None,
+            default_gst_rate=None,
+        )
+
     return PricingRulesResponse(
-        overhead_percentage=Decimal(str(settings.get("overhead_percentage", "10.00"))),
-        profit_percentage=Decimal(str(settings.get("profit_percentage", "15.00"))),
+        is_configured=True,
+        overhead_percentage=Decimal(str(settings["overhead_percentage"])) if "overhead_percentage" in settings else None,
+        profit_percentage=Decimal(str(settings["profit_percentage"])) if "profit_percentage" in settings else None,
         gst_type=str(settings.get("gst_type", "CGST_SGST")),
-        default_gst_rate=Decimal(str(settings.get("default_gst_rate", "18.00"))),
+        default_gst_rate=Decimal(str(settings["default_gst_rate"])) if "default_gst_rate" in settings else None,
     )
 
 
@@ -356,6 +367,7 @@ def update_pricing_rules(
     db.refresh(company)
 
     return PricingRulesResponse(
+        is_configured=True,
         overhead_percentage=rules_in.overhead_percentage,
         profit_percentage=rules_in.profit_percentage,
         gst_type=rules_in.gst_type,

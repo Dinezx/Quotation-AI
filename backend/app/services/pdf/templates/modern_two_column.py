@@ -100,6 +100,25 @@ class ModernTwoColumnTemplate(BaseQuotationTemplate):
             Paragraph(f"Cust. GSTIN: <font face='Courier'><b>{cust_gstin}</b></font> | PO Ref: <font face='Courier'><b>{po_num}</b></font>", body_text),
         ]
 
+        logo_flowable = self.get_company_logo_flowable(company, max_width=130, max_height=42, cfg=cfg)
+        show_logo = cfg.get("show_logo", True)
+        logo_pos = cfg.get("logo_position", "left").lower()
+
+        if logo_flowable and show_logo:
+            if logo_pos == "center":
+                center_tbl = Table([[logo_flowable]], colWidths=[523])
+                center_tbl.setStyle(TableStyle([
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ]))
+                content.append(center_tbl)
+                content.append(Spacer(1, 4))
+            elif logo_pos == "right":
+                right_col = [logo_flowable, Spacer(1, 4)] + right_col
+            else:  # left
+                left_col = [logo_flowable, Spacer(1, 4)] + left_col
+
         two_col_tbl = Table([[left_col, right_col]], colWidths=[255, 268])
         two_col_tbl.setStyle(TableStyle([
             ("BOX", (0, 0), (0, 0), 0.5, colors.HexColor("#cbd5e1")),

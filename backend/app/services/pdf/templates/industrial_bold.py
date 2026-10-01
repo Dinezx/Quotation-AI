@@ -99,17 +99,24 @@ class IndustrialBoldTemplate(BaseQuotationTemplate):
         ]
         right_p = Paragraph("<br/>".join(right_lines), style_doc_sub)
 
-        header_tbl = Table([[left_p, right_p]], colWidths=[319, 200])
-        header_tbl.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), primary),
-            ("LINEBELOW", (0, 0), (-1, -1), 3, accent), # Bold industrial orange bar below header
-            ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-            ("LEFTPADDING", (0, 0), (-1, -1), 10),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]))
-        content.append(header_tbl)
+        content.extend(self.build_header_logo_flowables(
+            company=company,
+            cfg=cfg,
+            left_cell=left_p,
+            right_cell=right_p,
+            col_widths=[319, 200],
+            max_width=135,
+            max_height=45,
+            table_style=[
+                ("BACKGROUND", (0, 0), (-1, -1), primary),
+                ("LINEBELOW", (0, 0), (-1, -1), 3, accent),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        ))
         content.append(Spacer(1, 8))
 
         # 2. Dispatch / Buyer Reference Block

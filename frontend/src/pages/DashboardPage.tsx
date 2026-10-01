@@ -172,7 +172,7 @@ export const DashboardPage: React.FC = () => {
             {/* Primary Action Button */}
             <button
               onClick={() => navigate('/upload')}
-              className="flex items-center gap-1.5 bg-[#B87333] hover:bg-[#A46328] active:scale-[0.99] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer focus:outline-none"
+              className="flex items-center gap-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.99] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer focus:outline-none"
             >
               <Plus className="w-4 h-4" />
               <span>New Purchase Order</span>
@@ -326,7 +326,7 @@ export const DashboardPage: React.FC = () => {
                     <span className="text-2xl font-bold text-[#1b1c19] tracking-tight font-mono">
                       {data.customer_activity.total_active_customers}
                     </span>
-                    <span className="text-xs text-[#64748B] font-medium">OEM Accounts</span>
+                    <span className="text-xs text-[#64748B] font-medium">Customer Accounts</span>
                   </div>
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs">
@@ -371,7 +371,7 @@ export const DashboardPage: React.FC = () => {
                           type="text"
                           value={searchFilter}
                           onChange={(e) => setSearchFilter(e.target.value)}
-                          placeholder="Filter by quote or OEM..."
+                          placeholder="Filter by quote or customer..."
                           className="w-full bg-[#f5f3ee] pl-8 pr-3 py-1.5 rounded-lg text-xs text-[#1b1c19] placeholder:text-[#76777d] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#B87333] transition-all"
                         />
                       </div>
@@ -387,7 +387,7 @@ export const DashboardPage: React.FC = () => {
                         <p className="mt-1">Upload a customer PO to extract line items and compute deterministic costing.</p>
                         <button
                           onClick={() => navigate('/upload')}
-                          className="mt-4 px-4 py-2 bg-[#B87333] hover:bg-[#A46328] text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+                          className="mt-4 px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
                         >
                           Upload Customer PO
                         </button>
@@ -397,7 +397,7 @@ export const DashboardPage: React.FC = () => {
                         <thead>
                           <tr className="bg-[#f5f3ee] text-[#45474c] uppercase font-semibold text-[11px] tracking-wider border-b border-[#eae8e3]">
                             <th className="py-2.5 px-3">Quotation #</th>
-                            <th className="py-2.5 px-3">Client / OEM</th>
+                            <th className="py-2.5 px-3">Customer</th>
                             <th className="py-2.5 px-3">Quoted Date</th>
                             <th className="py-2.5 px-3 text-right">Final Total (₹)</th>
                             <th className="py-2.5 px-3 text-center">Status</th>
@@ -509,7 +509,7 @@ export const DashboardPage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <Building2 className="w-4 h-4 text-[#B87333]" />
                         <span className="text-sm font-semibold text-[#1b1c19]">
-                          Top OEM Customer Accounts
+                          Top Customer Accounts
                         </span>
                       </div>
                       <span className="text-xs font-semibold text-[#1b1c19] font-mono">

@@ -85,10 +85,11 @@ class POCalculateResponse(BaseModel):
 
 
 class PricingRulesResponse(BaseModel):
-    overhead_percentage: Decimal = Decimal("10.00")
-    profit_percentage: Decimal = Decimal("15.00")
-    gst_type: str = "CGST_SGST"
-    default_gst_rate: Decimal = Decimal("18.00")
+    is_configured: bool = False
+    overhead_percentage: Optional[Decimal] = None
+    profit_percentage: Optional[Decimal] = None
+    gst_type: Optional[str] = None
+    default_gst_rate: Optional[Decimal] = None
 
     model_config = ConfigDict(from_attributes=True)
 

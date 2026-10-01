@@ -3,6 +3,7 @@ import { ratesApi, MaterialDTO, ProcessDTO, MaterialCreateDTO, ProcessCreateDTO,
 import { MaterialRate, ProcessRate } from '../types/rates';
 
 export function dtoToMaterialRate(dto: MaterialDTO): MaterialRate {
+  const updatedDate = dto.updated_at || dto.created_at;
   return {
     id: dto.id,
     name: dto.name,
@@ -14,19 +15,29 @@ export function dtoToMaterialRate(dto: MaterialDTO): MaterialRate {
     scrapCreditPerKg: Number(dto.scrap_credit_rate),
     densityGPerCm3: dto.density ? Number(dto.density) : 7.85,
     primarySupplier: 'Direct Rate Master',
-    mandiHub: 'Pune MCX Depot',
+    mandiHub: 'Master Hub',
     aiMatchStatus: 'VERIFIED',
     is_active: dto.is_active,
-    lastUpdated: new Date(dto.updated_at || dto.created_at).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }),
-    isPopular: true,
+    lastUpdated: updatedDate
+      ? new Date(updatedDate).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })
+      : '-',
+    isPopular: false,
   };
 }
 
 export function dtoToProcessRate(dto: ProcessDTO): ProcessRate {
+  const updatedDate = dto.updated_at || dto.created_at;
+  const formattedDate = updatedDate
+    ? new Date(updatedDate).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '-';
   return {
     id: dto.id,
     workstationName: dto.name,
@@ -40,14 +51,10 @@ export function dtoToProcessRate(dto: ProcessDTO): ProcessRate {
       : 'CNC',
     hourlyRate: Number(dto.hourly_rate),
     setupCost: Number(dto.setup_cost),
-    capacityUtilizationPct: 82,
-    shiftMode: '2 Shifts (16h)',
+    unit: dto.unit || 'hour',
     is_active: dto.is_active,
-    lastCalibrated: new Date(dto.updated_at || dto.created_at).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }),
+    lastCalibrated: formattedDate,
+    lastUpdated: formattedDate,
   };
 }
 

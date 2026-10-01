@@ -25,9 +25,11 @@ export interface ProcessRate {
   category: 'CNC' | 'Turning' | 'Milling' | 'Grinding' | 'Laser & Fabrication' | 'Inspection';
   hourlyRate: number;
   setupCost: number;
-  capacityUtilizationPct: number;
-  shiftMode: string;
+  unit?: string;
+  capacityUtilizationPct?: number;
+  shiftMode?: string;
   lastCalibrated: string;
+  lastUpdated?: string;
   is_active?: boolean;
 }
 
@@ -41,10 +43,11 @@ export interface MultipliersConfig {
 }
 
 export interface PricingRulesConfig {
-  overhead_percentage: number;
-  profit_percentage: number;
-  gst_type: string;
-  default_gst_rate: number;
+  is_configured?: boolean;
+  overhead_percentage: number | null;
+  profit_percentage: number | null;
+  gst_type: string | null;
+  default_gst_rate: number | null;
 }
 
 export interface HsnGstRule {

@@ -74,6 +74,31 @@ export const companyApi = {
     return response.data;
   },
 
+  getLogoUrl: (version?: string | number): string | null => {
+    const token = localStorage.getItem('quotation_ai_auth_token');
+    const v = version ?? Date.now();
+    const cleanBase = (apiClient.defaults.baseURL || '').replace(/\/+$/, '');
+    if (token) {
+      return `${cleanBase}/company/logo?token=${encodeURIComponent(token)}&v=${v}`;
+    }
+    return `${cleanBase}/company/logo?v=${v}`;
+  },
+
+  getLogoBlob: async (): Promise<Blob | null> => {
+    try {
+      const response = await apiClient.get('/company/logo', {
+        responseType: 'blob',
+        params: { v: Date.now() },
+      });
+      return response.data;
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        return null;
+      }
+      throw err;
+    }
+  },
+
   previewTemplatePdf: async (
     templateId: string,
     config?: Partial<QuotationTemplateConfig>

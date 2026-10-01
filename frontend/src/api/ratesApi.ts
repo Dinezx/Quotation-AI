@@ -45,10 +45,11 @@ export interface ProcessCreateDTO {
 }
 
 export interface PricingRulesDTO {
-  overhead_percentage: number;
-  profit_percentage: number;
-  gst_type: string; // 'CGST_SGST' | 'IGST' | 'EXEMPT'
-  default_gst_rate: number;
+  is_configured?: boolean;
+  overhead_percentage: number | null;
+  profit_percentage: number | null;
+  gst_type: string | null; // 'CGST_SGST' | 'IGST' | 'EXEMPT'
+  default_gst_rate: number | null;
 }
 
 export const ratesApi = {

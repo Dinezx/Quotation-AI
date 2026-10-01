@@ -5,19 +5,14 @@ import {
   FileText, 
   Trash2, 
   Eye, 
-  Building2, 
-  FlaskConical, 
   ArrowLeft, 
-  ArrowRight, 
   Sparkles, 
   FolderOpen, 
   ShieldCheck, 
-  CheckCircle2,
-  Scan,
-  Table,
-  Check,
-  RefreshCw,
-  X
+  Scan, 
+  Table, 
+  RefreshCw, 
+  X 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { purchaseOrderApi } from '../api/purchaseOrderApi';
@@ -25,24 +20,7 @@ import { purchaseOrderApi } from '../api/purchaseOrderApi';
 interface StagedPO {
   name: string;
   size: string;
-  lineItems: number;
-  customerName: string;
-  gstin: string;
-  vendorCode: string;
-  location: string;
-  contractNote: string;
 }
-
-const DEFAULT_SAMPLE_PO: StagedPO = {
-  name: 'Heavy_Machining_PO_7702.pdf',
-  size: '4.2 MB',
-  lineItems: 8,
-  customerName: 'Tata Motors Commercial Vehicle Div',
-  gstin: '27AAACT2727Q1ZW',
-  vendorCode: 'TM-PUN-09142',
-  location: 'Chinchwad, Pune Works',
-  contractNote: 'Pre-linked to active customer master, tiered volume rebates, and standard Net-60 credit terms.',
-};
 
 export const PoUploadPage: React.FC = () => {
   const navigate = useNavigate();
@@ -88,30 +66,7 @@ export const PoUploadPage: React.FC = () => {
     setStagedFile({
       name: file.name,
       size: `${sizeMb} MB`,
-      lineItems: 3,
-      customerName: 'Tata Motors Commercial Vehicle Div',
-      gstin: '27AAACT2727Q1ZW',
-      vendorCode: 'TM-PUN-09142',
-      location: 'Chakan Works, Pune',
-      contractNote: 'Matched with customer catalog, standard Net-60 credit terms, Tier-1 manufacturing specifications.',
     });
-  };
-
-  const handleLoadSample = async () => {
-    try {
-      setUploadError(null);
-      const res = await fetch('/sample_manufacturing_purchase_order.pdf');
-      if (!res.ok) {
-        throw new Error('Failed to load sample PO document');
-      }
-      const blob = await res.blob();
-      const sampleFile = new File([blob], 'sample_manufacturing_purchase_order.pdf', {
-        type: 'application/pdf',
-      });
-      processSelectedFile(sampleFile);
-    } catch (err: any) {
-      setUploadError('Could not load sample file: ' + err.message);
-    }
   };
 
   const handleRemoveFile = () => {
@@ -136,12 +91,12 @@ export const PoUploadPage: React.FC = () => {
 
     const timer1 = setTimeout(() => {
       setExtractProgress(45);
-      setExtractStepText('Reading geometric GD&T callouts and BOM table structures...');
+      setExtractStepText('Reading GD&T callouts and BOM table structures...');
     }, 500);
 
     const timer2 = setTimeout(() => {
       setExtractProgress(75);
-      setExtractStepText('Cross-referencing metallurgy grades with database rate masters...');
+      setExtractStepText('Extracting customer, line items, and delivery terms...');
     }, 1100);
 
     try {
@@ -170,67 +125,67 @@ export const PoUploadPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-[#fbf9f4] p-6 md:p-8 font-sans antialiased text-[#1b1c19] min-h-screen">
+    <div className="w-full bg-[#f8fafc] p-6 md:p-8 font-sans antialiased text-slate-900 min-h-screen">
       <div className="max-w-[1180px] w-full mx-auto pb-16 flex flex-col">
-        {/* WORKFLOW STEPPER (5-Step Horizontal Component matching Stitch) */}
-        <div className="w-full bg-white rounded-xl shadow-xs border border-[#E5E1D8] px-6 py-4 mb-6">
+        {/* WORKFLOW STEPPER */}
+        <div className="w-full bg-white rounded-xl shadow-xs border border-slate-200 px-6 py-4 mb-6">
           <div className="grid grid-cols-5 items-center relative">
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-[#eae8e3] -z-0 mx-10" />
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-100 -z-0 mx-10" />
 
             {/* Step 1: Active */}
             <div className="relative z-10 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#B87333] text-white flex items-center justify-center font-semibold text-xs shadow-md ring-4 ring-[#B87333]/20 font-mono">
+              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-semibold text-xs shadow-xs font-mono">
                 01
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-semibold">
+                <span className="text-[11px] uppercase tracking-wider text-[#2563EB] font-bold">
                   Step 01
                 </span>
-                <span className="text-sm font-semibold text-[#1b1c19]">Upload</span>
+                <span className="text-sm font-semibold text-slate-900">Upload</span>
               </div>
             </div>
 
             {/* Step 2: Inactive */}
             <div className="relative z-10 flex items-center gap-3 justify-center">
-              <div className="w-8 h-8 rounded-full bg-[#f0eee9] text-[#76777d] flex items-center justify-center font-semibold text-xs font-mono">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-semibold text-xs font-mono">
                 02
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider text-[#76777d]">Step 02</span>
-                <span className="text-sm font-semibold text-[#76777d]">Review</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Step 02</span>
+                <span className="text-sm font-medium text-slate-400">Review</span>
               </div>
             </div>
 
             {/* Step 3: Inactive */}
             <div className="relative z-10 flex items-center gap-3 justify-center">
-              <div className="w-8 h-8 rounded-full bg-[#f0eee9] text-[#76777d] flex items-center justify-center font-semibold text-xs font-mono">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-semibold text-xs font-mono">
                 03
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider text-[#76777d]">Step 03</span>
-                <span className="text-sm font-semibold text-[#76777d]">Costing</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Step 03</span>
+                <span className="text-sm font-medium text-slate-400">Costing</span>
               </div>
             </div>
 
             {/* Step 4: Inactive */}
             <div className="relative z-10 flex items-center gap-3 justify-center">
-              <div className="w-8 h-8 rounded-full bg-[#f0eee9] text-[#76777d] flex items-center justify-center font-semibold text-xs font-mono">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-semibold text-xs font-mono">
                 04
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider text-[#76777d]">Step 04</span>
-                <span className="text-sm font-semibold text-[#76777d]">Preview</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Step 04</span>
+                <span className="text-sm font-medium text-slate-400">Draft</span>
               </div>
             </div>
 
             {/* Step 5: Inactive */}
             <div className="relative z-10 flex items-center gap-3 justify-end">
-              <div className="w-8 h-8 rounded-full bg-[#f0eee9] text-[#76777d] flex items-center justify-center font-semibold text-xs font-mono">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-semibold text-xs font-mono">
                 05
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-[11px] uppercase tracking-wider text-[#76777d]">Step 05</span>
-                <span className="text-sm font-semibold text-[#76777d]">Send</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Step 05</span>
+                <span className="text-sm font-medium text-slate-400">Finalize</span>
               </div>
             </div>
           </div>
@@ -240,27 +195,16 @@ export const PoUploadPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex flex-col">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-semibold text-[#1b1c19] tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                 Upload Purchase Order
               </h1>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ffdcc2] text-[#8c4f10] text-xs font-semibold">
-                Stage 1 / 5
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] text-xs font-semibold border border-blue-200">
+                Step 1 of 5
               </span>
             </div>
-            <p className="text-sm text-[#45474c] mt-1 leading-relaxed">
-              Upload your purchase order and ORYNZA will identify the important information automatically.
+            <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+              Upload customer purchase order documents (PDF or image). Quotation AI will extract parts, quantities, and commercial terms.
             </p>
-          </div>
-
-          <div className="flex items-center self-start sm:self-center gap-2 px-3 py-1.5 rounded-full bg-white shadow-xs border border-[#E5E1D8]">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400" />
-            </span>
-            <span className="text-xs font-semibold text-[#1b1c19] tracking-wide">
-              Vision Engine v4.2 Ready
-            </span>
-            <span className="text-[#76777d] text-xs font-mono">| 18ms latency</span>
           </div>
         </div>
 
@@ -276,43 +220,38 @@ export const PoUploadPage: React.FC = () => {
               onDrop={handleDrop}
               className={`relative group bg-white rounded-xl p-8 shadow-xs transition-all duration-200 border-2 border-dashed cursor-pointer overflow-hidden ${
                 isDragOver
-                  ? 'border-[#B87333] bg-[#ffdcc2]/20'
-                  : 'border-[#c6c6cd] hover:border-[#B87333] hover:shadow-sm'
+                  ? 'border-[#2563EB] bg-blue-50/30'
+                  : 'border-slate-300 hover:border-[#2563EB] hover:shadow-sm'
               }`}
             >
-              <div className="absolute -right-16 -top-16 w-48 h-48 bg-[#B87333]/5 rounded-full blur-2xl pointer-events-none" />
               <div className="flex flex-col items-center text-center max-w-lg mx-auto py-6">
-                <div className="w-16 h-16 rounded-xl bg-[#f5f3ee] flex items-center justify-center text-[#B87333] mb-4 shadow-xs group-hover:scale-105 transition-transform duration-200">
+                <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center text-[#2563EB] mb-4 shadow-xs group-hover:scale-105 transition-transform duration-200">
                   <UploadCloud className="w-8 h-8" />
                 </div>
-                <h3 className="text-base sm:text-lg font-semibold text-[#1b1c19] mb-1">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1">
                   Drag and drop your purchase order here, or{' '}
-                  <span className="text-[#B87333] underline decoration-[#B87333]/30 decoration-2 underline-offset-4 font-semibold hover:text-[#A46328]">
+                  <span className="text-[#2563EB] underline decoration-[#2563EB]/30 decoration-2 underline-offset-4 font-semibold hover:text-[#1D4ED8]">
                     Browse Files
                   </span>
                 </h3>
-                <p className="text-xs sm:text-sm text-[#45474c] mt-1.5 mb-6">
-                  Upload multi-page client POs, specification annexures, or engineering work orders.
+                <p className="text-xs sm:text-sm text-slate-500 mt-1.5 mb-6">
+                  Upload customer PO documents, drawing annexures, or engineering work orders.
                 </p>
 
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#f0eee9] text-xs text-[#45474c]">
-                  <FileText className="w-4 h-4 text-[#B87333]" />
-                  <span>Supported formats: PDF, Scanned JPG/PNG, Excel (.xlsx, .csv) up to 25MB</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 text-xs text-slate-600">
+                  <FileText className="w-4 h-4 text-[#2563EB]" />
+                  <span>Supported formats: PDF, PNG, JPG, JPEG up to 25MB</span>
                 </div>
 
                 {/* Upload Meta Indicators */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full mt-8 pt-6 border-t border-[#eae8e3] text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full mt-8 pt-6 border-t border-slate-100 text-left">
                   <div className="flex items-center gap-2">
-                    <Scan className="w-4 h-4 text-[#B87333]" />
-                    <span className="text-xs text-[#45474c]">Optical Character Recog.</span>
+                    <Scan className="w-4 h-4 text-[#2563EB]" />
+                    <span className="text-xs text-slate-600">Document OCR &amp; Vision Extraction</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Table className="w-4 h-4 text-[#B87333]" />
-                    <span className="text-xs text-[#45474c]">Multi-page Line Parsing</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-[#B87333]" />
-                    <span className="text-xs text-[#45474c]">Sanitized Sandbox Scan</span>
+                    <Table className="w-4 h-4 text-[#2563EB]" />
+                    <span className="text-xs text-slate-600">Multi-page Line Item Parsing</span>
                   </div>
                 </div>
               </div>
@@ -328,22 +267,22 @@ export const PoUploadPage: React.FC = () => {
 
             {/* ACTIVE STAGED FILE PREVIEW */}
             {stagedFile ? (
-              <div className="bg-white rounded-xl p-5 shadow-xs border border-[#E5E1D8] flex items-center justify-between gap-4">
+              <div className="bg-white rounded-xl p-5 shadow-xs border border-slate-200 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-12 h-12 rounded-lg bg-[#172033] text-[#fdad67] flex items-center justify-center shrink-0 shadow-xs">
-                    <FileText className="w-6 h-6" />
+                  <div className="w-12 h-12 rounded-lg bg-[#0f172a] text-[#2563EB] flex items-center justify-center shrink-0 shadow-xs">
+                    <FileText className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex flex-col truncate">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-[#1b1c19] truncate font-mono">
+                      <span className="text-sm font-semibold text-slate-900 truncate font-mono">
                         {stagedFile.name}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-[#eae8e3] text-xs font-medium text-[#45474c] shrink-0">
-                        Pre-Parsed
+                      <span className="px-2 py-0.5 rounded bg-blue-50 text-xs font-semibold text-[#2563EB] shrink-0 border border-blue-200">
+                        Ready for Extraction
                       </span>
                     </div>
-                    <span className="text-xs text-[#64748B] mt-0.5 font-mono">
-                      {stagedFile.size} • {stagedFile.lineItems} Precision Line Items • Uploaded just now
+                    <span className="text-xs text-slate-500 mt-0.5 font-mono">
+                      {stagedFile.size} • Selected file
                     </span>
                   </div>
                 </div>
@@ -352,117 +291,62 @@ export const PoUploadPage: React.FC = () => {
                   <button
                     onClick={handleRemoveFile}
                     title="Remove Document"
-                    className="p-2 text-[#76777d] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/40 rounded-lg transition-colors cursor-pointer"
+                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setPreviewOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f0eee9] hover:bg-[#eae8e3] rounded-lg text-[#1b1c19] text-xs font-semibold transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-800 text-xs font-semibold transition-colors cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    <span>Preview</span>
+                    <span>Details</span>
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl p-5 shadow-xs border border-dashed border-[#c6c6cd] text-center text-xs text-[#76777d]">
-                No document staged. Drop a file above or click "Load Pune Sample" below.
+              <div className="bg-white rounded-xl p-5 shadow-xs border border-dashed border-slate-300 text-center text-xs text-slate-500">
+                No document staged. Drag and drop a Purchase Order file (PDF, PNG, JPG) above or click Browse to select.
               </div>
             )}
 
-            {/* CUSTOMER PROFILE MATCH CARD */}
-            {stagedFile && (
-              <div className="bg-white rounded-xl p-5 shadow-xs border border-[#E5E1D8]">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-10 h-10 rounded-lg bg-[#ffdcc2] text-[#8c4f10] flex items-center justify-center shrink-0 mt-0.5">
-                      <Building2 className="w-5 h-5" />
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-semibold">
-                          Customer Profile Match
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#eae8e3] text-xs text-[#45474c] font-medium">
-                          Auto-Assigned
-                        </span>
-                      </div>
-                      <h4 className="text-sm font-semibold text-[#1b1c19] mt-1">
-                        {stagedFile.customerName}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-[#64748B]">
-                        <span className="font-mono">{stagedFile.gstin}</span>
-                        <span>•</span>
-                        <span>Vendor Code: {stagedFile.vendorCode}</span>
-                        <span>•</span>
-                        <span>{stagedFile.location}</span>
-                      </div>
-                      <p className="text-xs text-[#45474c] mt-2.5 bg-[#f5f3ee] p-2.5 rounded-lg leading-relaxed">
-                        <span className="font-semibold text-[#1b1c19]">Contract Matrix:</span> {stagedFile.contractNote}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => navigate('/customers')}
-                    className="px-3 py-1.5 rounded-lg bg-[#f0eee9] text-[#1b1c19] text-xs font-semibold hover:bg-[#eae8e3] transition-colors whitespace-nowrap cursor-pointer"
-                  >
-                    Modify Link
-                  </button>
-                </div>
+            {/* ERROR DISPLAY */}
+            {uploadError && (
+              <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800 flex items-center justify-between">
+                <span>{uploadError}</span>
+                <button
+                  onClick={() => setUploadError(null)}
+                  className="font-semibold text-red-600 hover:underline cursor-pointer"
+                >
+                  Dismiss
+                </button>
               </div>
             )}
-
-            {/* QUICK TEST SAMPLE ACTION */}
-            <div className="bg-gradient-to-r from-[#f5f3ee] via-white to-[#f5f3ee] rounded-xl p-5 shadow-xs border border-[#E5E1D8] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3.5">
-                <div className="w-9 h-9 rounded-full bg-[#B87333]/10 text-[#B87333] flex items-center justify-center shrink-0">
-                  <FlaskConical className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-[#1b1c19]">
-                    Test with Pune Plant Sample PO
-                  </span>
-                  <span className="text-xs text-[#64748B] font-mono">
-                    Heavy_Machining_PO_7702.pdf, 4.2 MB • 8 Line Items
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleLoadSample}
-                className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#eae8e3] text-[#1b1c19] hover:bg-[#e4e2dd] text-xs font-semibold transition-colors cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Load Pune Sample</span>
-              </button>
-            </div>
 
             {/* EXTRACTION PROGRESS DIALOG */}
             {isExtracting && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-5 rounded-xl bg-[#172033] text-white shadow-md border border-[#1f2d47] space-y-3"
+                className="p-5 rounded-xl bg-[#0f172a] text-white shadow-md border border-slate-800 space-y-3"
               >
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#fdad67] animate-pulse" />
-                    <span className="font-semibold text-white tracking-wide">AI Smart Extraction in Progress</span>
+                    <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+                    <span className="font-semibold text-white tracking-wide">AI Extraction in Progress</span>
                   </div>
-                  <span className="font-mono text-[#fdad67] font-bold">{extractProgress}%</span>
+                  <span className="font-mono text-blue-400 font-bold">{extractProgress}%</span>
                 </div>
 
-                <div className="w-full bg-[#102134] h-2 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
                   <motion.div
-                    className="bg-[#B87333] h-full rounded-full"
+                    className="bg-[#2563EB] h-full rounded-full"
                     animate={{ width: `${extractProgress}%` }}
                     transition={{ duration: 0.3 }}
                   />
                 </div>
 
-                <div className="text-xs text-[#7f879f] font-mono">
+                <div className="text-xs text-slate-400 font-mono">
                   &gt; {extractStepText}
                 </div>
               </motion.div>
@@ -472,159 +356,118 @@ export const PoUploadPage: React.FC = () => {
           {/* SECONDARY COLUMN (4 COLS) */}
           <div className="col-span-12 lg:col-span-4 flex flex-col gap-5">
             {/* CARD: WHAT HAPPENS NEXT? */}
-            <div className="bg-white rounded-xl p-5 shadow-xs border border-[#E5E1D8]">
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#eae8e3]">
-                <span className="w-2 h-2 rounded-full bg-[#B87333]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#1b1c19]">
+            <div className="bg-white rounded-xl p-5 shadow-xs border border-slate-200">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+                <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
                   WHAT HAPPENS NEXT?
                 </h3>
               </div>
 
               <ol className="flex flex-col gap-4">
                 <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#172033] text-white flex items-center justify-center text-xs font-semibold font-mono shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-[#0f172a] text-white flex items-center justify-center text-xs font-semibold font-mono shrink-0 mt-0.5">
                     1
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[#1b1c19]">
+                    <span className="text-xs font-semibold text-slate-900">
                       Upload Document
                     </span>
-                    <span className="text-xs text-[#64748B] mt-0.5 leading-relaxed">
-                      AI engine ingests multi-page drawings, line items, and annexures.
+                    <span className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                      AI engine ingests drawings, specifications, and purchase order files.
                     </span>
                   </div>
                 </li>
 
                 <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#f0eee9] text-[#45474c] flex items-center justify-center text-xs font-semibold font-mono shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-semibold font-mono shrink-0 mt-0.5">
                     2
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[#1b1c19]">
-                      Information is Identified
+                    <span className="text-xs font-semibold text-slate-900">
+                      AI Extraction
                     </span>
-                    <span className="text-xs text-[#64748B] mt-0.5 leading-relaxed">
-                      Extracts GSTIN, part numbers, raw material grades, quantities, and delivery milestones.
+                    <span className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                      Identifies customer, PO number, line items, materials, processes, and quantities.
                     </span>
                   </div>
                 </li>
 
                 <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#f0eee9] text-[#45474c] flex items-center justify-center text-xs font-semibold font-mono shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-semibold font-mono shrink-0 mt-0.5">
                     3
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[#1b1c19]">
-                      Review Extracted Details
+                    <span className="text-xs font-semibold text-slate-900">
+                      Review &amp; Confirm
                     </span>
-                    <span className="text-xs text-[#64748B] mt-0.5 leading-relaxed">
-                      Confidence score check with instant inline edits and cross-reference validation.
+                    <span className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                      Verify extracted customer details and line items before costing.
                     </span>
                   </div>
                 </li>
 
                 <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#f0eee9] text-[#45474c] flex items-center justify-center text-xs font-semibold font-mono shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-semibold font-mono shrink-0 mt-0.5">
                     4
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[#1b1c19]">
-                      Continue to Costing
+                    <span className="text-xs font-semibold text-slate-900">
+                      Rate Binding &amp; Calculation
                     </span>
-                    <span className="text-xs text-[#64748B] mt-0.5 leading-relaxed">
-                      Live rates applied for raw metals, CNC machine cycles, and surface treatment.
+                    <span className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                      Rates applied for raw materials, machining, setup, overhead, and GST.
+                    </span>
+                  </div>
+                </li>
+
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-semibold font-mono shrink-0 mt-0.5">
+                    5
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-slate-900">
+                      Quotation Draft &amp; Finalize
+                    </span>
+                    <span className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                      Generate PDF dossier, lock final version, and dispatch to customer.
                     </span>
                   </div>
                 </li>
               </ol>
             </div>
 
-            {/* SYSTEM METRIC CARD */}
-            <div className="bg-white rounded-xl p-5 shadow-xs border border-[#E5E1D8] relative overflow-hidden">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider text-[#B87333] font-semibold">
-                    Shopfloor Verified
-                  </span>
-                  <div className="text-3xl font-bold text-[#1b1c19] tracking-tight leading-none mt-1 font-mono">
-                    99.2%
-                  </div>
-                </div>
-                <div className="w-10 h-10 rounded-lg bg-[#f0eee9] flex items-center justify-center text-[#B87333]">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-              </div>
-
-              <div className="text-xs font-semibold text-[#1b1c19] mb-1">
-                Extraction Accuracy
-              </div>
-              <p className="text-xs text-[#64748B] leading-relaxed">
-                Benchmarked across 14,200+ Indian automotive & precision tooling POs from Maruti, Tata, and Ashok Leyland tier-1 suppliers.
-              </p>
-
-              {/* Accuracy Wave Chart */}
-              <div className="w-full mt-4 h-12 bg-[#f5f3ee] rounded-lg p-2 flex items-end">
-                <svg className="w-full h-8 text-[#B87333]" fill="none" viewBox="0 0 200 40">
-                  <path
-                    d="M0 32 L30 28 L60 30 L90 20 L120 22 L150 12 L180 14 L200 8"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2.5"
-                  />
-                  <path
-                    d="M0 32 L30 28 L60 30 L90 20 L120 22 L150 12 L180 14 L200 8 L200 40 L0 40 Z"
-                    fill="currentColor"
-                    fillOpacity="0.12"
-                  />
-                </svg>
-              </div>
-            </div>
-
             {/* ENTERPRISE SECURITY CARD */}
-            <div className="bg-white rounded-xl p-4 shadow-xs border border-[#E5E1D8] flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#172033] text-[#fdad67] flex items-center justify-center shrink-0">
+            <div className="bg-white rounded-xl p-4 shadow-xs border border-slate-200 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#0f172a] text-blue-400 flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-4 h-4" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-semibold text-[#1b1c19]">
+                <span className="text-xs font-semibold text-slate-900">
                   256-bit AES Document Encryption
                 </span>
-                <span className="text-[11px] text-[#64748B]">
-                  ISO 27001 Certified • SOC 2 Type II Audited
+                <span className="text-[11px] text-slate-500">
+                  Tenant-isolated secure storage
                 </span>
               </div>
-            </div>
-
-            {/* PLANT TELEMETRY MINI BADGE */}
-            <div className="bg-[#f5f3ee] rounded-xl p-4 flex items-center justify-between border border-[#E5E1D8]">
-              <div className="flex flex-col">
-                <span className="text-[11px] text-[#64748B]">Current Plant Load</span>
-                <span className="text-xs font-semibold text-[#1b1c19] mt-0.5">
-                  Pune Machining Line 04
-                </span>
-              </div>
-              <span className="px-2.5 py-1 rounded bg-white text-[#B87333] font-mono text-xs font-semibold shadow-xs">
-                44 mins backlog
-              </span>
             </div>
           </div>
         </div>
 
         {/* ACTION FOOTER BAR */}
-        <div className="mt-8 pt-6 border-t border-[#eae8e3] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-xs font-semibold text-[#45474c] hover:text-[#1b1c19] transition-colors py-2 px-1 cursor-pointer focus:outline-none"
+            className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors py-2 px-1 cursor-pointer focus:outline-none"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Cancel & Return to Dashboard</span>
+            <span>Cancel &amp; Return to Dashboard</span>
           </button>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[#1b1c19] hover:bg-[#f0eee9] text-xs font-semibold transition-colors shadow-xs border border-[#E5E1D8] cursor-pointer"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white text-slate-800 hover:bg-slate-50 text-xs font-semibold transition-colors shadow-xs border border-slate-200 cursor-pointer"
             >
               <FolderOpen className="w-4 h-4" />
               <span>Choose Another File</span>
@@ -633,7 +476,7 @@ export const PoUploadPage: React.FC = () => {
             <button
               onClick={handleStartExtraction}
               disabled={!stagedFile || isExtracting}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-[#B87333] hover:bg-[#A46328] active:scale-[0.99] text-white text-xs font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.99] text-white text-xs font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
             >
               {isExtracting ? (
                 <>
@@ -643,7 +486,7 @@ export const PoUploadPage: React.FC = () => {
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>Upload & Extract with AI →</span>
+                  <span>Begin AI Extraction →</span>
                 </>
               )}
             </button>
@@ -659,46 +502,42 @@ export const PoUploadPage: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-[#E5E1D8]"
+              className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-[#eae8e3]">
-                <div className="flex items-center gap-2 font-semibold text-sm text-[#1b1c19]">
-                  <FileText className="w-4 h-4 text-[#B87333]" />
-                  <span>{stagedFile.name}</span>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2 font-semibold text-sm text-slate-900">
+                  <FileText className="w-4 h-4 text-[#2563EB]" />
+                  <span className="truncate">{stagedFile.name}</span>
                 </div>
                 <button
                   onClick={() => setPreviewOpen(false)}
-                  className="p-1 text-[#76777d] hover:text-[#1b1c19] rounded cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="bg-[#f5f3ee] p-4 rounded-lg space-y-2 text-xs text-[#45474c]">
+              <div className="bg-slate-50 p-4 rounded-lg space-y-2 text-xs text-slate-600">
+                <div className="flex justify-between font-mono">
+                  <span>File Name:</span>
+                  <span className="font-semibold text-slate-900 truncate max-w-[220px]">{stagedFile.name}</span>
+                </div>
                 <div className="flex justify-between font-mono">
                   <span>File Size:</span>
-                  <span className="font-semibold text-[#1b1c19]">{stagedFile.size}</span>
-                </div>
-                <div className="flex justify-between font-mono">
-                  <span>Estimated Items:</span>
-                  <span className="font-semibold text-[#1b1c19]">{stagedFile.lineItems} Line Items</span>
+                  <span className="font-semibold text-slate-900">{stagedFile.size}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Matched Customer:</span>
-                  <span className="font-semibold text-[#1b1c19]">{stagedFile.customerName}</span>
-                </div>
-                <div className="flex justify-between font-mono">
-                  <span>GSTIN:</span>
-                  <span className="font-semibold text-[#1b1c19]">{stagedFile.gstin}</span>
+                  <span>Status:</span>
+                  <span className="font-semibold text-[#2563EB]">Ready for AI Extraction</span>
                 </div>
               </div>
 
               <div className="pt-2 flex justify-end">
                 <button
                   onClick={() => setPreviewOpen(false)}
-                  className="px-4 py-2 bg-[#172033] text-white text-xs font-semibold rounded-lg hover:bg-[#102134] transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-[#0f172a] text-white text-xs font-semibold rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  Close Preview
+                  Close
                 </button>
               </div>
             </motion.div>

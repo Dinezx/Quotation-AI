@@ -347,10 +347,10 @@ export const PoReviewPage: React.FC = () => {
                     Customer Entity
                   </div>
                   <div className="text-base font-semibold text-[#1b1c19]">
-                    {po.customer_name || 'Tata Motors Limited'}
+                    {po.customer_name || 'Customer Name'}
                   </div>
                   <div className="text-xs text-[#45474c] mt-0.5">
-                    Pune Plant Div • GSTIN: 27AAACT2727Q1ZW
+                    {po.extracted_data?.customer_gstin ? `GSTIN: ${po.extracted_data.customer_gstin}` : (po.extracted_data?.gstin ? `GSTIN: ${po.extracted_data.gstin}` : 'GSTIN: Not detected')}
                   </div>
                 </div>
 
@@ -361,14 +361,14 @@ export const PoReviewPage: React.FC = () => {
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-base font-semibold text-[#1b1c19] font-mono">
-                      {po.po_number || 'TML/PO/2026/0942'}
+                      {po.po_number || '—'}
                     </span>
                     <span className="text-[11px] text-[#3F7D5A] font-semibold bg-[#3F7D5A]/10 px-2 py-0.5 rounded">
                       Active
                     </span>
                   </div>
                   <div className="text-xs text-[#45474c] mt-0.5">
-                    Issue Date: {po.po_date ? new Date(po.po_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '14 Feb 2026'}
+                    Issue Date: {po.po_date ? new Date(po.po_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                   </div>
                 </div>
 
@@ -378,10 +378,10 @@ export const PoReviewPage: React.FC = () => {
                     Delivery Destination
                   </div>
                   <div className="text-sm text-[#1b1c19] font-medium">
-                    {po.delivery_terms || 'Chakan Industrial Area, Phase II'}
+                    {po.delivery_terms || '—'}
                   </div>
                   <div className="text-xs text-[#45474c] mt-0.5">
-                    Due: 28 Mar 2026 <span className="text-[#B87333] font-semibold">(42 Days Lead)</span>
+                    {po.delivery_date ? `Delivery: ${new Date(po.delivery_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}` : 'Standard Delivery'}
                   </div>
                 </div>
 
@@ -391,11 +391,11 @@ export const PoReviewPage: React.FC = () => {
                     Payment &amp; Invoicing
                   </div>
                   <div className="text-sm text-[#1b1c19] font-medium">
-                    {po.payment_terms || '60 Days Net from Delivery'}
+                    {po.payment_terms || 'Standard Payment Terms'}
                   </div>
                   <div className="flex items-center gap-1 mt-0.5 text-xs text-[#3F7D5A]">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span className="text-[11px] font-medium">Standard SLA Tier-1 Verified</span>
+                    <span className="text-[11px] font-medium">Commercial Terms Extracted</span>
                   </div>
                 </div>
               </div>
@@ -410,11 +410,11 @@ export const PoReviewPage: React.FC = () => {
                       Extracted Line Items ({po.items.length})
                     </h2>
                     <span className="px-2 py-0.5 bg-[#01081a] text-white text-[11px] font-semibold rounded">
-                      CAD Matched
+                      Extracted
                     </span>
                   </div>
                   <p className="text-xs text-[#45474c] mt-0.5">
-                    Verified against Tata Motors Tier-1 digital engineering tolerances
+                    Extracted and mapped from source purchase order document
                   </p>
                 </div>
 
@@ -521,7 +521,7 @@ export const PoReviewPage: React.FC = () => {
                               className={`px-2.5 py-1 rounded text-xs font-semibold transition-all ${
                                 isConfirmed
                                   ? 'bg-[#f0eee9] text-[#45474c] hover:bg-[#eae8e3]'
-                                  : 'bg-[#B87333] text-white hover:bg-[#A46328] shadow-xs'
+                                  : 'bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-xs'
                               }`}
                             >
                               {isConfirmed ? 'Edit' : 'Confirm'}
@@ -582,7 +582,7 @@ export const PoReviewPage: React.FC = () => {
                     </div>
                     <div className="w-3/4 h-7 bg-[#3F7D5A]/20 border border-[#3F7D5A]/40 rounded flex items-center px-2">
                       <span className="text-[9px] text-[#3F7D5A] font-mono font-bold tracking-tight">
-                        • TATA MOTORS REQUISITION HEADER
+                        • SOURCE PURCHASE ORDER HEADER
                       </span>
                     </div>
                   </div>
@@ -598,8 +598,8 @@ export const PoReviewPage: React.FC = () => {
 
                 <div className="flex items-center justify-between text-xs text-[#45474c] pt-1">
                   <div className="truncate max-w-[180px]">
-                    <span className="font-medium text-[#1b1c19] truncate block">PO-TML-2026-CHAKAN.pdf</span>
-                    <span className="text-[11px] text-[#76777d]">1.4 MB • Text + Vector Layer</span>
+                    <span className="font-medium text-[#1b1c19] truncate block">{po.source_file_name || (po.po_number ? `${po.po_number}.pdf` : 'Source_Document.pdf')}</span>
+                    <span className="text-[11px] text-[#76777d]">Extracted Document</span>
                   </div>
                   <button 
                     onClick={() => setInspectModalOpen(true)}
@@ -657,11 +657,11 @@ export const PoReviewPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Tier-1 Vendor Notice Card */}
+            {/* Engineering Standard Notice Card */}
             <div className="p-4 bg-[#f5f3ee] rounded-xl flex items-start gap-3 text-[#45474c] shadow-xs border border-[#E5E1D8]">
-              <Info className="w-5 h-5 text-[#B87333] shrink-0 mt-0.5" />
+              <Info className="w-5 h-5 text-[#2563EB] shrink-0 mt-0.5" />
               <p className="text-xs leading-relaxed">
-                All unassigned dimensional tolerances have been automatically mapped to <strong>ISO 2768-m</strong> in accordance with Tata Motors Tier-1 vendor supply agreements.
+                All unassigned dimensional tolerances have been automatically mapped to <strong>ISO 2768-m</strong> standard machining practice.
               </p>
             </div>
 
@@ -697,7 +697,7 @@ export const PoReviewPage: React.FC = () => {
             <button 
               onClick={handleApproveAndProceed}
               disabled={approving}
-              className="px-6 py-2.5 bg-[#B87333] text-white rounded-lg text-xs font-bold tracking-wide hover:bg-[#A46328] transition-all shadow-md shadow-[#B87333]/20 flex items-center gap-2 group"
+              className="px-6 py-2.5 bg-[#2563EB] text-white rounded-lg text-xs font-bold tracking-wide hover:bg-[#1D4ED8] transition-all shadow-md shadow-[#2563EB]/20 flex items-center gap-2 group"
             >
               <span>{approving ? 'Verifying...' : 'Continue to Costing Matrix'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

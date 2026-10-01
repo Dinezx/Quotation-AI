@@ -138,7 +138,7 @@ export const LandingPage: React.FC = () => {
             {isAuthenticated ? (
               <button
                 onClick={() => navigate('/dashboard')}
-                className="px-4 py-2 bg-[#B87333] hover:bg-[#A46328] text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-[#B87333]/20 flex items-center gap-2 cursor-pointer"
+                className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-[#2563EB]/20 flex items-center gap-2 cursor-pointer"
               >
                 <span>Go to Dashboard</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -152,10 +152,10 @@ export const LandingPage: React.FC = () => {
                   Sign In
                 </button>
                 <button
-                  onClick={() => setIsPilotModalOpen(true)}
-                  className="px-4 py-2 bg-[#B87333] hover:bg-[#A46328] text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-[#B87333]/20 flex items-center gap-2 cursor-pointer"
+                  onClick={() => navigate('/signup')}
+                  className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-[#2563EB]/20 flex items-center gap-2 cursor-pointer"
                 >
-                  <span>Request Plant Pilot</span>
+                  <span>Sign Up Free</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </>
@@ -207,10 +207,10 @@ export const LandingPage: React.FC = () => {
                   Sign In
                 </button>
                 <button
-                  onClick={() => { setMobileMenuOpen(false); setIsPilotModalOpen(true); }}
-                  className="w-full py-2.5 text-center text-xs font-bold text-white bg-[#B87333] hover:bg-[#A46328] rounded-lg shadow-sm"
+                  onClick={() => { setMobileMenuOpen(false); navigate('/signup'); }}
+                  className="w-full py-2.5 text-center text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-lg shadow-sm"
                 >
-                  Request Plant Pilot
+                  Sign Up Free
                 </button>
               </div>
             </motion.div>
@@ -253,12 +253,12 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Primary Call to Action Buttons */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 max-w-md mx-auto">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 max-w-lg mx-auto">
             <button
-              onClick={() => setIsPilotModalOpen(true)}
-              className="w-full sm:w-auto px-7 py-3.5 bg-[#B87333] hover:bg-[#A46328] text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-[#B87333]/25 flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
+              onClick={() => navigate('/signup')}
+              className="w-full sm:w-auto px-7 py-3.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-[#2563EB]/25 flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
             >
-              <span>Request 14-Day Plant Pilot</span>
+              <span>Create Plant Account Free</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
@@ -266,7 +266,7 @@ export const LandingPage: React.FC = () => {
               className="w-full sm:w-auto px-6 py-3.5 bg-[#172033] hover:bg-[#202c45] text-slate-200 hover:text-white text-sm font-semibold rounded-lg transition-all border border-[#2b3a58] flex items-center justify-center gap-2 cursor-pointer"
             >
               <Cpu className="w-4 h-4 text-[#fdad67]" />
-              <span>Explore Live Platform</span>
+              <span>Sign In with Email or Google</span>
             </button>
           </div>
 
@@ -1185,10 +1185,10 @@ export const LandingPage: React.FC = () => {
                 </ul>
               </div>
               <button
-                onClick={() => setIsPilotModalOpen(true)}
+                onClick={() => navigate('/signup')}
                 className="mt-8 w-full py-3 bg-white hover:bg-[#f0eee9] text-[#111827] text-xs font-bold rounded-lg transition-colors border border-[#E5E1D8] cursor-pointer"
               >
-                Select Job Shop Edition
+                Sign Up for Job Shop Edition
               </button>
             </div>
 
@@ -1216,10 +1216,10 @@ export const LandingPage: React.FC = () => {
                 </ul>
               </div>
               <button
-                onClick={() => setIsPilotModalOpen(true)}
-                className="mt-8 w-full py-3 bg-[#B87333] hover:bg-[#A46328] text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-[#B87333]/25 cursor-pointer"
+                onClick={() => navigate('/signup')}
+                className="mt-8 w-full py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-[#2563EB]/25 cursor-pointer"
               >
-                Launch Production Pilot
+                Sign Up for Production Facility
               </button>
             </div>
 
@@ -1351,10 +1351,10 @@ export const LandingPage: React.FC = () => {
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => setIsPilotModalOpen(true)}
-              className="w-full sm:w-auto px-8 py-4 bg-[#B87333] hover:bg-[#A46328] text-white text-sm font-bold rounded-lg transition-all shadow-xl shadow-[#B87333]/30 flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
+              onClick={() => navigate('/signup')}
+              className="w-full sm:w-auto px-8 py-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold rounded-lg transition-all shadow-xl shadow-[#2563EB]/30 flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
             >
-              <span>Launch Your 14-Day Free Pilot</span>
+              <span>Create Plant Account (Sign Up Free)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
@@ -1576,7 +1576,7 @@ export const LandingPage: React.FC = () => {
                   <div className="pt-2">
                     <button
                       type="submit"
-                      className="w-full py-3 bg-[#B87333] hover:bg-[#A46328] text-white font-bold rounded-lg transition-all shadow-md shadow-[#B87333]/25 cursor-pointer text-xs"
+                      className="w-full py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold rounded-lg transition-all shadow-md shadow-[#2563EB]/25 cursor-pointer text-xs"
                     >
                       Provision Plant Pilot Workspace
                     </button>

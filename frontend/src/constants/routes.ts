@@ -1,4 +1,9 @@
 export const ROUTES = {
+  HOME: '/',
+  LOGIN: '/login',
+  SIGNUP: '/signup',
+  CALLBACK: '/auth/callback',
+  ONBOARDING: '/onboarding',
   DASHBOARD: '/dashboard',
   UPLOAD: '/upload',
   REVIEW: '/review',

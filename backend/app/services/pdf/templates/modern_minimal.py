@@ -95,15 +95,15 @@ class ModernMinimalTemplate(BaseQuotationTemplate):
         ]
         right_p = Paragraph("<br/>".join(right_lines), style_meta)
 
-        header_tbl = Table([[left_p, right_p]], colWidths=[315, 192])
-        header_tbl.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
-        content.append(header_tbl)
+        content.extend(self.build_header_logo_flowables(
+            company=company,
+            cfg=cfg,
+            left_cell=left_p,
+            right_cell=right_p,
+            col_widths=[315, 192],
+            max_width=130,
+            max_height=44,
+        ))
         content.append(Spacer(1, 10))
         content.append(HRFlowable(width="100%", thickness=0.75, color=colors.HexColor("#e2e8f0"), spaceAfter=10))
 

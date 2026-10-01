@@ -1,5 +1,5 @@
 from typing import Optional, List
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -21,29 +21,36 @@ class AuthenticatedUser(BaseModel):
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
+    token: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ) -> AuthenticatedUser:
     """
     Validates Supabase access token via asymmetric JWKS verification.
     Resolves the authenticated user ID (sub) to their assigned company_id.
     Guarantees that company_id is strictly derived server-side.
+    Supports either Authorization: Bearer <token> header or ?token=<token> query parameter.
     """
-    if not credentials or not credentials.credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing Authorization header",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    raw_token = None
+    if credentials and credentials.credentials:
+        if credentials.scheme.lower() != "bearer":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Malformed Bearer token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        raw_token = credentials.credentials
+    elif token:
+        raw_token = token.strip()
 
-    if credentials.scheme.lower() != "bearer":
+    if not raw_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Malformed Bearer token",
+            detail="Missing Authorization header or token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     # 1. Asymmetric JWKS signature, issuer, algorithm, and expiration verification
-    payload = verify_supabase_jwt(credentials.credentials)
+    payload = verify_supabase_jwt(raw_token)
 
     sub: str = payload.get("sub")
     email: str = payload.get("email", "")

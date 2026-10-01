@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Building2,
   ShieldCheck,
@@ -13,6 +14,8 @@ import {
   FileText,
   AlertCircle,
   Building,
+  UserCircle,
+  LogOut,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/Button';
@@ -21,7 +24,9 @@ import { useDensity } from '../context/DensityContext';
 import { useCustomers } from '../hooks/useCustomers';
 import { customerApi } from '../api/customerApi';
 import { useCompanySettings } from '../hooks/useCompanySettings';
+import { useAuth } from '../context/AuthContext';
 import { TemplateGallerySection } from '../components/settings/TemplateGallerySection';
+import { CompanyLogo } from '../components/common/CompanyLogo';
 import {
   CompanyProfile,
   CompanyTaxSettings,
@@ -32,6 +37,9 @@ import {
 
 export const SettingsPage: React.FC = () => {
   const { isComfortable } = useDensity();
+  const { user, logout, company } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
   const { customers, refetch: refetchCustomers } = useCustomers();
   const {
     settings,
@@ -54,8 +62,19 @@ export const SettingsPage: React.FC = () => {
   } = useCompanySettings();
 
   const [activeTab, setActiveTab] = useState<
-    'profile' | 'tax' | 'bank' | 'defaults' | 'templates' | 'communication'
-  >('profile');
+    'profile' | 'tax' | 'bank' | 'defaults' | 'templates' | 'communication' | 'user'
+  >(() => {
+    if (tabParam && ['profile', 'tax', 'bank', 'defaults', 'templates', 'communication', 'user'].includes(tabParam)) {
+      return tabParam as any;
+    }
+    return 'profile';
+  });
+
+  useEffect(() => {
+    if (tabParam && ['profile', 'tax', 'bank', 'defaults', 'templates', 'communication', 'user'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+  }, [tabParam]);
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -343,6 +362,7 @@ export const SettingsPage: React.FC = () => {
             { id: 'defaults', label: 'Quotation Defaults', icon: FileText },
             { id: 'templates', label: 'Quotation Templates', icon: Sliders },
             { id: 'communication', label: 'Customer Communication', icon: Mail },
+            { id: 'user', label: 'My Profile', icon: UserCircle },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -350,7 +370,10 @@ export const SettingsPage: React.FC = () => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  setSearchParams({ tab: tab.id });
+                }}
                 className={`py-2 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
                   isActive
                     ? 'bg-slate-950 text-white shadow-xs'
@@ -381,20 +404,11 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-6">
-              <div className="w-32 h-20 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center p-2 overflow-hidden shrink-0">
-                {profileForm.logo_url ? (
-                  <img
-                    src={profileForm.logo_url}
-                    alt="Company Logo"
-                    className="max-h-full max-w-full object-contain"
-                  />
-                ) : (
-                  <div className="text-center text-slate-400">
-                    <Building className="w-6 h-6 mx-auto mb-1 opacity-50" />
-                    <span className="text-[10px]">No Logo</span>
-                  </div>
-                )}
-              </div>
+              <CompanyLogo
+                variant="settings"
+                overrideLogoUrl={profileForm.logo_url}
+                alt="Company Logo"
+              />
 
               <div className="space-y-2 flex-1">
                 <div className="flex items-center gap-3">
@@ -830,7 +844,7 @@ export const SettingsPage: React.FC = () => {
                   value={defaultsForm.delivery_terms || ''}
                   onChange={(e) => setDefaultsForm({ ...defaultsForm, delivery_terms: e.target.value })}
                   className="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-xs text-slate-900"
-                  placeholder="Ex-Works, Pune Plant"
+                  placeholder="Ex-Works"
                 />
               </div>
 
@@ -1005,6 +1019,117 @@ export const SettingsPage: React.FC = () => {
                   </Button>
                 )}
               </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* TAB 7: My Profile */}
+      {activeTab === 'user' && (
+        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          {/* Authoritative Company Logo View Section */}
+          <CompanyLogo
+            variant="profile"
+            overrideLogoUrl={settings?.profile?.logo_url ?? undefined}
+            companyName={company?.name || settings?.profile?.name}
+            onManageInSettings={() => {
+              setActiveTab('profile');
+              setSearchParams({ tab: 'profile' });
+            }}
+          />
+
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-6">
+            <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">User Account Profile</h3>
+                <p className="text-xs text-slate-500">
+                  Your personal operator credentials and tenant access privileges.
+                </p>
+              </div>
+              <Badge variant="success" size="sm">Active Session</Badge>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100">
+              <div className="w-16 h-16 rounded-full bg-[#172033] border-2 border-[#2563EB]/40 text-[#2563EB] flex items-center justify-center font-bold text-xl font-mono shadow-xs shrink-0">
+                {user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : user?.email ? user.email.slice(0, 2).toUpperCase() : 'U'}
+              </div>
+              <div className="space-y-1 text-center sm:text-left">
+                <h4 className="text-base font-bold text-slate-900 leading-tight">
+                  {user?.fullName || user?.email || 'User'}
+                </h4>
+                <p className="text-xs text-slate-500 font-mono">
+                  {user?.email || '—'}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1 justify-center sm:justify-start">
+                  <Badge variant="info" size="sm">
+                    {user?.role === 'ADMIN' ? 'Company Administrator' : user?.role || 'Member'}
+                  </Badge>
+                  {company?.name && (
+                    <Badge variant="slate" size="sm">
+                      {company.name}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Full Name</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={user?.fullName || ''}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-medium text-slate-700 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Work Email</label>
+                <input
+                  type="email"
+                  readOnly
+                  value={user?.email || ''}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-mono text-slate-700 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Role & Authority Level</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={user?.role === 'ADMIN' ? 'Plant Director / Tenant Admin' : user?.role || 'Costing Engineer'}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-medium text-slate-700 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Tenant Organization ID</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={user?.companyId || company?.id || 'ten_4920491024'}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-mono text-slate-700 cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-xs text-slate-400">
+                Logged in securely with session token authentication.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (logout) logout();
+                  window.location.href = '/';
+                }}
+                icon={<LogOut className="w-3.5 h-3.5 text-rose-500" />}
+              >
+                Sign Out
+              </Button>
             </div>
           </div>
         </motion.div>

@@ -98,16 +98,23 @@ class PremiumCorporateTemplate(BaseQuotationTemplate):
         ]
         right_hdr_p = Paragraph("<br/>".join(right_hdr_lines), hdr_quote_meta)
 
-        banner_tbl = Table([[left_hdr_p, right_hdr_p]], colWidths=[319, 200])
-        banner_tbl.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), primary),
-            ("TOPPADDING", (0, 0), (-1, -1), 10),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-            ("LEFTPADDING", (0, 0), (-1, -1), 10),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]))
-        content.append(banner_tbl)
+        content.extend(self.build_header_logo_flowables(
+            company=company,
+            cfg=cfg,
+            left_cell=left_hdr_p,
+            right_cell=right_hdr_p,
+            col_widths=[319, 200],
+            max_width=140,
+            max_height=48,
+            table_style=[
+                ("BACKGROUND", (0, 0), (-1, -1), primary),
+                ("TOPPADDING", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        ))
         content.append(Spacer(1, 10))
 
         # 2. Structured Information Blocks

@@ -135,15 +135,15 @@ class ClassicProfessionalTemplate(BaseQuotationTemplate):
         ]
         right_para = Paragraph("<br/>".join(right_lines), style_doc_meta)
 
-        header_tbl = Table([[left_para, right_para]], colWidths=[310, 205])
-        header_tbl.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
-        content.append(header_tbl)
+        content.extend(self.build_header_logo_flowables(
+            company=company,
+            cfg=cfg,
+            left_cell=left_para,
+            right_cell=right_para,
+            col_widths=[310, 205],
+            max_width=135,
+            max_height=48,
+        ))
         content.append(Spacer(1, 10))
 
         # 2. Customer & Reference Section

@@ -50,6 +50,7 @@ export const TemplateGallerySection: React.FC<TemplateGallerySectionProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [compareTemplateId, setCompareTemplateId] = useState<string | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState<boolean>(false);
 
   // Customizer Local State (for live preview before save)
@@ -450,33 +451,114 @@ export const TemplateGallerySection: React.FC<TemplateGallerySectionProps> = ({
         </div>
       )}
 
-      {/* FULL A4 PREVIEW MODAL */}
+      {/* FULL A4 PREVIEW & COMPARISON MODAL */}
       {previewTemplateId && (
         <Modal
           isOpen={true}
-          onClose={() => setPreviewTemplateId(null)}
-          title={`Quotation Preview — ${previewTemplate?.name || 'Template'}`}
+          onClose={() => {
+            setPreviewTemplateId(null);
+            setCompareTemplateId(null);
+          }}
+          title={previewTemplate?.name || 'Template Preview'}
           description="High-fidelity visual representation of how your quotation will render."
           maxWidth="4xl"
         >
           <div className="space-y-4">
-            <div className="max-h-[70vh] overflow-y-auto p-2 bg-slate-100 rounded-xl">
-              <TemplatePreviewDoc
-                templateId={previewTemplateId}
-                config={{
-                  ...currentConfig,
-                  template_id: previewTemplateId,
-                  primary_color: previewTemplate?.default_primary_color || currentConfig.primary_color,
-                  secondary_color: previewTemplate?.default_secondary_color || currentConfig.secondary_color,
-                }}
-                profile={profile}
-                bank={bank}
-                defaults={defaults}
-                isThumbnail={false}
-              />
+            {/* Template Details Header Bar */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-bold text-slate-900">{previewTemplate?.name}</h4>
+                  <Badge variant={previewTemplate?.category === 'Professional' ? 'info' : previewTemplate?.category === 'Industrial' ? 'warning' : 'slate'} size="sm">
+                    {previewTemplate?.category}
+                  </Badge>
+                  {currentConfig.template_id === previewTemplateId ? (
+                    <Badge variant="success" size="sm">Currently Active</Badge>
+                  ) : (
+                    <Badge variant="slate" size="sm">Not Selected</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-slate-600 max-w-xl">{previewTemplate?.description}</p>
+                <div className="text-[11px] text-blue-700 font-medium">
+                  <strong>Best for:</strong> {previewTemplate?.best_for || previewTemplate?.recommended_for || 'General manufacturing RFQs'}
+                </div>
+              </div>
+
+              {/* Compare Selector */}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Compare with:</span>
+                <select
+                  value={compareTemplateId || ''}
+                  onChange={(e) => setCompareTemplateId(e.target.value || null)}
+                  className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-blue-500"
+                >
+                  <option value="">None (Single View)</option>
+                  {templates
+                    .filter((t) => t.id !== previewTemplateId)
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.category})
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
 
-            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+            {/* Preview Canvas (Single or Side-by-Side Comparison) */}
+            <div className={`max-h-[65vh] overflow-y-auto p-3 bg-slate-100 rounded-xl ${
+              compareTemplateId ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''
+            }`}>
+              <div className="space-y-1">
+                {compareTemplateId && (
+                  <div className="text-xs font-bold text-slate-700 px-1 py-0.5">
+                    Template A: {previewTemplate?.name}
+                  </div>
+                )}
+                <TemplatePreviewDoc
+                  templateId={previewTemplateId}
+                  config={{
+                    ...currentConfig,
+                    template_id: previewTemplateId,
+                    primary_color: previewTemplate?.default_primary_color || currentConfig.primary_color,
+                    secondary_color: previewTemplate?.default_secondary_color || currentConfig.secondary_color,
+                  }}
+                  profile={profile}
+                  bank={bank}
+                  defaults={defaults}
+                  isThumbnail={false}
+                />
+              </div>
+
+              {compareTemplateId && (
+                <div className="space-y-1">
+                  <div className="text-xs font-bold text-slate-700 px-1 py-0.5 flex justify-between items-center">
+                    <span>Template B: {templates.find((t) => t.id === compareTemplateId)?.name}</span>
+                    <button
+                      onClick={() => setCompareTemplateId(null)}
+                      className="text-[11px] text-slate-400 hover:text-slate-700 underline cursor-pointer"
+                    >
+                      Exit Comparison
+                    </button>
+                  </div>
+                  <TemplatePreviewDoc
+                    templateId={compareTemplateId}
+                    config={{
+                      ...currentConfig,
+                      template_id: compareTemplateId,
+                      primary_color: templates.find((t) => t.id === compareTemplateId)?.default_primary_color || currentConfig.primary_color,
+                      secondary_color: templates.find((t) => t.id === compareTemplateId)?.default_secondary_color || currentConfig.secondary_color,
+                    }}
+                    profile={profile}
+                    bank={bank}
+                    defaults={defaults}
+                    isThumbnail={false}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Modal Actions */}
+            <div className="flex justify-between items-center pt-3 border-t border-slate-200">
               <Button
                 variant="outline"
                 size="md"
@@ -484,24 +566,30 @@ export const TemplateGallerySection: React.FC<TemplateGallerySectionProps> = ({
                 disabled={isDownloadingPdf}
                 icon={<Download className="w-4 h-4" />}
               >
-                {isDownloadingPdf ? 'Generating Sample PDF...' : 'Download Sample PDF'}
+                {isDownloadingPdf ? 'Generating PDF...' : 'Preview PDF'}
               </Button>
 
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="md" onClick={() => setPreviewTemplateId(null)}>
+                <Button variant="ghost" size="md" onClick={() => {
+                  setPreviewTemplateId(null);
+                  setCompareTemplateId(null);
+                }}>
                   Close
                 </Button>
                 <Button
                   variant="primary"
                   size="md"
+                  disabled={currentConfig.template_id === previewTemplateId}
                   onClick={async () => {
                     if (previewTemplate) {
                       await handleSelect(previewTemplate);
                       setPreviewTemplateId(null);
+                      setCompareTemplateId(null);
                     }
                   }}
+                  icon={currentConfig.template_id === previewTemplateId ? <Check className="w-4 h-4" /> : undefined}
                 >
-                  Use This Template
+                  {currentConfig.template_id === previewTemplateId ? 'Currently In Use' : 'Use This Template'}
                 </Button>
               </div>
             </div>

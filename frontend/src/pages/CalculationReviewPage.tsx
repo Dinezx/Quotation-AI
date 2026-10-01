@@ -681,7 +681,7 @@ export const CalculationReviewPage: React.FC = () => {
                   className={`w-full py-2.5 text-white font-bold text-xs rounded-lg transition-all shadow-md flex items-center justify-center gap-2 group ${
                     isBlocked || !calcResult?.quotation_id
                       ? 'bg-slate-400 cursor-not-allowed shadow-none'
-                      : 'bg-[#B87333] hover:bg-[#A46328] shadow-[#B87333]/20 active:scale-[0.99]'
+                      : 'bg-[#2563EB] hover:bg-[#1D4ED8] shadow-[#2563EB]/20 active:scale-[0.99]'
                   }`}
                 >
                   <span>{isBlocked ? 'Resolve Missing Rates to Proceed' : 'Continue to Quotation Preview'}</span>

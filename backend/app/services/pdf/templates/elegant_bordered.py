@@ -85,15 +85,42 @@ class ElegantBorderedTemplate(BaseQuotationTemplate):
         if contacts:
             head_lines.append(" | ".join(contacts))
 
-        header_tbl = Table([[Paragraph("<br/>".join(head_lines), sub_style)]], colWidths=[519])
-        header_tbl.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), 1, primary),
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fafafa")),
-            ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-            ("LEFTPADDING", (0, 0), (-1, -1), 10),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ]))
+        head_p = Paragraph("<br/>".join(head_lines), sub_style)
+        logo_flowable = self.get_company_logo_flowable(company, max_width=120, max_height=45, cfg=cfg)
+        show_logo = cfg.get("show_logo", True)
+        logo_pos = cfg.get("logo_position", "center").lower()
+
+        if logo_flowable and show_logo:
+            if logo_pos == "left":
+                tbl_data = [[logo_flowable, head_p]]
+                col_w = [120, 399]
+            elif logo_pos == "right":
+                tbl_data = [[head_p, logo_flowable]]
+                col_w = [399, 120]
+            else:  # center
+                tbl_data = [[logo_flowable], [head_p]]
+                col_w = [519]
+            header_tbl = Table(tbl_data, colWidths=col_w)
+            header_tbl.setStyle(TableStyle([
+                ("BOX", (0, 0), (-1, -1), 1, primary),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fafafa")),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]))
+        else:
+            header_tbl = Table([[head_p]], colWidths=[519])
+            header_tbl.setStyle(TableStyle([
+                ("BOX", (0, 0), (-1, -1), 1, primary),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fafafa")),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ]))
         content.append(header_tbl)
         content.append(Spacer(1, 6))
 

@@ -1,22 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText,
   Search,
   Download,
   Plus,
-  CheckCircle2,
   AlertCircle,
-  Clock,
-  RefreshCw,
+  Mail,
   ChevronRight,
-  TrendingUp,
-  Wallet,
-  BarChart3,
-  Factory,
-  ShieldCheck,
-  Edit3,
-  MoreVertical,
+  Eye,
+  CheckCircle2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { quotationApi, QuotationDTO } from '../api/quotationApi';
@@ -31,42 +24,42 @@ interface StatusMeta {
 }
 
 function getStatusMeta(status: string): StatusMeta {
-  switch (status) {
+  switch (status?.toUpperCase()) {
     case 'FINAL':
-      return { label: 'Finalized', dotColor: '#3F7D5A', pillClass: 'bg-[#3F7D5A]/15 text-[#3F7D5A]' };
+    case 'FINALIZED':
+      return { label: 'Finalized', dotColor: '#16a34a', pillClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200' };
     case 'APPROVED':
-      return { label: 'Approved', dotColor: '#3F7D5A', pillClass: 'bg-[#3F7D5A]/15 text-[#3F7D5A]' };
-    case 'READY_TO_SEND':
-      return { label: 'Ready to Send', dotColor: '#2dd4bf', pillClass: 'bg-[#B87333]/15 text-[#B87333]', pulse: true };
+      return { label: 'Approved', dotColor: '#16a34a', pillClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200' };
     case 'SENT':
-      return { label: 'Sent', dotColor: '#76777d', pillClass: 'bg-[#eae8e3] text-[#45474c]' };
-    case 'DISPATCHED':
-      return { label: 'Dispatched', dotColor: '#3F7D5A', pillClass: 'bg-[#3F7D5A]/15 text-[#3F7D5A]' };
+      return { label: 'Sent', dotColor: '#2563EB', pillClass: 'bg-blue-50 text-blue-700 border border-blue-200' };
     case 'DRAFT':
     default:
-      return { label: status || 'Draft', dotColor: '#B7791F', pillClass: 'bg-[#B7791F]/15 text-[#B7791F]' };
+      return { label: 'Draft', dotColor: '#d97706', pillClass: 'bg-amber-50 text-amber-700 border border-amber-200' };
+  }
+}
+
+function getEmailStatusBadge(status?: string): { label: string; className: string } {
+  switch (status?.toUpperCase()) {
+    case 'SENT':
+      return { label: 'Sent', className: 'bg-blue-50 text-blue-700 border border-blue-200' };
+    case 'FAILED':
+      return { label: 'Failed', className: 'bg-red-50 text-red-700 border border-red-200' };
+    case 'PENDING':
+      return { label: 'Pending', className: 'bg-amber-50 text-amber-700 border border-amber-200' };
+    default:
+      return { label: 'Not Sent', className: 'bg-slate-50 text-slate-500 border border-slate-200' };
   }
 }
 
 function getInitials(name: string): string {
   return (name || 'N/A')
     .split(' ')
+    .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0] || '')
     .join('')
     .toUpperCase();
 }
-
-const Sparkline: React.FC<{ color?: string }> = ({ color = '#B87333' }) => (
-  <svg className="w-16 h-5" fill="none" viewBox="0 0 64 20">
-    <path
-      d="M2 16 L14 12 L26 14 L38 8 L50 9 L62 3"
-      stroke={color}
-      strokeLinecap="round"
-      strokeWidth="2"
-    />
-  </svg>
-);
 
 function fmtDate(iso: string | undefined): string {
   if (!iso) return '—';
@@ -98,9 +91,11 @@ export const QuotationHistoryPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [quickFilter, setQuickFilter] = useState<string>('ALL');
+  const [dateFilter, setDateFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState<boolean>(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -150,11 +145,46 @@ export const QuotationHistoryPage: React.FC = () => {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const handleSendEmail = async (q: QuotationDTO, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSendingEmailId(q.id);
+    setFeedbackMessage(null);
+    try {
+      const res = await quotationApi.sendEmail(q.id);
+      setFeedbackMessage({
+        text: `Quotation ${q.quotation_number} sent successfully to ${res.recipient || 'customer'}.`,
+        type: 'success',
+      });
+      // Refresh list to update email status
+      fetchQuotations();
+    } catch (err: any) {
+      setFeedbackMessage({
+        text: `Email dispatch failed: ${err.response?.data?.detail || err.message}`,
+        type: 'error',
+      });
+    } finally {
+      setSendingEmailId(null);
+    }
+  };
 
-  const finalCount = quotations.filter((q) => q.status === 'FINAL').length;
-  const draftCount = quotations.filter((q) => q.status === 'DRAFT').length;
-  const pipelineValue = quotations.reduce((acc, q) => acc + (q.final_total || 0), 0);
+  // Date filtering on client side for the active page
+  const filteredQuotations = useMemo(() => {
+    if (dateFilter === 'ALL') return quotations;
+
+    const now = new Date();
+    return quotations.filter((q) => {
+      if (!q.quotation_date) return true;
+      const qDate = new Date(q.quotation_date);
+      const diffDays = (now.getTime() - qDate.getTime()) / (1000 * 3600 * 24);
+
+      if (dateFilter === '30_DAYS') return diffDays <= 30;
+      if (dateFilter === '90_DAYS') return diffDays <= 90;
+      if (dateFilter === 'YEAR') return qDate.getFullYear() === now.getFullYear();
+      return true;
+    });
+  }, [quotations, dateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   const toggleRow = (id: string) => {
     setSelectedIds((prev) => {
@@ -165,30 +195,12 @@ export const QuotationHistoryPage: React.FC = () => {
   };
 
   const allChecked =
-    quotations.length > 0 && quotations.every((q) => selectedIds.has(q.id));
+    filteredQuotations.length > 0 && filteredQuotations.every((q) => selectedIds.has(q.id));
 
   const toggleAll = () => {
     if (allChecked) setSelectedIds(new Set());
-    else setSelectedIds(new Set(quotations.map((q) => q.id)));
+    else setSelectedIds(new Set(filteredQuotations.map((q) => q.id)));
   };
-
-  const quickFilterOptions = [
-    { id: 'ALL', label: 'All Quotations', count: totalCount },
-    {
-      id: 'HIGH_VALUE',
-      label: 'High-Value (> ₹20L)',
-      count: quotations.filter((q) => q.final_total > 2000000).length,
-    },
-    { id: 'DRAFT', label: 'Follow-ups Due', count: draftCount },
-    { id: 'FINAL', label: 'Ready for Conversion', count: finalCount },
-  ];
-
-  const visibleRows =
-    quickFilter === 'ALL'
-      ? quotations
-      : quickFilter === 'HIGH_VALUE'
-      ? quotations.filter((q) => q.final_total > 2000000)
-      : quotations.filter((q) => q.status === quickFilter);
 
   const getPageNumbers = (): (number | '...')[] => {
     const pages: (number | '...')[] = [];
@@ -210,197 +222,63 @@ export const QuotationHistoryPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full px-8 py-7 bg-surface min-h-screen space-y-6 pb-12">
+    <div className="w-full px-6 md:px-8 py-7 bg-[#f8fafc] min-h-screen space-y-6 pb-16">
       {/* ── PAGE HEADER ────────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="flex flex-col space-y-1">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[#76777d] font-semibold">
-            <span>Sales &amp; Commercials</span>
-            <span className="text-[#c6c6cd]">/</span>
-            <span className="text-[#B87333] font-semibold">Ledger Registry</span>
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[#2563EB] font-bold">
+            <span>QUOTATIONS</span>
           </div>
-          <h1 className="text-[28px] leading-9 font-semibold text-[#1b1c19] tracking-tight">
+          <h1 className="text-2xl md:text-[28px] leading-tight font-bold text-slate-900 tracking-tight">
             Quotation History
           </h1>
-          <p className="text-[14px] text-[#45474c] max-w-2xl">
-            Track, audit, and analyze all issued and pending commercial manufacturing
-            quotations across production units with real-time tax and margin telemetry.
+          <p className="text-sm text-slate-600 max-w-2xl">
+            View, manage and download quotations created from customer purchase orders.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => fetchQuotations()}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-white text-[#1b1c19] text-[12px] font-medium rounded-lg shadow-sm hover:bg-[#eae8e3] transition-colors border border-[#e4e2dd]"
-          >
-            <RefreshCw className={`w-4 h-4 text-[#76777d] ${loading ? 'animate-spin' : ''}`} />
-            <span>Audit Trail</span>
-          </button>
-          <button
             onClick={() => navigate('/upload')}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#B87333] text-white text-[12px] font-medium rounded-lg shadow-sm hover:bg-[#A46328] transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#2563EB] text-white text-xs font-semibold rounded-lg shadow-sm hover:bg-[#1D4ED8] transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Create New Quotation</span>
+            <span>+ New Purchase Order</span>
           </button>
         </div>
       </div>
 
-      {/* ── KPI CARDS ──────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Card 1: Active Pipeline */}
-        <div className="bg-white p-4 rounded-lg shadow-sm flex flex-col justify-between">
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] uppercase tracking-wider text-[#76777d] font-semibold">
-                Active Pipeline
-              </span>
-              <div className="text-[36px] leading-[44px] font-bold text-[#1b1c19] mt-1 tracking-tight tabular-nums">
-                {loading ? '—' : fmtCurrency(pipelineValue)}
-              </div>
-            </div>
-            <div className="p-2 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center">
-              <Wallet className="w-5 h-5" />
-            </div>
+      {/* ── FEEDBACK ALERT ──────────────────────────────────────────────────── */}
+      {feedbackMessage && (
+        <div
+          className={`p-3 rounded-lg text-xs flex items-center justify-between gap-2 border ${
+            feedbackMessage.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {feedbackMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            )}
+            <span>{feedbackMessage.text}</span>
           </div>
-          <div className="mt-4 pt-3 flex items-center justify-between text-[12px]">
-            <div className="flex items-center gap-1 text-[#3F7D5A] font-semibold">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>+18.2%</span>
-              <span className="text-[#76777d] font-normal">vs last quarter</span>
-            </div>
-            <Sparkline color="#B87333" />
-          </div>
+          <button
+            onClick={() => setFeedbackMessage(null)}
+            className="text-xs font-semibold hover:underline cursor-pointer"
+          >
+            Dismiss
+          </button>
         </div>
-
-        {/* Card 2: Conversion Rate */}
-        <div className="bg-white p-4 rounded-lg shadow-sm flex flex-col justify-between">
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] uppercase tracking-wider text-[#76777d] font-semibold">
-                Conversion Rate
-              </span>
-              <div className="text-[36px] leading-[44px] font-bold text-[#1b1c19] mt-1 tracking-tight">
-                {loading
-                  ? '—'
-                  : quotations.length > 0
-                  ? Math.round((finalCount / quotations.length) * 100)
-                  : 64}
-                <span className="text-[18px] font-medium text-[#45474c]">%</span>
-              </div>
-            </div>
-            <div className="p-2 rounded-lg bg-[#f5f3ee] text-[#1b1c19] flex items-center justify-center">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-4 pt-3 flex items-center justify-between text-[12px]">
-            <div className="flex items-center gap-1 text-[#3F7D5A] font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>+4.1%</span>
-              <span className="text-[#76777d] font-normal">target met</span>
-            </div>
-            <div className="w-16 bg-[#eae8e3] h-1.5 rounded-full overflow-hidden">
-              <div className="bg-[#B87333] h-full rounded-full" style={{ width: '64.8%' }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: Awaiting OEMs */}
-        <div className="bg-white p-4 rounded-lg shadow-sm flex flex-col justify-between">
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] uppercase tracking-wider text-[#76777d] font-semibold">
-                Awaiting OEMs
-              </span>
-              <div className="text-[36px] leading-[44px] font-bold text-[#1b1c19] mt-1 tracking-tight">
-                {loading ? '—' : draftCount}
-                <span className="text-[18px] font-medium text-[#45474c] ml-1">pending</span>
-              </div>
-            </div>
-            <div className="p-2 rounded-lg bg-[#f5f3ee] text-[#B87333] flex items-center justify-center">
-              <Clock className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-4 pt-3 flex items-center justify-between text-[12px]">
-            <div className="flex items-center gap-1 text-[#45474c] font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#B87333] inline-block" />
-              <span>{draftCount} proposals</span>
-              <span className="text-[#76777d]">in review</span>
-            </div>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#eae8e3] text-[#1b1c19] font-medium">
-              {Math.max(1, Math.ceil(draftCount / 3))} High Priority
-            </span>
-          </div>
-        </div>
-
-        {/* Card 4: Avg Turnaround */}
-        <div className="bg-white p-4 rounded-lg shadow-sm flex flex-col justify-between">
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] uppercase tracking-wider text-[#76777d] font-semibold">
-                Avg Turnaround
-              </span>
-              <div className="text-[36px] leading-[44px] font-bold text-[#1b1c19] mt-1 tracking-tight">
-                18.4
-                <span className="text-[18px] font-medium text-[#45474c] ml-1">hrs</span>
-              </div>
-            </div>
-            <div className="p-2 rounded-lg bg-[#f5f3ee] text-[#1b1c19] flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-4 pt-3 flex items-center justify-between text-[12px]">
-            <div className="flex items-center gap-1 text-[#3F7D5A] font-semibold">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>-2.5 hrs</span>
-              <span className="text-[#76777d] font-normal">costing cycle</span>
-            </div>
-            <span className="text-[11px] text-[#76777d]">Benchmark: 24h</span>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* ── FILTER RIBBON ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col space-y-3 bg-white p-4 rounded-lg shadow-sm">
-        {/* Quick view tabs + export */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            {quickFilterOptions.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setQuickFilter(opt.id)}
-                className={`px-3.5 py-1.5 rounded-md text-[12px] font-medium flex items-center gap-1.5 whitespace-nowrap transition-colors ${
-                  quickFilter === opt.id
-                    ? 'bg-[#172033] text-white shadow-sm'
-                    : 'text-[#45474c] hover:bg-[#f5f3ee]'
-                }`}
-              >
-                <span>{opt.label}</span>
-                <span
-                  className={`px-1.5 rounded text-[10px] font-bold ${
-                    quickFilter === opt.id ? 'bg-white/20' : 'bg-[#eae8e3]'
-                  }`}
-                >
-                  {opt.count}
-                </span>
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f5f3ee] text-[#1b1c19] text-[12px] font-medium rounded-md hover:bg-[#eae8e3] transition-colors">
-              <Download className="w-3.5 h-3.5" />
-              <span>Export CSV</span>
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f5f3ee] text-[#1b1c19] text-[12px] font-medium rounded-md hover:bg-[#eae8e3] transition-colors">
-              <FileText className="w-3.5 h-3.5" />
-              <span>Print Ledger</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Search + filter dropdowns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
-          <div className="lg:col-span-4 relative">
-            <Search className="w-4 h-4 text-[#76777d] absolute left-3 top-1/2 -translate-y-1/2" />
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          {/* Search input */}
+          <div className="md:col-span-6 relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
@@ -408,128 +286,115 @@ export const QuotationHistoryPage: React.FC = () => {
                 setSearchQuery(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search by quotation #, customer, PO number..."
-              className="w-full pl-9 pr-4 py-2 bg-[#f5f3ee] rounded-lg text-[12px] text-[#1b1c19] placeholder:text-[#76777d] focus:outline-none focus:bg-white shadow-sm transition-colors"
+              placeholder="Search quotation #, customer, PO number..."
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#2563EB] transition-colors"
             />
           </div>
-          <div className="lg:col-span-2 relative">
+
+          {/* Status filter */}
+          <div className="md:col-span-3 relative">
             <select
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 bg-[#f5f3ee] rounded-lg text-[12px] text-[#1b1c19] appearance-none focus:outline-none cursor-pointer"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 appearance-none focus:outline-none focus:bg-white focus:border-[#2563EB] cursor-pointer"
             >
-              <option value="ALL">Status: All Records</option>
-              <option value="FINAL">Finalized</option>
+              <option value="ALL">All Statuses</option>
               <option value="DRAFT">Draft</option>
+              <option value="FINAL">Finalized</option>
               <option value="SENT">Sent</option>
             </select>
-            <ChevronRight className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-[#76777d] pointer-events-none rotate-90" />
+            <ChevronRight className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-90" />
           </div>
-          <div className="lg:col-span-2 relative">
-            <select className="w-full px-3 py-2 bg-[#f5f3ee] rounded-lg text-[12px] text-[#1b1c19] appearance-none focus:outline-none cursor-pointer">
-              <option>Date: Last 90 Days</option>
-              <option>Current Fiscal Q1</option>
-              <option>Last 30 Days</option>
-              <option>Custom Date Span</option>
+
+          {/* Date range filter */}
+          <div className="md:col-span-3 relative">
+            <select
+              value={dateFilter}
+              onChange={(e) => {
+                setDateFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 appearance-none focus:outline-none focus:bg-white focus:border-[#2563EB] cursor-pointer"
+            >
+              <option value="ALL">All Dates</option>
+              <option value="30_DAYS">Last 30 Days</option>
+              <option value="90_DAYS">Last 90 Days</option>
+              <option value="YEAR">This Year</option>
             </select>
-            <ChevronRight className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-[#76777d] pointer-events-none rotate-90" />
-          </div>
-          <div className="lg:col-span-2 relative">
-            <select className="w-full px-3 py-2 bg-[#f5f3ee] rounded-lg text-[12px] text-[#1b1c19] appearance-none focus:outline-none cursor-pointer">
-              <option>Customer: All OEMs</option>
-              <option>Tata Motors Ltd</option>
-              <option>Bharat Forge Ltd</option>
-              <option>L&amp;T Heavy Engineering</option>
-              <option>Kirloskar Oil Engines</option>
-            </select>
-            <ChevronRight className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-[#76777d] pointer-events-none rotate-90" />
-          </div>
-          <div className="lg:col-span-2 relative">
-            <select className="w-full px-3 py-2 bg-[#f5f3ee] rounded-lg text-[12px] text-[#1b1c19] appearance-none focus:outline-none cursor-pointer">
-              <option>Plant: Unit 1 – Pune</option>
-              <option>Unit 2 – Chakan</option>
-              <option>Unit 3 – Chennai</option>
-              <option>All Plant Hubs</option>
-            </select>
-            <Factory className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-[#76777d] pointer-events-none" />
+            <ChevronRight className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-90" />
           </div>
         </div>
       </div>
 
       {/* ── MAIN TABLE ─────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
         <div className="overflow-x-auto">
           {loading ? (
-            <div className="p-14 text-center flex flex-col items-center gap-3 text-[#45474c] text-[12px]">
-              <div className="w-7 h-7 border-2 border-[#172033] border-t-[#B87333] rounded-full animate-spin" />
+            <div className="p-14 text-center flex flex-col items-center gap-3 text-slate-500 text-xs">
+              <div className="w-7 h-7 border-2 border-slate-200 border-t-[#2563EB] rounded-full animate-spin" />
               <span>Loading quotation records from server...</span>
             </div>
           ) : error ? (
             <div className="p-10 text-center space-y-3">
               <AlertCircle className="w-9 h-9 text-amber-500 mx-auto" />
-              <p className="text-[12px] font-semibold text-amber-600">{error}</p>
+              <p className="text-xs font-semibold text-amber-600">{error}</p>
               <button
                 onClick={() => fetchQuotations()}
-                className="px-4 py-1.5 border border-[#e4e2dd] rounded-lg text-[12px] text-[#1b1c19] hover:bg-[#f5f3ee]"
+                className="px-4 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-800 hover:bg-slate-50 cursor-pointer"
               >
                 Retry
               </button>
             </div>
-          ) : visibleRows.length === 0 ? (
+          ) : filteredQuotations.length === 0 ? (
             <div className="p-14 text-center space-y-2">
-              <FileText className="w-11 h-11 text-[#dbdad5] mx-auto" />
-              <p className="font-semibold text-[#1b1c19] text-[14px]">No Quotations Found</p>
-              <p className="text-[12px] text-[#45474c]">
+              <FileText className="w-11 h-11 text-slate-300 mx-auto" />
+              <p className="font-semibold text-slate-900 text-sm">No Quotations Found</p>
+              <p className="text-xs text-slate-500">
                 No records match your search or filter criteria.
               </p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#f0eee9] text-[#45474c] text-[11px] uppercase tracking-wider font-semibold select-none">
+                <tr className="bg-slate-50/80 text-slate-600 text-[11px] uppercase tracking-wider font-semibold select-none border-b border-slate-200">
                   <th className="py-3 px-4 w-10 text-center">
                     <input
                       type="checkbox"
                       checked={allChecked}
                       onChange={toggleAll}
-                      className="w-3.5 h-3.5 rounded cursor-pointer"
+                      className="w-3.5 h-3.5 rounded cursor-pointer accent-[#2563EB]"
                     />
                   </th>
-                  <th className="py-3.5 px-4">Quotation No.</th>
-                  <th className="py-3.5 px-4">Date</th>
-                  <th className="py-3.5 px-4">Customer (OEM)</th>
-                  <th className="py-3.5 px-4 min-w-[200px]">Primary Components</th>
-                  <th className="py-3.5 px-4 text-right">Items Qty</th>
-                  <th className="py-3.5 px-4 text-right">Net Value (₹)</th>
-                  <th className="py-3.5 px-4 text-right">GST (₹)</th>
-                  <th className="py-3.5 px-4 text-right">Total Value (₹)</th>
-                  <th className="py-3.5 px-4 text-center">Status</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th className="py-3.5 px-4 font-semibold">Quotation No.</th>
+                  <th className="py-3.5 px-4 font-semibold">Customer</th>
+                  <th className="py-3.5 px-4 font-semibold">PO No.</th>
+                  <th className="py-3.5 px-4 font-semibold">Quotation Date</th>
+                  <th className="py-3.5 px-4 text-right font-semibold">Total Amount</th>
+                  <th className="py-3.5 px-4 text-center font-semibold">Status</th>
+                  <th className="py-3.5 px-4 text-center font-semibold">Email Status</th>
+                  <th className="py-3.5 px-4 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#f0eee9] text-[12px] text-[#1b1c19]">
+              <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
                 <AnimatePresence>
-                  {visibleRows.map((q, idx) => {
+                  {filteredQuotations.map((q, idx) => {
                     const meta = getStatusMeta(q.status);
+                    const emailBadge = getEmailStatusBadge(q.email_status);
                     const initials = getInitials(q.customer_name || '');
-                    const totalItems = q.items?.length ?? 0;
-                    const netVal = q.taxable_amount ?? q.subtotal ?? 0;
-                    const gstVal = q.gst_amount ?? 0;
                     const totalVal = q.final_total ?? 0;
-                    const primaryPart = q.items?.[0];
 
                     return (
                       <motion.tr
                         key={q.id}
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.03 }}
+                        transition={{ delay: idx * 0.02 }}
                         onClick={() => navigate(`/quotation/${q.id}`)}
-                        className={`hover:bg-[#f5f3ee] transition-colors cursor-pointer ${
-                          selectedIds.has(q.id) ? 'bg-[#f5f3ee]' : ''
+                        className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${
+                          selectedIds.has(q.id) ? 'bg-blue-50/40' : ''
                         }`}
                       >
                         {/* Checkbox */}
@@ -544,98 +409,67 @@ export const QuotationHistoryPage: React.FC = () => {
                             type="checkbox"
                             checked={selectedIds.has(q.id)}
                             onChange={() => toggleRow(q.id)}
-                            className="w-3.5 h-3.5 rounded cursor-pointer"
+                            className="w-3.5 h-3.5 rounded cursor-pointer accent-[#2563EB]"
                           />
                         </td>
 
                         {/* Quotation No */}
-                        <td className="py-3.5 px-4 font-semibold text-[#01081a]">
-                          <div className="flex items-center gap-1.5">
+                        <td className="py-3.5 px-4 font-semibold text-slate-900">
+                          <div className="flex items-center gap-2">
                             <span
                               className="w-2 h-2 rounded-full shrink-0"
                               style={{ backgroundColor: meta.dotColor }}
                             />
-                            <span className="text-[13px]">{q.quotation_number}</span>
+                            <span className="font-mono text-xs">{q.quotation_number}</span>
                           </div>
-                          <span className="text-[10px] text-[#76777d] block pl-3.5 font-normal mt-0.5">
-                            {q.status} · {q.gst_type || 'IGST'}
-                          </span>
-                        </td>
-
-                        {/* Date */}
-                        <td className="py-3.5 px-4 text-[#45474c] whitespace-nowrap">
-                          {fmtDate(q.quotation_date)}
                         </td>
 
                         {/* Customer */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded bg-[#eae8e3] flex items-center justify-center text-[10px] font-bold text-[#45474c] shrink-0">
+                            <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">
                               {initials}
                             </div>
-                            <span className="font-semibold text-[#1b1c19] truncate max-w-[160px]">
-                              {q.customer_name || 'Customer'}
+                            <span className="font-medium text-slate-900 truncate max-w-[200px]">
+                              {q.customer_name || '—'}
                             </span>
                           </div>
                         </td>
 
-                        {/* Primary Component */}
-                        <td className="py-3.5 px-4">
-                          {primaryPart ? (
-                            <>
-                              <div className="font-medium text-[#1b1c19] truncate max-w-[200px]">
-                                {primaryPart.part_name}
-                              </div>
-                              <div className="text-[11px] text-[#76777d] truncate max-w-[200px]">
-                                {[primaryPart.material, primaryPart.process]
-                                  .filter(Boolean)
-                                  .join(' · ') || 'CNC Machined'}
-                              </div>
-                            </>
-                          ) : (
-                            <span className="text-[#76777d]">—</span>
-                          )}
+                        {/* PO No */}
+                        <td className="py-3.5 px-4 font-mono text-slate-600">
+                          {q.po_number || '—'}
                         </td>
 
-                        {/* Items Qty */}
-                        <td className="py-3.5 px-4 text-right font-medium text-[#1b1c19] whitespace-nowrap">
-                          {totalItems > 0 ? (
-                            <>
-                              {totalItems}{' '}
-                              <span className="text-[#76777d] text-xs">items</span>
-                            </>
-                          ) : (
-                            '—'
-                          )}
+                        {/* Quotation Date */}
+                        <td className="py-3.5 px-4 text-slate-600 whitespace-nowrap">
+                          {fmtDate(q.quotation_date)}
                         </td>
 
-                        {/* Net Value */}
-                        <td className="py-3.5 px-4 text-right text-[#45474c] whitespace-nowrap tabular-nums">
-                          {netVal > 0 ? fmtCurrency(netVal) : '—'}
-                        </td>
-
-                        {/* GST */}
-                        <td className="py-3.5 px-4 text-right text-[#76777d] whitespace-nowrap tabular-nums">
-                          {gstVal > 0 ? fmtCurrency(gstVal) : '—'}
-                        </td>
-
-                        {/* Total Value */}
-                        <td className="py-3.5 px-4 text-right font-semibold text-[#1b1c19] text-[14px] whitespace-nowrap tabular-nums">
+                        {/* Total Amount */}
+                        <td className="py-3.5 px-4 text-right font-semibold text-slate-900 text-xs whitespace-nowrap tabular-nums">
                           {totalVal > 0 ? fmtCurrency(totalVal) : '—'}
                         </td>
 
-                        {/* Status badge */}
+                        {/* Status */}
                         <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${meta.pillClass}`}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${meta.pillClass}`}
                           >
                             <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                meta.pulse ? 'animate-pulse' : ''
-                              }`}
+                              className="w-1.5 h-1.5 rounded-full"
                               style={{ backgroundColor: meta.dotColor }}
                             />
                             {meta.label}
+                          </span>
+                        </td>
+
+                        {/* Email Status */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${emailBadge.className}`}
+                          >
+                            {emailBadge.label}
                           </span>
                         </td>
 
@@ -645,38 +479,47 @@ export const QuotationHistoryPage: React.FC = () => {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex items-center justify-end gap-1.5">
-                            {q.status === 'FINAL' ? (
+                            {/* View */}
+                            <button
+                              onClick={() => navigate(`/quotation/${q.id}`)}
+                              className="px-2.5 py-1 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-medium rounded transition-colors flex items-center gap-1 cursor-pointer"
+                              title="View Quotation"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-slate-500" />
+                              <span>View</span>
+                            </button>
+
+                            {/* Download PDF */}
+                            <button
+                              onClick={(e) => handleDownload(q, e)}
+                              disabled={downloadingId === q.id}
+                              className="px-2.5 py-1 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-medium rounded transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                              title="Download PDF"
+                            >
+                              <Download
+                                className={`w-3.5 h-3.5 text-slate-500 ${
+                                  downloadingId === q.id ? 'animate-spin' : ''
+                                }`}
+                              />
+                              <span>PDF</span>
+                            </button>
+
+                            {/* Send Email */}
+                            {(q.status === 'FINAL' || q.status === 'SENT') && (
                               <button
-                                onClick={(e) => handleDownload(q, e)}
-                                disabled={downloadingId === q.id}
-                                className="px-2.5 py-1 bg-[#f0eee9] text-[#1b1c19] text-[11px] font-medium rounded hover:bg-[#e4e2dd] transition-colors flex items-center gap-1"
+                                onClick={(e) => handleSendEmail(q, e)}
+                                disabled={sendingEmailId === q.id}
+                                className="px-2.5 py-1 bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-xs font-medium rounded transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                title="Send Email to Customer"
                               >
-                                <Download
+                                <Mail
                                   className={`w-3.5 h-3.5 ${
-                                    downloadingId === q.id ? 'animate-spin' : ''
+                                    sendingEmailId === q.id ? 'animate-spin' : ''
                                   }`}
                                 />
-                                {downloadingId === q.id ? '...' : 'View PDF'}
-                              </button>
-                            ) : q.status === 'DRAFT' ? (
-                              <button
-                                onClick={() => navigate(`/calculation/${q.id}`)}
-                                className="px-2.5 py-1 bg-[#f0eee9] text-[#1b1c19] text-[11px] font-medium rounded hover:bg-[#e4e2dd] transition-colors flex items-center gap-1"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                                Revise
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => navigate(`/quotation/${q.id}`)}
-                                className="px-2.5 py-1 bg-[#B87333] text-white text-[11px] font-medium rounded hover:bg-[#A46328] transition-colors"
-                              >
-                                View / Dispatch
+                                <span>Send</span>
                               </button>
                             )}
-                            <button className="p-1 rounded hover:bg-[#eae8e3] text-[#76777d] transition-colors">
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
                           </div>
                         </td>
                       </motion.tr>
@@ -689,45 +532,39 @@ export const QuotationHistoryPage: React.FC = () => {
         </div>
 
         {/* ── PAGINATION FOOTER ─────────────────────────────────────────────── */}
-        {!loading && visibleRows.length > 0 && (
-          <div className="px-4 py-3 bg-[#f0eee9] flex flex-col md:flex-row items-center justify-between gap-3">
+        {!loading && filteredQuotations.length > 0 && (
+          <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-4">
-              <span className="text-[12px] text-[#45474c]">
+              <span className="text-xs text-slate-600">
                 Showing{' '}
-                <span className="font-semibold text-[#1b1c19]">
+                <span className="font-semibold text-slate-900">
                   {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)}
                 </span>{' '}
                 of{' '}
-                <span className="font-semibold text-[#1b1c19]">{totalCount}</span> quotations
+                <span className="font-semibold text-slate-900">{totalCount}</span> quotations
               </span>
-              <div className="hidden sm:flex items-center gap-1 text-[12px] text-[#45474c]">
-                <span>Active Registry Value:</span>
-                <span className="font-semibold text-[#1b1c19] tabular-nums text-[15px]">
-                  {fmtCurrency(pipelineValue)}
-                </span>
-              </div>
             </div>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1 || loading}
-                className="px-2.5 py-1 rounded bg-white text-[#76777d] hover:text-[#1b1c19] disabled:opacity-40 text-[12px] font-medium border border-[#e4e2dd]"
+                className="px-2.5 py-1 rounded bg-white text-slate-600 hover:text-slate-900 disabled:opacity-40 text-xs font-medium border border-slate-200 cursor-pointer"
               >
                 &lt; Prev
               </button>
               {getPageNumbers().map((pg, i) =>
                 pg === '...' ? (
-                  <span key={`ellipsis-${i}`} className="px-1 text-[#76777d] text-[12px]">
+                  <span key={`ellipsis-${i}`} className="px-1 text-slate-400 text-xs">
                     ...
                   </span>
                 ) : (
                   <button
                     key={pg}
                     onClick={() => setPage(pg as number)}
-                    className={`w-7 h-7 rounded text-[12px] font-medium flex items-center justify-center transition-colors ${
+                    className={`w-7 h-7 rounded text-xs font-medium flex items-center justify-center transition-colors cursor-pointer ${
                       pg === page
-                        ? 'bg-[#172033] text-white shadow-sm'
-                        : 'bg-white text-[#1b1c19] hover:bg-[#eae8e3] border border-[#e4e2dd]'
+                        ? 'bg-[#2563EB] text-white shadow-xs font-semibold'
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                     }`}
                   >
                     {pg}
@@ -737,132 +574,13 @@ export const QuotationHistoryPage: React.FC = () => {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages || loading}
-                className="px-2.5 py-1 rounded bg-white text-[#1b1c19] hover:bg-[#eae8e3] disabled:opacity-40 text-[12px] font-medium border border-[#e4e2dd]"
+                className="px-2.5 py-1 rounded bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 text-xs font-medium border border-slate-200 cursor-pointer"
               >
                 Next &gt;
               </button>
             </div>
           </div>
         )}
-      </div>
-
-      {/* ── BOTTOM INSIGHTS ROW ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Panel 1: Recent Approvals */}
-        <div className="bg-white p-4 rounded-lg shadow-sm flex flex-col">
-          <div className="flex items-center justify-between pb-2">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#B87333]" />
-              <span className="text-[15px] font-semibold text-[#1b1c19]">Recent Approvals</span>
-            </div>
-            <span className="text-[11px] text-[#76777d]">Last 48 Hrs</span>
-          </div>
-          <div className="space-y-2 mt-2">
-            {quotations
-              .filter((q) => q.status === 'FINAL')
-              .slice(0, 2)
-              .map((q) => (
-                <div
-                  key={q.id}
-                  className="flex items-center justify-between p-2 rounded bg-[#f5f3ee]"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#3F7D5A] shrink-0" />
-                    <div>
-                      <div className="text-[12px] font-semibold text-[#1b1c19]">
-                        {q.quotation_number} ({q.customer_name?.split(' ')[0]})
-                      </div>
-                      <div className="text-[11px] text-[#76777d]">
-                        Finalized by {q.finalized_by || 'System'}
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[12px] font-bold text-[#1b1c19] tabular-nums">
-                    {fmtCurrency(q.final_total)}
-                  </span>
-                </div>
-              ))}
-            {quotations.filter((q) => q.status === 'FINAL').length === 0 && (
-              <div className="text-center text-[12px] text-[#76777d] py-4">
-                No recent approvals
-              </div>
-            )}
-          </div>
-          <button className="mt-3 inline-flex items-center gap-1 text-[12px] text-[#B87333] font-semibold hover:underline">
-            View all {finalCount} recent approvals
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Panel 2: Tax & HSN Mapping */}
-        <div className="bg-white p-4 rounded-lg shadow-sm flex flex-col">
-          <div className="flex items-center justify-between pb-2">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#3F7D5A]" />
-              <span className="text-[15px] font-semibold text-[#1b1c19]">
-                Tax &amp; HSN Mapping
-              </span>
-            </div>
-            <span className="text-[11px] px-2 py-0.5 rounded bg-[#3F7D5A]/10 text-[#3F7D5A] font-bold">
-              100% Verified
-            </span>
-          </div>
-          <div className="space-y-2 mt-2">
-            {[
-              { code: 'HSN 8483', desc: 'Transmission Shafts', gst: '18% GST Nominal' },
-              { code: 'HSN 7326', desc: 'Machined Iron/Steel', gst: '18% GST Nominal' },
-              { code: 'E-Way Bill', desc: 'Generation State', gst: 'Portal Synced' },
-            ].map((item) => (
-              <div key={item.code} className="flex justify-between items-center text-[12px]">
-                <span className="text-[#45474c]">
-                  {item.code} ({item.desc})
-                </span>
-                <span className="font-medium text-[#1b1c19]">{item.gst}</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-3 pt-2 bg-[#f5f3ee] p-2 rounded text-[11px] text-[#76777d] flex items-center gap-1.5">
-            <AlertCircle className="w-3.5 h-3.5 text-[#B87333] shrink-0" />
-            <span>All tax slabs locked per Central Excise Act 2026 amendments.</span>
-          </div>
-        </div>
-
-        {/* Panel 3: Pune Bay Capacity */}
-        <div className="bg-white p-4 rounded-lg shadow-sm flex flex-col">
-          <div className="flex items-center justify-between pb-2">
-            <div className="flex items-center gap-2">
-              <Factory className="w-4 h-4 text-[#B87333]" />
-              <span className="text-[15px] font-semibold text-[#1b1c19]">Pune Bay Capacity</span>
-            </div>
-            <span className="text-[24px] font-bold text-[#1b1c19] tabular-nums">78.4%</span>
-          </div>
-          <div className="mt-2 space-y-3">
-            {[
-              { label: 'CNC 4-Axis Turning Cells', pct: 88, color: '#B87333' },
-              { label: 'Submerged Wire-EDM Suite', pct: 62, color: '#3F7D5A' },
-            ].map((item) => (
-              <div key={item.label}>
-                <div className="flex justify-between text-[12px] font-medium mb-1">
-                  <span className="text-[#45474c]">{item.label}</span>
-                  <span className="text-[#1b1c19] font-semibold">{item.pct}% Loaded</span>
-                </div>
-                <div className="w-full bg-[#eae8e3] h-2 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ backgroundColor: item.color }}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${item.pct}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-3 pt-2 flex items-center justify-between text-[11px]">
-            <span className="text-[#76777d]">Earliest slot for new quotes:</span>
-            <span className="font-semibold text-[#B87333]">22 Feb 2026 (Shift 1)</span>
-          </div>
-        </div>
       </div>
     </div>
   );

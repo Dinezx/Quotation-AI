@@ -33,7 +33,7 @@ test.describe('Quotation AI — Landing Page Public SaaS Experience', () => {
     await expect(nav.getByRole('button', { name: 'Pricing' })).toBeVisible();
     await expect(nav.getByRole('button', { name: 'FAQ' })).toBeVisible();
     await expect(nav.getByRole('button', { name: 'Sign In' })).toBeVisible();
-    await expect(nav.getByRole('button', { name: 'Request Plant Pilot' })).toBeVisible();
+    await expect(nav.getByRole('button', { name: 'Sign Up Free' })).toBeVisible();
   });
 
   test('3. Interactive Quotation Workspace tabs switch cleanly', async ({ page }) => {
@@ -82,12 +82,12 @@ test.describe('Quotation AI — Landing Page Public SaaS Experience', () => {
     await expect(page.locator('body')).toContainText(/CGST/i);
   });
 
-  test('6. Plant pilot request modal opens, validates, and closes', async ({ page }) => {
+  test('6. Enterprise inquiry modal opens, validates, and closes', async ({ page }) => {
     await page.goto('/');
 
-    // Click "Request Plant Pilot" in navbar
-    const pilotBtn = page.locator('nav').getByRole('button', { name: 'Request Plant Pilot' });
-    await pilotBtn.click();
+    // Click "Contact Enterprise Sales"
+    const enterpriseBtn = page.getByRole('button', { name: 'Contact Enterprise Sales' });
+    await enterpriseBtn.click();
 
     // Verify modal is shown
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -101,7 +101,7 @@ test.describe('Quotation AI — Landing Page Public SaaS Experience', () => {
     await expect(page.getByRole('dialog')).not.toBeVisible();
   });
 
-  test('7. Login link from landing page navigates to /login', async ({ page }) => {
+  test('7. Login link navigates to /login and displays Google sign-in option', async ({ page }) => {
     await page.goto('/');
 
     const signInBtn = page.locator('nav').getByRole('button', { name: 'Sign In' });
@@ -110,5 +110,30 @@ test.describe('Quotation AI — Landing Page Public SaaS Experience', () => {
     await expect(page).toHaveURL(/\/login/);
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Sign In with Google/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Create Plant Account \(Sign Up Free\)/i })).toBeVisible();
+  });
+
+  test('8. Sign up navigation presents Google and email sign-up options', async ({ page }) => {
+    await page.goto('/signup');
+
+    await expect(page).toHaveURL(/\/signup/);
+    await expect(page.locator('body')).toContainText(/Register Your Precision Plant/i);
+
+    // Google Sign Up button is prominently visible
+    const googleSignUpBtn = page.getByRole('button', { name: /Sign Up with Google/i });
+    await expect(googleSignUpBtn).toBeVisible();
+
+    // Work email and plant details form inputs are visible
+    await expect(page.locator('input#fullName')).toBeVisible();
+    await expect(page.locator('input#companyName')).toBeVisible();
+    await expect(page.locator('input#signupEmail')).toBeVisible();
+    await expect(page.locator('input#signupPassword')).toBeVisible();
+
+    // Switch to Sign In link functions
+    const signInLink = page.getByRole('button', { name: /Sign In to Console/i });
+    await expect(signInLink).toBeVisible();
+    await signInLink.click();
+    await expect(page).toHaveURL(/\/login/);
   });
 });

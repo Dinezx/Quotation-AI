@@ -28,7 +28,7 @@ from app.core.config import settings
 from app.core.jwks import jwks_manager
 from app.db.base import Base
 from app.db.session import engine, SessionLocal
-from app.db.init_db import seed_initial_data
+from app.db.init_db import seed_initial_data, seed_benchmark_test_rates
 from app.models.company import Company
 from app.models.user import User
 from app.services.ai.extractor import po_extraction_service
@@ -130,6 +130,7 @@ def setup_test_db():
     # Ensure baseline company A is reset to canonical state
     db = SessionLocal()
     try:
+        seed_benchmark_test_rates(db=db, company_id="comp-bpe-pune")
         comp_a = db.query(Company).filter(Company.id == "comp-bpe-pune").first()
         if comp_a:
             comp_a.name = "Bharat Precision Engineering Pvt. Ltd."

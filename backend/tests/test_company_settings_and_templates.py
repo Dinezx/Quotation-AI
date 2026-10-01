@@ -535,3 +535,63 @@ def test_mandatory_historical_safety_immutability_lifecycle(auth_headers):
     # Q1 and Q2 are completely distinct documents
     assert q1_final["pdf_sha256"] != q2_final["pdf_sha256"]
     assert orig_pdf_bytes != q2_bytes
+
+
+def test_logo_query_token_and_cache_control(auth_headers, session_jwt_signer):
+    """Verify logo endpoint supports query token, cache-control headers, and version parameter."""
+    token = session_jwt_signer("usr-bpe-001", "r.deshmukh@bharatprecision.co.in")
+
+    # 1. Upload valid PNG logo
+    png_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+    client.post("/api/v1/company/logo", files={"file": ("token_logo.png", png_bytes, "image/png")}, headers=auth_headers)
+
+    # 2. Access via query token (without Authorization header)
+    resp = client.get(f"/api/v1/company/logo?token={token}&v=12345")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "image/png"
+    assert "no-cache" in resp.headers.get("cache-control", "")
+    assert "no-store" in resp.headers.get("cache-control", "")
+    assert resp.content == png_bytes
+
+    # 3. Access without token or header returns 401
+    resp_unauth = client.get("/api/v1/company/logo")
+    assert resp_unauth.status_code == 401
+
+
+def test_all_8_templates_render_with_logo_and_positions(auth_headers):
+    """Verify that all 8 templates generate valid PDFs with logo in left, center, and right positions."""
+    png_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+    client.post("/api/v1/company/logo", files={"file": ("pos_logo.png", png_bytes, "image/png")}, headers=auth_headers)
+
+    templates = [
+        "classic_professional", "modern_minimal", "premium_corporate",
+        "elegant_bordered", "industrial_bold", "modern_two_column",
+        "creative_modern", "simple_clean"
+    ]
+    positions = ["left", "center", "right"]
+
+    for tmpl in templates:
+        for pos in positions:
+            client.put("/api/v1/company/template", json={"template_id": tmpl, "logo_position": pos, "show_logo": True}, headers=auth_headers)
+            resp = client.post(f"/api/v1/company/template/preview-pdf?template_id={tmpl}", headers=auth_headers)
+            assert resp.status_code == 200, f"Template {tmpl} failed at position {pos}: {resp.text}"
+            assert resp.content.startswith(b"%PDF"), f"Invalid PDF output for {tmpl} at position {pos}"
+
+    # Verify show_logo=False hides logo and renders cleanly
+    client.put("/api/v1/company/template", json={"show_logo": False}, headers=auth_headers)
+    resp_hidden = client.post("/api/v1/company/template/preview-pdf?template_id=classic_professional", headers=auth_headers)
+    assert resp_hidden.status_code == 200
+    assert resp_hidden.content.startswith(b"%PDF")
+
+
+def test_corrupt_logo_handled_gracefully(auth_headers):
+    """Verify that corrupt logo files are handled gracefully without breaking PDF generation."""
+    corrupt_data = b"not a valid png file image data at all"
+    # Bypass MIME check by uploading as image/png with invalid content
+    client.post("/api/v1/company/logo", files={"file": ("bad_logo.png", corrupt_data, "image/png")}, headers=auth_headers)
+
+    # PDF generation must succeed gracefully
+    resp = client.post("/api/v1/company/template/preview-pdf?template_id=classic_professional", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.content.startswith(b"%PDF")
+

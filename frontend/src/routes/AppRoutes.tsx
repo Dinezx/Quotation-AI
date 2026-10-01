@@ -17,6 +17,9 @@ const CustomersPage = lazy(() => import('../pages/CustomersPage').then(m => ({ d
 const CustomerDetailPage = lazy(() => import('../pages/CustomerDetailPage').then(m => ({ default: m.CustomerDetailPage })));
 const SettingsPage = lazy(() => import('../pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const LoginPage = lazy(() => import('../pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const SignUpPage = lazy(() => import('../pages/SignUpPage').then(m => ({ default: m.SignUpPage })));
+const AuthCallbackPage = lazy(() => import('../pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
+const CompanyOnboardingPage = lazy(() => import('../pages/CompanyOnboardingPage').then(m => ({ default: m.CompanyOnboardingPage })));
 
 const RouteLoadingFallback: React.FC = () => (
   <div className="flex items-center justify-center min-h-[50vh]">
@@ -34,8 +37,13 @@ export const AppRoutes: React.FC = () => {
         {/* Public SaaS Landing Page */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* Public Enterprise Sign In */}
+        {/* Public Enterprise Sign In & Sign Up */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+
+        {/* OAuth Callback & First-Time Onboarding */}
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/onboarding" element={<CompanyOnboardingPage />} />
 
         {/* Authenticated Manufacturing Console */}
         <Route
@@ -61,6 +69,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:customerId" element={<CustomerDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/profile" element={<Navigate to="/settings?tab=user" replace />} />
         </Route>
 
         {/* Catch-all */}

@@ -21,34 +21,68 @@ export interface AuthCompany {
   settings?: Record<string, any>;
 }
 
+export interface SyncResult {
+  success: boolean;
+  needsOnboarding: boolean;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   company: AuthCompany | null;
   isAuthenticated: boolean;
+  needsOnboarding: boolean;
   isLoading: boolean;
   token: string | null;
-  login: (emailOrToken: string, password?: string) => Promise<void>;
+  login: (emailOrToken: string, password?: string) => Promise<SyncResult>;
+  signUp: (data: {
+    email: string;
+    password?: string;
+    fullName: string;
+    companyName: string;
+    phone?: string;
+  }) => Promise<void>;
+  completeOnboarding: (data: {
+    companyName: string;
+    legalName?: string;
+    gstin?: string;
+    address?: string;
+    phone?: string;
+    contactEmail?: string;
+    fullName?: string;
+  }) => Promise<any>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
-  refreshSession: () => Promise<void>;
+  refreshSession: () => Promise<SyncResult>;
 }
+
+export const getAppRedirectUrl = (): string => {
+  const customBase =
+    (import.meta as any).env?.VITE_APP_URL ||
+    (import.meta as any).env?.VITE_PUBLIC_URL ||
+    '';
+  const origin = customBase ? customBase.replace(/\/+$/, '') : window.location.origin;
+  return `${origin}/auth/callback`;
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [company, setCompany] = useState<AuthCompany | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean>(false);
   const [token, setToken] = useState<string | null>(
     () => localStorage.getItem('quotation_ai_auth_token')
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Synchronize authenticated session profile with backend
-  const verifyAndSyncBackend = useCallback(async (authToken: string | null) => {
+  const verifyAndSyncBackend = useCallback(async (authToken: string | null): Promise<SyncResult> => {
     if (!authToken) {
       setUser(null);
       setCompany(null);
+      setNeedsOnboarding(false);
       setIsLoading(false);
-      return false;
+      return { success: false, needsOnboarding: false };
     }
 
     try {
@@ -77,16 +111,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: res.data.company.email || undefined,
           settings: res.data.company.settings || {},
         });
-        return true;
+        setNeedsOnboarding(false);
+        return { success: true, needsOnboarding: false };
       }
       throw new Error('Invalid authentication response structure');
     } catch (err: any) {
+      // If 403 (User has no associated tenant company) -> user needs first-time onboarding
+      if (err.response?.status === 403) {
+        const detail = (err.response?.data?.detail || '').toLowerCase();
+        if (detail.includes('no associated tenant company') || detail.includes('no valid company association')) {
+          let sbUser: any = null;
+          if (isSupabaseConfigured) {
+            try {
+              const { data } = await supabase.auth.getUser(authToken);
+              sbUser = data.user;
+            } catch (uErr) {
+              console.debug('[AuthContext] getUser error:', uErr);
+            }
+          }
+          const email = sbUser?.email || '';
+          const name = sbUser?.user_metadata?.full_name || sbUser?.user_metadata?.name || (email ? email.split('@')[0] : 'Costing Lead');
+          setUser({
+            id: sbUser?.id || 'pending-user',
+            email: email,
+            fullName: name,
+            role: 'ADMIN',
+            companyId: '',
+          });
+          setCompany(null);
+          setNeedsOnboarding(true);
+          return { success: true, needsOnboarding: true };
+        }
+      }
+
       console.warn('[AuthContext] Backend token verification failed:', err.response?.data?.detail || err.message);
       localStorage.removeItem('quotation_ai_auth_token');
       setToken(null);
       setUser(null);
       setCompany(null);
-      return false;
+      setNeedsOnboarding(false);
+      return { success: false, needsOnboarding: false };
     } finally {
       setIsLoading(false);
     }
@@ -138,6 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setToken(null);
           setUser(null);
           setCompany(null);
+          setNeedsOnboarding(false);
           setIsLoading(false);
         }
       });
@@ -152,7 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [verifyAndSyncBackend]);
 
-  const login = async (emailOrToken: string, password?: string) => {
+  const login = async (emailOrToken: string, password?: string): Promise<SyncResult> => {
     setIsLoading(true);
 
     try {
@@ -174,20 +239,192 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         localStorage.setItem('quotation_ai_auth_token', accessToken);
         setToken(accessToken);
-        const verified = await verifyAndSyncBackend(accessToken);
-        if (!verified) {
-          throw new Error('Authentication verified with Supabase, but no active tenant is linked in the Quotation AI database.');
+        const syncResult = await verifyAndSyncBackend(accessToken);
+        if (!syncResult.success) {
+          throw new Error('Authentication verified with Supabase, but failed to connect to Quotation AI backend.');
         }
-        return;
+        return syncResult;
       }
 
       // Case B: Direct token login or JWT token passed directly
       const rawToken = emailOrToken;
       localStorage.setItem('quotation_ai_auth_token', rawToken);
       setToken(rawToken);
-      const verified = await verifyAndSyncBackend(rawToken);
-      if (!verified) {
+      const syncResult = await verifyAndSyncBackend(rawToken);
+      if (!syncResult.success) {
         throw new Error('Session token rejected by Quotation AI backend authentication service.');
+      }
+      return syncResult;
+    } catch (err) {
+      setIsLoading(false);
+      throw err;
+    }
+  };
+
+  const signUp = async (data: {
+    email: string;
+    password?: string;
+    fullName: string;
+    companyName: string;
+    phone?: string;
+  }) => {
+    setIsLoading(true);
+    try {
+      let sub: string | undefined = undefined;
+      let accessToken: string | null = null;
+
+      // 1. If Supabase configured and password provided, create in Supabase Auth
+      if (isSupabaseConfigured && data.password) {
+        const { data: sbData, error: sbError } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            data: {
+              full_name: data.fullName,
+              company_name: data.companyName,
+            },
+          },
+        });
+
+        if (sbError) {
+          throw new Error(sbError.message);
+        }
+
+        sub = sbData.user?.id;
+        accessToken = sbData.session?.access_token || null;
+      }
+
+      // 2. Call backend signup API to register tenant company and rate cards
+      const res = await apiClient.post('/auth/signup', {
+        email: data.email,
+        full_name: data.fullName,
+        company_name: data.companyName,
+        phone: data.phone,
+        sub: sub,
+      });
+
+      // 3. If token obtained from Supabase
+      if (accessToken) {
+        localStorage.setItem('quotation_ai_auth_token', accessToken);
+        setToken(accessToken);
+        await verifyAndSyncBackend(accessToken);
+      } else if (!isSupabaseConfigured) {
+        // Fallback for local testing or dev without external Supabase
+        const newUsr = res.data.user;
+        const newComp = res.data.company;
+        setUser({
+          id: newUsr.id,
+          email: newUsr.email,
+          fullName: newUsr.full_name,
+          role: newUsr.role,
+          companyId: newUsr.company_id,
+        });
+        setCompany({
+          id: newComp.id,
+          name: newComp.name,
+          legalName: newComp.legal_name,
+          gstin: newComp.gstin,
+          settings: newComp.settings || {},
+        });
+        setNeedsOnboarding(false);
+        const fallbackJwt = `mock-token-${newUsr.id}`;
+        localStorage.setItem('quotation_ai_auth_token', fallbackJwt);
+        setToken(fallbackJwt);
+      } else if (data.password) {
+        try {
+          await login(data.email, data.password);
+        } catch (loginErr) {
+          console.debug('[AuthContext] Post-signup login attempt:', loginErr);
+        }
+      }
+    } catch (err) {
+      setIsLoading(false);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const completeOnboarding = async (data: {
+    companyName: string;
+    legalName?: string;
+    gstin?: string;
+    address?: string;
+    phone?: string;
+    contactEmail?: string;
+    fullName?: string;
+  }) => {
+    setIsLoading(true);
+    try {
+      const activeToken = token || localStorage.getItem('quotation_ai_auth_token');
+      if (!activeToken) {
+        throw new Error('No active session token found. Please sign in again.');
+      }
+
+      const res = await apiClient.post('/auth/onboarding', {
+        company_name: data.companyName,
+        legal_name: data.legalName,
+        gstin: data.gstin,
+        address: data.address,
+        phone: data.phone,
+        contact_email: data.contactEmail,
+        full_name: data.fullName,
+      }, {
+        headers: {
+          Authorization: `Bearer ${activeToken}`,
+        },
+      });
+
+      if (res.data?.user && res.data?.company) {
+        setUser({
+          id: res.data.user.id,
+          email: res.data.user.email,
+          fullName: res.data.user.full_name || undefined,
+          role: res.data.user.role,
+          companyId: res.data.user.company_id,
+        });
+
+        setCompany({
+          id: res.data.company.id,
+          name: res.data.company.name,
+          legalName: res.data.company.legal_name || undefined,
+          gstin: res.data.company.gstin || undefined,
+          address: res.data.company.address || undefined,
+          phone: res.data.company.phone || undefined,
+          email: res.data.company.email || undefined,
+          settings: res.data.company.settings || {},
+        });
+
+        setNeedsOnboarding(false);
+        return res.data;
+      }
+      throw new Error('Onboarding response missing user or company entity.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    setIsLoading(true);
+    try {
+      if (!isSupabaseConfigured) {
+        throw new Error(
+          'Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment.'
+        );
+      }
+      const callbackUrl = getAppRedirectUrl();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: callbackUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+      if (error) {
+        throw new Error(error.message);
       }
     } catch (err) {
       setIsLoading(false);
@@ -208,13 +445,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(null);
       setUser(null);
       setCompany(null);
+      setNeedsOnboarding(false);
       setIsLoading(false);
     }
   };
 
-  const refreshSession = async () => {
+  const refreshSession = async (): Promise<SyncResult> => {
     const currentToken = localStorage.getItem('quotation_ai_auth_token');
-    await verifyAndSyncBackend(currentToken);
+    return await verifyAndSyncBackend(currentToken);
   };
 
   return (
@@ -223,9 +461,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         company,
         isAuthenticated: Boolean(user && company),
+        needsOnboarding,
         isLoading,
         token,
         login,
+        signUp,
+        completeOnboarding,
+        loginWithGoogle,
         logout,
         refreshSession,
       }}
