@@ -52,8 +52,15 @@ async def get_current_user(
     # 1. Asymmetric JWKS signature, issuer, algorithm, and expiration verification
     payload = verify_supabase_jwt(raw_token)
 
-    sub: str = payload.get("sub")
-    email: str = payload.get("email", "")
+    sub = payload.get("sub")
+    if not sub or not isinstance(sub, str):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token payload is missing subject claim",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    email: str = str(payload.get("email") or "")
     user_metadata = payload.get("user_metadata", {}) or {}
     app_metadata = payload.get("app_metadata", {}) or {}
 
