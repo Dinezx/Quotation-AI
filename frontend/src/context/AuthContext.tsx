@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../lib/apiClient';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
@@ -473,7 +473,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const googleLoginInProgressRef = useRef(false);
+
   const loginWithGoogle = useCallback(async () => {
+    if (googleLoginInProgressRef.current) {
+      return;
+    }
+    googleLoginInProgressRef.current = true;
     setIsLoading(true);
     try {
       if (!isSupabaseConfigured) {
@@ -481,15 +487,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           'Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment.'
         );
       }
+
+      // Reuse an existing valid Supabase session on subsequent logins
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        localStorage.setItem('quotation_ai_auth_token', session.access_token);
+        setToken(session.access_token);
+        const syncResult = await verifyAndSyncBackend(session.access_token);
+        if (syncResult.success) {
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const callbackUrl = getAppRedirectUrl();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: callbackUrl,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+          scopes: 'openid email profile',
         },
       });
       if (error) {
@@ -498,8 +514,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       setIsLoading(false);
       throw err;
+    } finally {
+      googleLoginInProgressRef.current = false;
     }
-  }, []);
+  }, [verifyAndSyncBackend]);
 
   const logout = useCallback(async () => {
     setIsLoading(true);

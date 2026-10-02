@@ -622,4 +622,135 @@ describe('Google OAuth & AuthCallbackPage Definitive Scenarios', () => {
     // exchangeCodeForSession should only be called ONCE for the same code
     expect(exchangeMock).toHaveBeenCalledTimes(1);
   });
+
+  // Scenario: First Google login initiation requests standard scopes without consent prompt or offline access
+  it('Scenario: First Google login calls signInWithOAuth with openid, email, profile and no prompt/offline params', async () => {
+    const TestComponent: React.FC = () => {
+      const { loginWithGoogle } = useAuth();
+      return (
+        <div>
+          <button onClick={() => loginWithGoogle()}>Sign in with Google</button>
+        </div>
+      );
+    };
+
+    const signInMock = vi.mocked(supabase.auth.signInWithOAuth).mockResolvedValue({
+      data: { provider: 'google', url: 'https://accounts.google.com/o/oauth2/v2/auth?...' },
+      error: null,
+    });
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Sign in with Google/i }));
+
+    await waitFor(() => {
+      expect(signInMock).toHaveBeenCalledTimes(1);
+    });
+
+    const callArgs = signInMock.mock.calls[0][0];
+    expect(callArgs.provider).toBe('google');
+    expect(callArgs.options?.scopes).toBe('openid email profile');
+    expect(callArgs.options?.redirectTo).toContain('/auth/callback');
+
+    // Ensure prompt: 'consent' and access_type: 'offline' were removed
+    const queryParams = (callArgs.options as any)?.queryParams;
+    expect(queryParams?.prompt).toBeUndefined();
+    expect(queryParams?.access_type).toBeUndefined();
+  });
+
+  // Scenario: Existing Supabase session is reused on subsequent login without calling signInWithOAuth
+  it('Scenario: Existing Supabase session is reused directly without triggering new Google OAuth redirect', async () => {
+    const TestComponent: React.FC = () => {
+      const { loginWithGoogle, isAuthenticated, user, company } = useAuth();
+      return (
+        <div>
+          <div data-testid="auth-state">{isAuthenticated ? 'logged-in' : 'logged-out'}</div>
+          <div data-testid="user-email">{user?.email || 'no-user'}</div>
+          <div data-testid="company-name">{company?.name || 'no-company'}</div>
+          <button onClick={() => loginWithGoogle()}>Sign in with Google</button>
+        </div>
+      );
+    };
+
+    // Active session already present in Supabase
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'existing-active-sb-jwt',
+          user: { email: 'workshop.lead@precision.in', id: 'usr-reuse-1' },
+        },
+      } as any,
+      error: null,
+    });
+
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        user: { id: 'usr-reuse-1', email: 'workshop.lead@precision.in', role: 'ADMIN', company_id: 'comp-reuse-1' },
+        company: { id: 'comp-reuse-1', name: 'Precision CNC Works' },
+      },
+    });
+
+    const signInMock = vi.mocked(supabase.auth.signInWithOAuth);
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Sign in with Google/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('auth-state')).toHaveTextContent('logged-in');
+      expect(screen.getByTestId('user-email')).toHaveTextContent('workshop.lead@precision.in');
+      expect(screen.getByTestId('company-name')).toHaveTextContent('Precision CNC Works');
+    });
+
+    // signInWithOAuth must NOT have been called because session was reused
+    expect(signInMock).not.toHaveBeenCalled();
+    expect(localStorage.getItem('quotation_ai_auth_token')).toBe('existing-active-sb-jwt');
+  });
+
+  // Scenario: Concurrent/duplicate loginWithGoogle calls do not trigger duplicate OAuth redirects
+  it('Scenario: Duplicate loginWithGoogle calls are deduplicated and do not produce multiple redirects', async () => {
+    const TestComponent: React.FC = () => {
+      const { loginWithGoogle } = useAuth();
+      return (
+        <div>
+          <button onClick={() => {
+            loginWithGoogle();
+            loginWithGoogle();
+          }}>Double Click Google</button>
+        </div>
+      );
+    };
+
+    let resolveSignIn: any;
+    const signInPromise = new Promise<{ data: any; error: any }>((resolve) => {
+      resolveSignIn = resolve;
+    });
+
+    const signInMock = vi.mocked(supabase.auth.signInWithOAuth).mockReturnValue(signInPromise as any);
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Double Click Google/i }));
+
+    // Only one signInWithOAuth call should be dispatched
+    await waitFor(() => {
+      expect(signInMock).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      resolveSignIn({ data: {}, error: null });
+    });
+  });
 });

@@ -189,14 +189,15 @@ export const AuthCallbackPage: React.FC = () => {
                 try {
                   console.debug('[Auth] Code exchange started');
                   const result = await supabase.auth.exchangeCodeForSession(code);
+                  exchangedCodes.add(code);
                   if (!result.error) {
-                    exchangedCodes.add(code);
                     console.debug('[Auth] Code exchange succeeded');
                   } else {
                     console.debug('[Auth] Code exchange failed:', result.error.message);
                   }
                   return { session: result.data?.session || null, error: result.error };
                 } catch (err: any) {
+                  exchangedCodes.add(code);
                   console.debug('[Auth] Code exchange failed:', err?.message || err);
                   return { session: null, error: err };
                 } finally {
@@ -264,13 +265,19 @@ export const AuthCallbackPage: React.FC = () => {
             }
           }
 
-          // Fallback: check if active session already exists in client
+          // Fallback: check if active session already exists in client or localStorage
           if (!tokenToVerify) {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.access_token) {
               tokenToVerify = session.access_token;
               authenticatedUserEmail = session.user?.email;
               console.debug(`[Auth] Session detected: user ${authenticatedUserEmail || 'authenticated'}`);
+            } else {
+              const savedToken = localStorage.getItem('quotation_ai_auth_token');
+              if (savedToken) {
+                tokenToVerify = savedToken;
+                console.debug('[Auth] Session detected: cached auth token present');
+              }
             }
           }
         }
