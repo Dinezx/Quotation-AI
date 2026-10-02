@@ -10,7 +10,6 @@ import {
   ChevronDown 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { NotificationDropdown } from '../notifications/NotificationDropdown';
 
 interface TopNavBarProps {
   onOpenMobileMenu?: () => void;
@@ -23,8 +22,11 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({ onOpenMobileMenu }) => {
 
   const getBreadcrumb = () => {
     const path = location.pathname;
+
     if (path === '/' || path === '/dashboard') return { title: 'Dashboard', path: '/dashboard' };
-    if (path.startsWith('/upload') || path.startsWith('/review')) return { title: 'Purchase Orders', path: '/upload' };
+    if (path.startsWith('/upload') || path.startsWith('/review')) {
+      return { title: 'Purchase Orders', path: '/upload' };
+    }
     if (path.startsWith('/quotations') || path.startsWith('/quotation') || path.startsWith('/calculation') || path.startsWith('/dispatch')) {
       return { title: 'Quotations', path: '/quotations' };
     }
@@ -96,7 +98,13 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({ onOpenMobileMenu }) => {
       {/* Right Controls: Notifications, Authenticated Company Badge, User Avatar */}
       <div className="flex items-center gap-3 shrink-0">
         {/* Real Workflow Notifications with Live Badge & Popover */}
-        <NotificationDropdown />
+        <button
+          type="button"
+          className="relative rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          aria-label="Notifications"
+        >
+          <Bell className="h-5 w-5" />
+        </button>
 
         {/* Authenticated Company Selector / Badge */}
         <div 
