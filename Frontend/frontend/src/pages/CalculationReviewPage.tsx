@@ -190,11 +190,11 @@ export const CalculationReviewPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Step 4: Preview (Inactive) */}
+            {/* Step 4: Template (Inactive) */}
             <div 
               onClick={() => {
                 if (calcResult?.quotation_id && !isBlocked) {
-                  navigate(`/quotation/${calcResult.quotation_id}`);
+                  navigate(`/templates/${calcResult.quotation_id}`);
                 }
               }}
               className="relative z-10 flex items-center gap-3 justify-center cursor-pointer group"
@@ -203,7 +203,7 @@ export const CalculationReviewPage: React.FC = () => {
                 04
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[11px] uppercase tracking-wider text-slate-400">Preview</span>
+                <span className="text-[11px] uppercase tracking-wider text-[#76777d]">Template</span>
               </div>
             </div>
 
@@ -503,7 +503,7 @@ export const CalculationReviewPage: React.FC = () => {
               <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>All bill-of-material rates verified against DIN 7168 standards.</span>
+                  <span>All bill-of-material rates verified against the active company rate master.</span>
                 </div>
                 <div className="font-semibold text-slate-900">
                   Direct Manufacturing Cost: <span className="font-mono font-bold text-sm text-[#2563EB]">
@@ -675,7 +675,7 @@ export const CalculationReviewPage: React.FC = () => {
                   disabled={isBlocked || !calcResult?.quotation_id}
                   onClick={() => {
                     if (calcResult?.quotation_id) {
-                      navigate(`/quotation/${calcResult.quotation_id}`);
+                      navigate(`/templates/${calcResult.quotation_id}`);
                     }
                   }}
                   className={`w-full py-2.5 text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-2 group cursor-pointer ${
@@ -684,7 +684,7 @@ export const CalculationReviewPage: React.FC = () => {
                       : 'bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.99]'
                   }`}
                 >
-                  <span>{isBlocked ? 'Resolve Missing Rates to Proceed' : 'Continue to Quotation Preview'}</span>
+                  <span>{isBlocked ? 'Resolve Missing Rates to Proceed' : 'Continue to Quotation Template'}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </button>
 

@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { AppShell } from '../layouts/AppShell';
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -12,6 +12,7 @@ const RateManagementPage = lazy(() => import('../pages/RateManagementPage').then
 const CalculationReviewPage = lazy(() => import('../pages/CalculationReviewPage').then(m => ({ default: m.CalculationReviewPage })));
 const QuotationHistoryPage = lazy(() => import('../pages/QuotationHistoryPage').then(m => ({ default: m.QuotationHistoryPage })));
 const QuotationPreviewPage = lazy(() => import('../pages/QuotationPreviewPage').then(m => ({ default: m.QuotationPreviewPage })));
+const QuotationTemplatePage = lazy(() => import('../pages/QuotationTemplatePage').then(m => ({ default: m.QuotationTemplatePage })));
 const QuotationDispatchPage = lazy(() => import('../pages/QuotationDispatchPage').then(m => ({ default: m.QuotationDispatchPage })));
 const CustomersPage = lazy(() => import('../pages/CustomersPage').then(m => ({ default: m.CustomersPage })));
 const CustomerDetailPage = lazy(() => import('../pages/CustomerDetailPage').then(m => ({ default: m.CustomerDetailPage })));
@@ -20,6 +21,11 @@ const LoginPage = lazy(() => import('../pages/LoginPage').then(m => ({ default: 
 const SignUpPage = lazy(() => import('../pages/SignUpPage').then(m => ({ default: m.SignUpPage })));
 const AuthCallbackPage = lazy(() => import('../pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 const CompanyOnboardingPage = lazy(() => import('../pages/CompanyOnboardingPage').then(m => ({ default: m.CompanyOnboardingPage })));
+
+const QuotationTemplateRedirect: React.FC = () => {
+  const { quoteId } = useParams();
+  return <Navigate to={quoteId ? `/templates/${quoteId}` : '/templates'} replace />;
+};
 
 const RouteLoadingFallback: React.FC = () => (
   <div className="flex items-center justify-center min-h-[50vh]">
@@ -61,6 +67,11 @@ export const AppRoutes: React.FC = () => {
           <Route path="/rates" element={<RateManagementPage />} />
           <Route path="/calculation" element={<CalculationReviewPage />} />
           <Route path="/calculation/:quoteId" element={<CalculationReviewPage />} />
+          <Route path="/templates" element={<QuotationTemplatePage />} />
+          <Route path="/templates/:quoteId" element={<QuotationTemplatePage />} />
+          {/* Legacy route redirects for backward compatibility */}
+          <Route path="/quotation-template" element={<Navigate to="/templates" replace />} />
+          <Route path="/quotation-template/:quoteId" element={<QuotationTemplateRedirect />} />
           <Route path="/quotation" element={<QuotationPreviewPage />} />
           <Route path="/quotation/:quoteId" element={<QuotationPreviewPage />} />
           <Route path="/quotations" element={<QuotationHistoryPage />} />

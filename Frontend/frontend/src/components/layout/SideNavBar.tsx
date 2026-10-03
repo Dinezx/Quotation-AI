@@ -95,10 +95,13 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
         },
         {
           label: 'Templates',
-          path: '/settings?tab=templates',
+          path: '/templates',
           icon: Palette,
           isActive: (pathname, search) =>
-            pathname === '/settings' && search.includes('tab=templates'),
+            pathname === '/templates' ||
+            pathname.startsWith('/templates/') ||
+            pathname === '/quotation-template' ||
+            (pathname === '/settings' && search.includes('tab=templates')),
         },
       ],
     },
