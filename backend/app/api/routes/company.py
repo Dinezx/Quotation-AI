@@ -5,8 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.security import get_current_company_id, get_current_user, AuthenticatedUser
+from app.core.security import get_current_company_id, get_current_user, require_role, AuthenticatedUser
+from app.core.file_security import validate_file_content
+from app.services.audit.audit_service import AuditService
 from app.db.session import get_db
+
 from app.models.company import Company
 from app.schemas.company import (
     CompanyFullSettingsResponse,
@@ -61,10 +64,11 @@ def get_company_settings(
 @router.put("/profile", response_model=CompanyProfileResponse)
 def update_company_profile(
     profile_in: CompanyProfileUpdate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Update authoritative manufacturer company profile and credentials."""
+    company_id = current_user.company_id
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
@@ -97,16 +101,28 @@ def update_company_profile(
 
     db.commit()
     db.refresh(company)
+
+    AuditService.log_event(
+        event="COMPANY_PROFILE_UPDATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Company",
+        entity_id=company_id,
+        db=db,
+    )
+
     return CompanyProfileResponse(**company.get_profile_data())
 
 
 @router.put("/tax", response_model=CompanyTaxSettingsResponse)
 def update_company_tax_settings(
     tax_in: CompanyTaxSettingsUpdate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Update company GSTIN, tax mode (CGST_SGST, IGST, EXEMPT), and default GST rate."""
+    company_id = current_user.company_id
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
@@ -128,16 +144,28 @@ def update_company_tax_settings(
 
     db.commit()
     db.refresh(company)
+
+    AuditService.log_event(
+        event="COMPANY_TAX_SETTINGS_UPDATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Company",
+        entity_id=company_id,
+        db=db,
+    )
+
     return CompanyTaxSettingsResponse(**company.get_tax_settings())
 
 
 @router.put("/bank", response_model=CompanyBankSettingsResponse)
 def update_company_bank_details(
     bank_in: CompanyBankSettingsUpdate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Update company remittance bank account, IFSC, and UPI details."""
+    company_id = current_user.company_id
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
@@ -164,16 +192,28 @@ def update_company_bank_details(
 
     db.commit()
     db.refresh(company)
+
+    AuditService.log_event(
+        event="COMPANY_BANK_DETAILS_UPDATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Company",
+        entity_id=company_id,
+        db=db,
+    )
+
     return CompanyBankSettingsResponse(**company.get_bank_settings())
 
 
 @router.put("/defaults", response_model=CompanyQuotationDefaultsResponse)
 def update_company_quotation_defaults(
     defaults_in: CompanyQuotationDefaultsUpdate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Update quotation commercial defaults (validity, payment terms, delivery, inspection, signatory)."""
+    company_id = current_user.company_id
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
@@ -191,6 +231,17 @@ def update_company_quotation_defaults(
 
     db.commit()
     db.refresh(company)
+
+    AuditService.log_event(
+        event="COMPANY_DEFAULTS_UPDATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Company",
+        entity_id=company_id,
+        db=db,
+    )
+
     return CompanyQuotationDefaultsResponse(**company.get_quotation_defaults())
 
 
@@ -218,10 +269,11 @@ def get_active_template(
 @router.put("/template", response_model=QuotationTemplateConfigResponse)
 def update_template_configuration(
     template_in: QuotationTemplateConfigUpdate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Update company's active quotation template selection and presentation styling."""
+    company_id = current_user.company_id
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
@@ -245,7 +297,19 @@ def update_template_configuration(
 
     db.commit()
     db.refresh(company)
+
+    AuditService.log_event(
+        event="COMPANY_TEMPLATE_UPDATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Company",
+        entity_id=company_id,
+        db=db,
+    )
+
     return QuotationTemplateConfigResponse(**company.get_template_config())
+
 
 
 @router.post("/template/preview-pdf")
@@ -360,12 +424,12 @@ def get_company_logo(
 @router.post("/logo")
 async def upload_company_logo(
     file: UploadFile = File(...),
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """
     Upload or replace company logo.
-    Validates MIME type (PNG/JPEG/WEBP/SVG) and size (<= 5MB).
+    Validates MIME type, magic bytes (PNG/JPEG/WEBP/SVG), and size (<= 5MB).
     Uploads to company-scoped storage and updates company.logo_url.
     """
     content_type = file.content_type or ""
@@ -386,6 +450,14 @@ async def upload_company_logo(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Logo file exceeds maximum size of 5 MB."
         )
+
+    # Magic byte signature validation
+    validate_file_content(
+        content=file_bytes,
+        filename=file.filename or "logo.png",
+        max_bytes=MAX_LOGO_BYTES,
+        allowed_types=list(ALLOWED_LOGO_CONTENT_TYPES.keys()),
+    )
 
     company = db.query(Company).filter(Company.id == current_user.company_id).first()
     if not company:
@@ -414,6 +486,17 @@ async def upload_company_logo(
     db.commit()
     db.refresh(company)
 
+    AuditService.log_event(
+        event="COMPANY_LOGO_UPLOADED",
+        company_id=company.id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Company",
+        entity_id=company.id,
+        metadata={"filename": clean_filename, "size_bytes": len(file_bytes)},
+        db=db,
+    )
+
     return {
         "message": "Company logo uploaded successfully.",
         "logo_url": storage_path,
@@ -422,7 +505,7 @@ async def upload_company_logo(
 
 @router.delete("/logo")
 def remove_company_logo(
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Remove existing company logo from storage and reset company.logo_url."""
@@ -440,4 +523,15 @@ def remove_company_logo(
         company.logo_url = None
         db.commit()
 
+        AuditService.log_event(
+            event="COMPANY_LOGO_REMOVED",
+            company_id=company.id,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            entity_type="Company",
+            entity_id=company.id,
+            db=db,
+        )
+
     return {"message": "Company logo removed successfully."}
+

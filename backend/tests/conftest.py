@@ -10,16 +10,19 @@ from cryptography.hazmat.primitives import serialization
 # Ensure backend root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+backend_db_path = os.path.join(backend_dir, "quotation_ai.db").replace("\\", "/")
+
 # If environment or .env has unconfigured placeholder DATABASE_URL, isolate test runner to local SQLite
-env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+env_path = os.path.join(backend_dir, ".env")
 if "your-project-ref" in os.environ.get("DATABASE_URL", ""):
-    os.environ["DATABASE_URL"] = "sqlite:///./quotation_ai.db"
+    os.environ["DATABASE_URL"] = f"sqlite:///{backend_db_path}"
 elif os.path.exists(env_path):
     try:
         with open(env_path, "r", encoding="utf-8") as f:
             for line in f:
                 if line.strip().startswith("DATABASE_URL") and "your-project-ref" in line:
-                    os.environ["DATABASE_URL"] = "sqlite:///./quotation_ai.db"
+                    os.environ["DATABASE_URL"] = f"sqlite:///{backend_db_path}"
                     break
     except Exception:
         pass

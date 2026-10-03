@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.core.security import get_current_company_id
+from app.core.security import get_current_company_id, require_role, AuthenticatedUser
+from app.services.audit.audit_service import AuditService
 from app.db.session import get_db
 from app.models.company import Company
 from app.models.material import Material
@@ -33,10 +34,11 @@ def list_materials(
 @router.post("/materials", response_model=MaterialResponse, status_code=status.HTTP_201_CREATED)
 def create_material(
     material_in: MaterialCreate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Create a new material rate card. Enforces tenant grade uniqueness."""
+    company_id = current_user.company_id
     clean_grade = material_in.grade.strip()
     
     # Check for duplicate grade within the same company
@@ -63,6 +65,18 @@ def create_material(
     db.add(material)
     db.commit()
     db.refresh(material)
+
+    AuditService.log_event(
+        event="RATE_MATERIAL_CREATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Material",
+        entity_id=material.id,
+        metadata={"grade": clean_grade, "base_rate": str(material.base_rate)},
+        db=db,
+    )
+
     return material
 
 
@@ -86,10 +100,11 @@ def get_material(
 def update_material(
     material_id: str,
     material_in: MaterialUpdate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Update an existing material rate card."""
+    company_id = current_user.company_id
     material = db.query(Material).filter(
         Material.id == material_id,
         Material.company_id == company_id
@@ -124,16 +139,29 @@ def update_material(
 
     db.commit()
     db.refresh(material)
+
+    AuditService.log_event(
+        event="RATE_MATERIAL_UPDATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Material",
+        entity_id=material.id,
+        metadata={"grade": material.grade},
+        db=db,
+    )
+
     return material
 
 
 @router.delete("/materials/{material_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_material(
     material_id: str,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Deactivate a material rate card."""
+    company_id = current_user.company_id
     material = db.query(Material).filter(
         Material.id == material_id,
         Material.company_id == company_id
@@ -143,16 +171,28 @@ def delete_material(
     
     material.is_active = False
     db.commit()
+
+    AuditService.log_event(
+        event="RATE_MATERIAL_DELETED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Material",
+        entity_id=material.id,
+        db=db,
+    )
+
     return None
 
 
 @router.post("/materials/{material_id}/reactivate", response_model=MaterialResponse)
 def reactivate_material(
     material_id: str,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Reactivate a previously deactivated material rate card."""
+    company_id = current_user.company_id
     material = db.query(Material).filter(
         Material.id == material_id,
         Material.company_id == company_id
@@ -163,6 +203,17 @@ def reactivate_material(
     material.is_active = True
     db.commit()
     db.refresh(material)
+
+    AuditService.log_event(
+        event="RATE_MATERIAL_REACTIVATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Material",
+        entity_id=material.id,
+        db=db,
+    )
+
     return material
 
 
@@ -184,10 +235,11 @@ def list_processes(
 @router.post("/processes", response_model=ProcessResponse, status_code=status.HTTP_201_CREATED)
 def create_process(
     process_in: ProcessCreate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Create a new process rate card. Enforces tenant process name uniqueness."""
+    company_id = current_user.company_id
     clean_name = process_in.name.strip()
     
     # Check for duplicate process name within the same company
@@ -213,6 +265,18 @@ def create_process(
     db.add(process)
     db.commit()
     db.refresh(process)
+
+    AuditService.log_event(
+        event="RATE_PROCESS_CREATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Process",
+        entity_id=process.id,
+        metadata={"name": clean_name, "rate": str(process.hourly_rate)},
+        db=db,
+    )
+
     return process
 
 
@@ -236,10 +300,11 @@ def get_process(
 def update_process(
     process_id: str,
     process_in: ProcessUpdate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Update an existing process rate card."""
+    company_id = current_user.company_id
     process = db.query(Process).filter(
         Process.id == process_id,
         Process.company_id == company_id
@@ -275,16 +340,29 @@ def update_process(
 
     db.commit()
     db.refresh(process)
+
+    AuditService.log_event(
+        event="RATE_PROCESS_UPDATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Process",
+        entity_id=process.id,
+        metadata={"name": process.name},
+        db=db,
+    )
+
     return process
 
 
 @router.delete("/processes/{process_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_process(
     process_id: str,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Deactivate a process rate card."""
+    company_id = current_user.company_id
     process = db.query(Process).filter(
         Process.id == process_id,
         Process.company_id == company_id
@@ -294,16 +372,28 @@ def delete_process(
     
     process.is_active = False
     db.commit()
+
+    AuditService.log_event(
+        event="RATE_PROCESS_DELETED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Process",
+        entity_id=process.id,
+        db=db,
+    )
+
     return None
 
 
 @router.post("/processes/{process_id}/reactivate", response_model=ProcessResponse)
 def reactivate_process(
     process_id: str,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Reactivate a previously deactivated process rate card."""
+    company_id = current_user.company_id
     process = db.query(Process).filter(
         Process.id == process_id,
         Process.company_id == company_id
@@ -314,6 +404,17 @@ def reactivate_process(
     process.is_active = True
     db.commit()
     db.refresh(process)
+
+    AuditService.log_event(
+        event="RATE_PROCESS_REACTIVATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Process",
+        entity_id=process.id,
+        db=db,
+    )
+
     return process
 
 
@@ -354,10 +455,11 @@ def get_pricing_rules(
 @router.put("/pricing-rules", response_model=PricingRulesResponse)
 def update_pricing_rules(
     rules_in: PricingRulesUpdate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Update tenant commercial pricing rules (Overhead %, Profit %, GST config, Rounding)."""
+    company_id = current_user.company_id
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
@@ -373,6 +475,21 @@ def update_pricing_rules(
     company.settings = settings
     db.commit()
     db.refresh(company)
+
+    AuditService.log_event(
+        event="PRICING_RULES_UPDATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="PricingRules",
+        entity_id=company_id,
+        metadata={
+            "overhead_percentage": str(rules_in.overhead_percentage),
+            "profit_percentage": str(rules_in.profit_percentage),
+            "gst_type": rules_in.gst_type,
+        },
+        db=db,
+    )
 
     return PricingRulesResponse(
         is_configured=True,

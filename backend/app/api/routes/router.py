@@ -7,6 +7,7 @@ from app.api.routes.quotations import router as quotations_router
 from app.api.routes.company import router as company_router
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.notifications import router as notifications_router
+from app.api.routes.audit import router as audit_router
 
 api_router = APIRouter()
 
@@ -18,4 +19,6 @@ api_router.include_router(quotations_router)
 api_router.include_router(company_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(notifications_router)
+api_router.include_router(audit_router)
+
 

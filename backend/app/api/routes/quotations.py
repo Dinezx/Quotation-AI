@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload, joinedload
 from app.core.config import settings
-from app.core.security import get_current_company_id, get_current_user, AuthenticatedUser
+from app.core.security import get_current_company_id, get_current_user, require_role, AuthenticatedUser
+from app.core.rate_limit import heavy_rate_limit
+from app.services.audit.audit_service import AuditService
 from app.db.session import get_db
 from app.models.company import Company
 from app.models.customer import Customer
@@ -272,10 +274,11 @@ def calculate_quotation_stateless(
 def calculate_and_update_quotation(
     quotation_id: str,
     request: CalculateQuotationRequest,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """Recalculate an existing quotation and persist both header totals and item breakdowns atomically."""
+    company_id = current_user.company_id
     quotation = db.query(Quotation).filter(
         Quotation.id == quotation_id,
         Quotation.company_id == company_id
@@ -295,6 +298,17 @@ def calculate_and_update_quotation(
             quotation=quotation,
             request=request
         )
+
+        AuditService.log_event(
+            event="QUOTATION_RECALCULATED",
+            company_id=company_id,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            entity_type="Quotation",
+            entity_id=quotation.id,
+            db=db,
+        )
+
         return updated_quotation
     except HTTPException:
         db.rollback()
@@ -310,7 +324,7 @@ def calculate_and_update_quotation(
 @router.post("/{quotation_id}/finalize", response_model=QuotationResponse)
 def finalize_quotation(
     quotation_id: str,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db)
 ):
     """
@@ -378,6 +392,17 @@ def finalize_quotation(
         entity_type="QUOTATION",
         entity_id=updated.id,
         severity="INFO",
+    )
+
+    AuditService.log_event(
+        event="QUOTATION_FINALIZED",
+        company_id=current_user.company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Quotation",
+        entity_id=updated.id,
+        metadata={"quotation_number": updated.quotation_number, "final_total": str(updated.final_total)},
+        db=db,
     )
 
     return updated
@@ -510,7 +535,8 @@ def generate_quotation_pdf_post(
 @router.post("/{quotation_id}/send-email", response_model=SendQuotationEmailResponse)
 def send_quotation_email(
     quotation_id: str,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
+    _rate_limit = Depends(heavy_rate_limit),
     db: Session = Depends(get_db),
 ):
     """

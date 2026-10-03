@@ -8,6 +8,8 @@ from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.core.security import get_current_user, AuthenticatedUser, security_scheme
 from app.core.jwks import verify_supabase_jwt
+from app.core.rate_limit import auth_rate_limit, standard_rate_limit
+from app.services.audit.audit_service import AuditService
 from app.db.session import get_db
 from app.models.company import Company
 from app.models.user import User
@@ -36,7 +38,11 @@ class OnboardingRequest(BaseModel):
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
-def signup(req: SignUpRequest, db: Session = Depends(get_db)):
+def signup(
+    req: SignUpRequest,
+    _rate_limit = Depends(auth_rate_limit),
+    db: Session = Depends(get_db)
+):
     """Registers a new manufacturing plant tenant and administrative user account."""
     clean_email = str(req.email).lower().strip()
     clean_company = req.company_name.strip()
@@ -131,6 +137,18 @@ def signup(req: SignUpRequest, db: Session = Depends(get_db)):
     db.refresh(user)
     db.refresh(company)
 
+    AuditService.log_event(
+        event="AUTH_SIGNUP",
+        company_id=company.id,
+        user_id=user.id,
+        user_email=user.email,
+        entity_type="Company",
+        entity_id=company.id,
+        metadata={"company_name": company.name},
+        db=db,
+    )
+
+
     return {
         "status": "success",
         "message": "Plant facility account created successfully.",
@@ -155,6 +173,7 @@ def signup(req: SignUpRequest, db: Session = Depends(get_db)):
 def complete_onboarding(
     req: OnboardingRequest,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
+    _rate_limit = Depends(auth_rate_limit),
     db: Session = Depends(get_db)
 ):
     """
@@ -285,6 +304,18 @@ def complete_onboarding(
     db.refresh(user)
     db.refresh(company)
 
+    AuditService.log_event(
+        event="AUTH_ONBOARDING",
+        company_id=company.id,
+        user_id=user.id,
+        user_email=user.email,
+        entity_type="Company",
+        entity_id=company.id,
+        metadata={"company_name": company.name},
+        db=db,
+    )
+
+
     return {
         "status": "success",
         "message": "Company onboarding completed successfully.",
@@ -311,6 +342,7 @@ def complete_onboarding(
 @router.get("/me")
 async def get_me(
     current_user: AuthenticatedUser = Depends(get_current_user),
+    _rate_limit = Depends(standard_rate_limit),
     db: Session = Depends(get_db)
 ):
     """Returns profile and company details for current authenticated session."""

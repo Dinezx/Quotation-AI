@@ -1,7 +1,14 @@
+import json
 import os
-from typing import List, Optional
-from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import List, Optional, Annotated
+from pydantic import field_validator, ValidationInfo, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict, NoDecode
+
+DEFAULT_DEV_CORS_ORIGINS: List[str] = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+]
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Quotation AI Backend"
@@ -49,21 +56,75 @@ class Settings(BaseSettings):
     AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT: Optional[str] = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT", None)
     AZURE_DOCUMENT_INTELLIGENCE_KEY: Optional[str] = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY", None)
 
+    # Environment & Deployment Mode
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development") # development, staging, production
+    AZURE_FRONT_DOOR_ID: Optional[str] = os.getenv("AZURE_FRONT_DOOR_ID", None)
+    RATELIMIT_ENABLED: bool = os.getenv("RATELIMIT_ENABLED", "true").lower() in ("true", "1", "yes")
+
     # CORS
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-    ]
+    CORS_ORIGINS: Annotated[List[str], NoDecode] = Field(
+        default_factory=lambda: [] if os.getenv("ENVIRONMENT", "").lower() == "production" else list(DEFAULT_DEV_CORS_ORIGINS),
+        validate_default=True,
+    )
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v):
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",") if i.strip()]
-        elif isinstance(v, list):
-            return v
-        return v
+    def assemble_cors_origins(cls, v, info: ValidationInfo) -> List[str]:
+        # 1. Parse string representation or iterable into a list of strings
+        origins: List[str]
+        if isinstance(v, str):
+            v_clean = v.strip()
+            if not v_clean:
+                origins = []
+            elif v_clean.startswith("[") or v_clean.endswith("]") or v_clean.startswith("{"):
+                try:
+                    parsed = json.loads(v_clean)
+                except Exception as e:
+                    raise ValueError(f"Malformed JSON for CORS_ORIGINS: {e}") from e
+                if not isinstance(parsed, list):
+                    raise ValueError("CORS_ORIGINS JSON must be a list of origin strings")
+                origins = [str(item).strip() for item in parsed if str(item).strip()]
+            else:
+                # Comma-separated or single origin
+                origins = [item.strip() for item in v_clean.split(",") if item.strip()]
+        elif isinstance(v, (list, tuple, set)):
+            origins = [str(item).strip() for item in v if str(item).strip()]
+        elif v is None:
+            origins = []
+        else:
+            raise ValueError(f"Invalid CORS_ORIGINS type: {type(v)}")
+
+        # 2. Determine environment
+        env = None
+        if info and info.data:
+            env = info.data.get("ENVIRONMENT")
+        if env is None:
+            env = os.getenv("ENVIRONMENT", "development")
+        is_production = (env or "").lower() == "production"
+
+        cleaned_origins: List[str] = []
+        for origin in origins:
+            # Reject wildcard in production
+            if origin == "*" or "*" in origin:
+                if is_production:
+                    raise ValueError("Wildcard CORS ('*') is strictly forbidden in production")
+                cleaned_origins.append(origin)
+                continue
+
+            # Check valid URL format
+            if not (origin.startswith("http://") or origin.startswith("https://")):
+                raise ValueError(f"Invalid CORS origin '{origin}': must start with http:// or https://")
+
+            # Reject localhost/loopback in production
+            origin_lower = origin.lower()
+            if "localhost" in origin_lower or "127.0.0.1" in origin_lower or "0.0.0.0" in origin_lower:
+                if is_production:
+                    raise ValueError(f"Localhost/loopback origin '{origin}' is strictly forbidden in production")
+
+            # Remove trailing slash for consistent origin matching
+            cleaned_origins.append(origin.rstrip("/"))
+
+        return cleaned_origins
 
     @property
     def SUPABASE_JWKS_URL(self) -> str:

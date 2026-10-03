@@ -3,7 +3,11 @@ from decimal import Decimal
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session, selectinload, defer
-from app.core.security import get_current_company_id, get_current_user, AuthenticatedUser
+from app.core.security import get_current_company_id, get_current_user, require_role, AuthenticatedUser
+from app.core.file_security import validate_file_content, sanitize_filename
+from app.services.security.malware_scanner import get_malware_scanner
+from app.core.rate_limit import heavy_rate_limit
+from app.services.audit.audit_service import AuditService
 from app.db.session import get_db
 from app.models.customer import Customer
 from app.models.purchase_order import PurchaseOrder
@@ -138,10 +142,12 @@ def create_purchase_order_from_extraction(
 @router.post("/upload")
 async def upload_po_document(
     file: UploadFile = File(...),
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
+    _rate_limit = Depends(heavy_rate_limit),
     db: Session = Depends(get_db),
 ):
     """Upload PO document (PDF, TIFF, PNG, JPEG), extract, and persist as NEEDS_REVIEW."""
+    company_id = current_user.company_id
     allowed_types = ["application/pdf", "image/png", "image/jpeg", "image/tiff"]
     if file.content_type not in allowed_types:
         raise HTTPException(
@@ -152,12 +158,28 @@ async def upload_po_document(
     content = await file.read()
     await file.seek(0)
 
+    # 1. Binary magic byte & size validation (max 25MB)
+    validate_file_content(
+        content=content,
+        filename=file.filename or "uploaded_document.pdf",
+        max_bytes=25 * 1024 * 1024,
+        allowed_types=allowed_types,
+    )
+
+    # 2. Sanitize filename
+    safe_filename = sanitize_filename(file.filename or "uploaded_document")
+    file.filename = safe_filename
+
+    # 3. Malware scanning integration point
+    scanner = get_malware_scanner()
+    scanner.scan_bytes(content, filename=safe_filename)
+
     url = await StorageService.upload_file(file, subfolder=f"po_{company_id}")
     await file.close()
 
     extraction = await po_extraction_service.extract_document(
         content=content,
-        file_name=file.filename or "uploaded_document",
+        file_name=safe_filename,
         content_type=file.content_type or "application/pdf",
     )
 
@@ -165,7 +187,7 @@ async def upload_po_document(
     po_create = convert_extraction_to_po_create(
         extraction=extraction,
         source_file_url=url,
-        source_file_name=file.filename,
+        source_file_name=safe_filename,
     )
     po = PurchaseOrder(
         company_id=company_id,
@@ -209,6 +231,17 @@ async def upload_po_document(
 
     db.commit()
     db.refresh(po)
+
+    AuditService.log_event(
+        event="PO_UPLOADED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="PurchaseOrder",
+        entity_id=po.id,
+        metadata={"filename": safe_filename, "po_number": po.po_number, "size_bytes": len(content)},
+        db=db,
+    )
 
     has_flags = any(it.review_flags for it in po.items) or po.status == "NEEDS_REVIEW"
     NotificationService.create_notification(
@@ -388,7 +421,7 @@ def get_purchase_order_item(
 def approve_purchase_order(
     po_id: str,
     approve_req: Optional[PurchaseOrderApproveRequest] = None,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db),
 ):
     """
@@ -486,6 +519,17 @@ def approve_purchase_order(
             severity="SUCCESS",
         )
 
+        AuditService.log_event(
+            event="PO_APPROVED",
+            company_id=current_user.company_id,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            entity_type="PurchaseOrder",
+            entity_id=po.id,
+            metadata={"po_number": po.po_number},
+            db=db,
+        )
+
         return po
 
     except HTTPException:
@@ -503,7 +547,7 @@ def approve_purchase_order(
 def reject_purchase_order(
     po_id: str,
     reject_req: PurchaseOrderRejectRequest,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db),
 ):
     """Rejects a purchase order with a documented reason."""
@@ -537,6 +581,17 @@ def reject_purchase_order(
             entity_type="PURCHASE_ORDER",
             entity_id=po.id,
             severity="ERROR",
+        )
+
+        AuditService.log_event(
+            event="PO_REJECTED",
+            company_id=current_user.company_id,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            entity_type="PurchaseOrder",
+            entity_id=po.id,
+            metadata={"reason": reject_req.reason},
+            db=db,
         )
 
         return po

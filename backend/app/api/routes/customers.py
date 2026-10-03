@@ -3,7 +3,8 @@ from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload, joinedload
-from app.core.security import get_current_company_id
+from app.core.security import get_current_company_id, require_role, AuthenticatedUser
+from app.services.audit.audit_service import AuditService
 from app.db.session import get_db
 from app.models.customer import Customer
 from app.models.quotation import Quotation
@@ -82,10 +83,11 @@ def list_customers(
 @router.post("", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
 def create_customer(
     customer_in: CustomerCreate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db),
 ):
     """Create a new customer under the current tenant with duplicate protection."""
+    company_id = current_user.company_id
     name = customer_in.name.strip() if customer_in.name else ""
     if not name:
         raise HTTPException(status_code=422, detail="Customer name is required.")
@@ -148,6 +150,18 @@ def create_customer(
     db.add(customer)
     db.commit()
     db.refresh(customer)
+
+    AuditService.log_event(
+        event="CUSTOMER_CREATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Customer",
+        entity_id=customer.id,
+        metadata={"name": customer.name, "email": customer.email},
+        db=db,
+    )
+
     return customer
 
 
@@ -171,10 +185,11 @@ def get_customer(
 def update_customer(
     customer_id: str,
     customer_in: CustomerUpdate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db),
 ):
     """Update customer details with duplicate protection."""
+    company_id = current_user.company_id
     customer = db.query(Customer).filter(
         Customer.id == customer_id,
         Customer.company_id == company_id,
@@ -280,6 +295,18 @@ def update_customer(
 
     db.commit()
     db.refresh(customer)
+
+    AuditService.log_event(
+        event="CUSTOMER_UPDATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Customer",
+        entity_id=customer.id,
+        metadata={"name": customer.name},
+        db=db,
+    )
+
     return customer
 
 
@@ -287,12 +314,13 @@ def update_customer(
 def update_customer_communication_settings(
     customer_id: str,
     settings_in: CustomerCommunicationSettingsUpdate,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db),
 ):
     """
     Update customer quotation email communication preference without altering the login email.
     """
+    company_id = current_user.company_id
     customer = db.query(Customer).filter(
         Customer.id == customer_id,
         Customer.company_id == company_id,
@@ -310,16 +338,29 @@ def update_customer_communication_settings(
 
     db.commit()
     db.refresh(customer)
+
+    AuditService.log_event(
+        event="CUSTOMER_COMMUNICATION_SETTINGS_UPDATED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Customer",
+        entity_id=customer.id,
+        metadata={"quotation_email": customer.quotation_email},
+        db=db,
+    )
+
     return customer
 
 
 @router.delete("/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_customer(
     customer_id: str,
-    company_id: str = Depends(get_current_company_id),
+    current_user: AuthenticatedUser = Depends(require_role(["ADMIN", "COSTING_ENGINEER"])),
     db: Session = Depends(get_db),
 ):
     """Soft-delete/deactivate a customer."""
+    company_id = current_user.company_id
     customer = db.query(Customer).filter(
         Customer.id == customer_id,
         Customer.company_id == company_id,
@@ -329,6 +370,17 @@ def delete_customer(
 
     customer.is_active = False
     db.commit()
+
+    AuditService.log_event(
+        event="CUSTOMER_DELETED",
+        company_id=company_id,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        entity_type="Customer",
+        entity_id=customer.id,
+        db=db,
+    )
+
     return None
 
 
